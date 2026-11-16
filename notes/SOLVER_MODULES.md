@@ -45,7 +45,7 @@ tasks, while compatibility dispatchers continue to read older inputs.
 | Constant-cross-section SphDSMC SIDM | `venus_cpu_sidm_sphdsmc_constant` or `_openmp` | CPU | Implemented for the documented finite-time scope |
 | Velocity-dependent SphDSMC SIDM | `venus_cpu_sidm_sphdsmc_velocity_dependent` or `_openmp` | CPU | Formula/kernel scope; convergence required per run |
 | Low-compactness Einstein--Vlasov WPIC | `venus_cpu_einstein_vlasov_wpic_low_compactness` | CPU | Low-compactness completed example |
-| High-compactness Einstein--Vlasov WPIC | `venus_cpu_einstein_vlasov_wpic_black_hole --coordinates schwarzschild|eddington_finkelstein` | CPU | Separate polar--areal and horizon-penetrating advanced-null kernels; quantitative convergence required |
+| High-compactness Einstein--Vlasov WPIC | `venus_cpu_einstein_vlasov_wpic_black_hole --coordinates schwarzschild\|eddington_finkelstein` | CPU | Separate polar--areal and horizon-penetrating advanced-null kernels; quantitative convergence required |
 | Expanding Vlasov--Poisson WPIC | `venus_cpu_vlasov_poisson_wpic_expanding` | CPU | Implemented in the documented marker scope |
 | Subhalo collisional WPIC | `venus_cpu_subhalo_wpic` | CPU | Implemented operator/cadence path |
 | Constant-cross-section SIDM WPIC | `venus_cpu_sidm_wpic_constant` | CPU | Implemented with the documented locality caveat |

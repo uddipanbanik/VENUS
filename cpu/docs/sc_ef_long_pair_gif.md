@@ -41,39 +41,42 @@ Before the SC chart ends, the red EF curve and blue SC curve are evaluated at
 the same physical events. Equal coordinate-time numbers are not assumed to
 mean equal events. The renderer instead solves the ingoing-light map
 
-\[
+```math
 \frac{\partial v}{\partial r}
   = \exp(\lambda-\mu)\frac{\partial v}{\partial \tau},
-\]
+```
 
-where \(\tau\) is Schwarzschild time and \(v\) is ingoing EF time. It repeats
-the radial integration with \(n\) and \(2n\) substeps, uses the finer result,
+where $`\tau`$ is Schwarzschild time and $`v`$ is ingoing EF time. It repeats
+the radial integration with $`n`$ and $`2n`$ substeps, uses the finer result,
 and checks refinement and forward–inverse composition errors. After the SC
 chart ends, the animation continues with EF-only frames so the horizon and
 exterior matter remain visible.
 
 The three panels overlay SC (solid blue) and EF (dashed red):
 
-1. Density: horizontal axis \(\log_{10}r\), vertical axis
-   \(\log_{10}\rho\).
-2. Density slope: horizontal axis \(\log_{10}r\), vertical axis
-   \[
-   \frac{\mathrm d\log\rho}{\mathrm d\log r}.
-   \]
-3. Compactness: horizontal axis \(r\), vertical axis
-   \[
-   \frac{2m(r)}{r}.
-   \]
+1. Density: horizontal axis $`\log_{10}r`$, vertical axis
+   $`\log_{10}\rho`$.
+2. Density slope: horizontal axis $`\log_{10}r`$, vertical axis
 
-The horizontal compactness level \(2m/r=1\) marks the trapped-surface
+   $$
+   \frac{\mathrm d\log\rho}{\mathrm d\log r}.
+   $$
+
+3. Compactness: horizontal axis $`r`$, vertical axis
+
+   $$
+   \frac{2m(r)}{r}.
+   $$
+
+The horizontal compactness level $`2m/r=1`$ marks the trapped-surface
 condition. The EF density shown before trapping is the same static-observer
 quantity used by the parity test,
 
-\[
+```math
 \rho_{\mathrm{EF}}=\frac{T_{vv}}{a b^2}.
-\]
+```
 
-The static observer exists in the exterior \(a>0\). Density and its slope
+The static observer exists in the exterior $`a>0`$. Density and its slope
 are plotted in that region, while compactness is plotted throughout the
 retained domain.
 

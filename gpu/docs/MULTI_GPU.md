@@ -2,12 +2,12 @@
 
 ## Decomposition and device binding
 
-The VENUS GPU module uses one MPI process per GPU. Rank \(a\) owns a subset
-\(P_a\) of the marker population:
+The VENUS GPU module uses one MPI process per GPU. Rank $`a`$ owns a subset
+$`P_a`$ of the marker population:
 
-\[
+```math
 N_p=\sum_a |P_a|.
-\]
+```
 
 Call device binding before allocating a `WpicState`:
 
@@ -26,11 +26,11 @@ accelerators.
 
 Every GPU deposits its local extensive moments,
 
-\[
+```math
 M_i^{(a)}=\sum_{p\in P_a}a_{pi}m_p,
-\]
+```
 
-then `MPI_Allreduce` forms \(M_i=\sum_a M_i^{(a)}\), likewise for all other
+then `MPI_Allreduce` forms $`M_i=\sum_a M_i^{(a)}`$, likewise for all other
 moments and mass ledgers. Only `O(Nr)` doubles cross MPI. Every rank uploads
 the global moments, solves identical spherical Poisson locally, and pushes its
 own markers.

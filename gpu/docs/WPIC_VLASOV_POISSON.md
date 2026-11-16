@@ -4,62 +4,62 @@
 
 For a spherical collisionless distribution in Newtonian gravity,
 
-\[
+```math
 \frac{\partial f}{\partial t}
 +w\frac{\partial f}{\partial r}
 +\left(\frac{L^2}{r^3}-\frac{\partial\Phi}{\partial r}\right)
  \frac{\partial f}{\partial w}=0,
 \qquad \eta=\frac{L^2}{2}.
-\]
+```
 
-Here \(f\) is the distribution function, \(r\) is physical radius, \(w\)
-is radial velocity in a static background, and \(L\) is specific angular
-momentum. The gravitational potential is \(\Phi\), the mass density is
-\(\rho\), and \(G\) is Newton's gravitational constant. In an expanding
-background, \(w\) denotes peculiar radial velocity, as defined in Section 5.
+Here $`f`$ is the distribution function, $`r`$ is physical radius, $`w`$
+is radial velocity in a static background, and $`L`$ is specific angular
+momentum. The gravitational potential is $`\Phi`$, the mass density is
+$`\rho`$, and $`G`$ is Newton's gravitational constant. In an expanding
+background, $`w`$ denotes peculiar radial velocity, as defined in Section 5.
 
 The spherical Poisson equation and radial force are
 
-\[
+```math
 \frac{1}{r^2}\frac{\partial}{\partial r}
 \left(r^2\frac{\partial\Phi}{\partial r}\right)=4\pi G\rho,
 \qquad
 \Phi_r(r)=\frac{G M(<r)}{r^2}.
-\]
+```
 
 WPIC approximates phase-space integrals by sums over weighted markers. Their
 mass weights source the radial density and Poisson field. A collisionless
-characteristic keeps marker mass and \(\eta\) fixed and evolves only
-\((r,w)\).
+characteristic keeps marker mass and $`\eta`$ fixed and evolves only
+$`(r,w)`$.
 
 ## 2. Spherical deposition
 
 The natural volume coordinate is
 
-\[
+```math
 q=\frac{r^3}{3},\qquad
 \Delta V_i=4\pi(q_{i+1/2}-q_{i-1/2}).
-\]
+```
 
 For q-CIC between two centers,
 
-\[
+```math
 a_{pi}=\frac{q_{i+1}-q_p}{q_{i+1}-q_i},\qquad
 a_{p,i+1}=1-a_{pi}.
-\]
+```
 
 Production uses the current CPU volume-corrected q-TSC weights. The kernel
 deposits all extensive quantities with the same cloud weights:
 
-\[
+```math
 M_i=\sum_p a_{pi}m_p,\quad
 P_i=\sum_p a_{pi}m_pw_p,
-\]
+```
 
-\[
+```math
 R_{2,i}=\sum_p a_{pi}m_pw_p^2,\quad
 T_{2,i}=\sum_p a_{pi}m_p\frac{2\eta_p}{r_p^2},
-\]
+```
 
 plus radial energy flux and squared cloud mass for effective marker number.
 The CUDA structure is:
@@ -82,16 +82,16 @@ which sets the scope of comparison with an x86 `long double` reduction.
 ### Origin-parity carrier
 
 An active cloud below the first face is partitioned continuously between the
-resolved mesh and the enclosed central mass. Let \(q_f=r_{\min}^3/3\) be
-the first face in volume coordinate and \(q_0\) the first cell center in
+resolved mesh and the enclosed central mass. Let $`q_f=r_{\min}^3/3`$ be
+the first face in volume coordinate and $`q_0`$ the first cell center in
 that coordinate. The transition width is
-\(\delta q=\min[2(q_0-q_f),q_f]\), and
-\(s=\min\{1,\max[0,(q-q_f+\delta q)/\delta q]\}\). The deposited fraction is
+$`\delta q=\min[2(q_0-q_f),q_f]`$, and
+$`s=\min\{1,\max[0,(q-q_f+\delta q)/\delta q]\}`$. The deposited fraction is
 
-\[
+```math
 f_{\rm resolved}=s^2(3-2s),\qquad
 M_{\rm mesh}+M_{\rm hidden}=m_p.
-\]
+```
 
 This is an algebraic mass identity for every marker. The halo production
 drivers enable this path. The particles continue to move through the origin;
@@ -104,12 +104,12 @@ The GPU field solver reconstructs constant mass per radial length inside each
 radial cell. This corresponds to the CPU constant-line-mass option. The CPU
 also provides a positive quadratic line-mass reconstruction.
 
-\[
+```math
 \lambda_i=\frac{M_i}{\Delta r_i},\qquad
 M(r)=M_{i-1/2}+\lambda_i(r-r_{i-1/2}).
-\]
+```
 
-A CUDA inclusive scan forms \(M_{i+1/2}\); independent threads evaluate
+A CUDA inclusive scan forms $`M_{i+1/2}`$; independent threads evaluate
 center force:
 
 ```cpp
@@ -119,36 +119,36 @@ phi_r[i] = gravity * mass_center / (r_center[i] * r_center[i]);
 ```
 
 Potential is integrated analytically. If
-\(A_i=M_{i-1/2}-\lambda_i r_{i-1/2}\),
+$`A_i=M_{i-1/2}-\lambda_i r_{i-1/2}`$,
 
-\[
+```math
 \int_{r_a}^{r_b}\frac{G M(r)}{r^2}\,dr
 =G\left[A_i\left(\frac1{r_a}-\frac1{r_b}\right)
 +\lambda_i\ln\left(\frac{r_b}{r_a}\right)\right].
-\]
+```
 
 A reverse scan starts from
-\(\Phi(r_{\max})=-GM(r_{\max})/r_{\max}\). The expanding halo production
+$`\Phi(r_{\max})=-GM(r_{\max})/r_{\max}`$. The expanding halo production
 drivers use masses that already represent density contrast and set
 `subtract_homogeneous_background=false`.
 
 When the supplied masses represent total density, the Poisson source uses
-\(\rho-\bar\rho\), where \(\bar\rho=3H^2/(8\pi G)\) and \(H=\dot a/a\).
+$`\rho-\bar\rho`$, where $`\bar\rho=3H^2/(8\pi G)`$ and $`H=\dot a/a`$.
 The source mass at the first face therefore contains the central particle
-mass, a prescribed point mass \(M_c\), and the background subtraction
-\(-4\pi\bar\rho r_{\min}^3/3\). This subtraction changes the gravitational
+mass, a prescribed point mass $`M_c`$, and the background subtraction
+$`-4\pi\bar\rho r_{\min}^3/3`$. This subtraction changes the gravitational
 source; the physical mass accounting retains the particle masses.
 
-For \(0<r<r_{\min}\), the force joins continuously to the first face:
+For $`0<r<r_{\min}`$, the force joins continuously to the first face:
 
-\[
+```math
 \Phi_r(r)=\frac{GM_c}{r^2}
  +\frac{G[M_{\mathrm{source}}(r_{\min})-M_c]}{r_{\min}^3}\,r.
-\]
+```
 
 The second term is the force of the uniformly represented central material.
 An empty central cavity in a static calculation has zero force when
-\(M_c=0\). The implementation evaluates its coefficient from the first
+$`M_c=0`$. The implementation evaluates its coefficient from the first
 face's enclosed source mass:
 
 ```cpp
@@ -158,39 +158,39 @@ return gravity * central_mass / (r * r) + core_coefficient * r;
 ```
 
 Resolved cells subtract the background using the same midpoint line-density
-quadrature as the CPU solver, \(4\pi\bar\rho r_i^2\Delta r_i\).
+quadrature as the CPU solver, $`4\pi\bar\rho r_i^2\Delta r_i`$.
 Uniform grid-represented density then gives zero force to roundoff. Sampling
 the background with exact shell volumes instead produces a residual that
-decreases as \(\Delta r^2\) under radial refinement.
+decreases as $`\Delta r^2`$ under radial refinement.
 
 ## 4. Kick–drift–kick characteristic map
 
 In a static background the first half kick is
 
-\[
+```math
 w^{n+1/2}=w^n-\frac{\Delta t}{2}\Phi_r^n(r^n).
-\]
+```
 
-The drift is the exact free central-motion solution. With \(L=\sqrt{2\eta}\),
+The drift is the exact free central-motion solution. With $`L=\sqrt{2\eta}`$,
 
-\[
+```math
 r_*^2=(r^n+\Delta t\,w^{n+1/2})^2
 +\left(\Delta t\frac{L}{r^n}\right)^2,
-\]
+```
 
-\[
+```math
 w_*=\frac{w^{n+1/2}(r^n+\Delta t\,w^{n+1/2})
 +(L/r^n)(\Delta t L/r^n)}{r_*}.
-\]
+```
 
 After endpoint deposition and Poisson solve,
 
-\[
+```math
 w^{n+1}=w_*-\frac{\Delta t}{2}\Phi_r^{n+1}(r_*).
-\]
+```
 
-For \(L>0\) and a drift that remains inside the radial walls, the CUDA code follows the
-CPU formula. Here \(x=r/a\), \(p=aw\), and `drift` is the integral defined
+For $`L>0`$ and a drift that remains inside the radial walls, the CUDA code follows the
+CPU formula. Here $`x=r/a`$, $`p=aw`$, and `drift` is the integral defined
 in Section 5:
 
 ```cpp
@@ -205,9 +205,9 @@ w = p / a1;
 
 At a finite reflecting wall, the code first solves for the time at which the
 free trajectory reaches the wall. It reverses the physical radial velocity
-there, preserves \(L\), and advances the remaining part of the drift. For a
-fixed physical wall at radius \(R\), the peculiar velocity changes according
-to \(w_{\mathrm{after}}=-w_{\mathrm{before}}-2H R\), with \(H\) evaluated at
+there, preserves $`L`$, and advances the remaining part of the drift. For a
+fixed physical wall at radius $`R`$, the peculiar velocity changes according
+to $`w_{\mathrm{after}}=-w_{\mathrm{before}}-2H R`$, with $`H`$ evaluated at
 the impact. CPU and GPU use the same host/device implementation:
 
 ```cpp
@@ -218,15 +218,15 @@ ev::advance_central_drift_with_walls(
 
 This calculation includes trajectories that cross the inner wall and would
 otherwise return outside it during the same step. In a static background,
-each free reflection preserves \(w^2+L^2/r^2\). With origin parity, the
-physical inner boundary is \(r=0\); a radial particle crosses the origin
+each free reflection preserves $`w^2+L^2/r^2`$. With origin parity, the
+physical inner boundary is $`r=0`$; a radial particle crosses the origin
 with the corresponding change of sign in its radial velocity.
 
-For exactly radial motion, \(L=0\), the drift advances the signed coordinate
-\(x+ p\int a^{-2}\,dt\). Its absolute value gives the new comoving radius.
+For exactly radial motion, $`L=0`$, the drift advances the signed coordinate
+$`x+ p\int a^{-2}\,dt`$. Its absolute value gives the new comoving radius.
 Crossing zero reverses the radial momentum. A forward step ending exactly at
 the origin stores the outgoing velocity, and the next step continues the
-same orbit. A particle initially at the origin is allowed when both \(L\)
+same orbit. A particle initially at the origin is allowed when both $`L`$
 and the central point mass vanish. The smooth central force is then zero.
 The implementation avoids division by the radius in this case:
 
@@ -251,17 +251,17 @@ fixed-step map.
 
 ## 5. Expanding coordinates
 
-For \(r=a(t)x\), the physical radial velocity is \(\dot r=Hr+w\), and the
-canonical radial momentum is \(p=a w\). The exact drift
+For $`r=a(t)x`$, the physical radial velocity is $`\dot r=Hr+w`$, and the
+canonical radial momentum is $`p=a w`$. The exact drift
 factor is
 
-\[
+```math
 S(t_n,t_{n+1})=\int_{t_n}^{t_{n+1}}\frac{dt}{a(t)^2}.
-\]
+```
 
-For \(a=[(t+t_0)/t_0]^\alpha\), the code evaluates the power-law integral
-analytically and uses the logarithmic limit near \(1-2\alpha=0\). The requested
-runs use \(\alpha=2/3\) and \(t_0=12\), exactly as their CPU baseline.
+For $`a=[(t+t_0)/t_0]^\alpha`$, the code evaluates the power-law integral
+analytically and uses the logarithmic limit near $`1-2\alpha=0`$. The requested
+runs use $`\alpha=2/3`$ and $`t_0=12`$, exactly as their CPU baseline.
 
 ## 6. Order of the GPU update
 

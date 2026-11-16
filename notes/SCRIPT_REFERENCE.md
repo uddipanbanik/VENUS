@@ -274,7 +274,7 @@ sets before calculating slopes, moments, or animations.
   vary. Reconnaissance values are preflight-derived rather than assigned an
   unvalidated numerical interval.
   Every EF value receives its own SC donor and mapped null artifact; the helper
-  deliberately excludes the unsupported radial \(L=0\) origin crossing. Its
+  deliberately excludes the unsupported radial $`L=0`$ origin crossing. Its
   receipt records `L/M_ADM,target`; post-run threshold JSON/CSV records both
   target and measured-initial-ADM ratios explicitly. It stores a semantic
   certificate/source/binary/family/map attestation and forbids rebuilding the

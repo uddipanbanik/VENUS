@@ -84,17 +84,17 @@ changes the particles, and the next proposal uses those changed particles.
 
 3. **Advance the proposal clock.** In [`eb::advance_cell`](../cpu/include/ev/relativistic_boltzmann/spherical_collisions.hpp), let $`N`$ be the current packet count and $`q_{\max}`$ the carried upper number-weight bound. Set $`D_{\max}=1`$ on SC and refresh $`D_{\max}=\max_i(\epsilon_{Ui}/P_i)`$ on EF at each proposal loop. With $`(A,V)=(e^\mu,V)`$ on SC or $`(b,V_0)`$ on EF,
 
-   ```math
+   $$
    R=\frac{A\Sigma}{V}q_{\max}N(N-1)D_{\max}^2,\qquad \mathcal T=-\ln U,\qquad \Delta t_{\rm trial}=\mathcal T/R.
-   ```
+   $$
 
    Here $`U`$ is uniform on $`(0,1)`$, and $`\mathcal T`$ is carried optical depth. If the wait exceeds remaining exposure $`h`$, subtract $`Rh`$ and finish the cell. Otherwise advance its coordinate clock by the wait and process one proposal. Empty and one-packet cells advance without collision draws.
 
 4. **Choose and lift a pair.** Unbiased integer rejection draws two distinct indices. Two independent tangential azimuths lift their spherical momenta into physical local four-momenta. Compute the invariant flux and the slice factor $`B_{ij}=\mathcal F_{ij}/(\epsilon_i\epsilon_j)`$ on SC or $`B_{ij}=\mathcal F_{ij}/(P_iP_j)`$ on EF. An independent uniform draw accepts with
 
-   ```math
+   $$
    \mathcal P_{ij}=\frac{\max(q_i,q_j)}{q_{\max}}\frac{B_{ij}}{2D_{\max}^2}.
-   ```
+   $$
 
    The unordered selection probability $`2/[N(N-1)]`$ times $`R\mathcal P_{ij}`$ gives the packet hazard above. The code checks the envelope before changing momenta.
 

@@ -49,10 +49,10 @@ schedule remain available for subsequent continuations.
 
 For a spherical system the physical phase volume is
 
-\[
+```math
   d\Gamma = 8\pi^2\,dr\,du\,d\eta,
   \qquad \eta=L^2/2,\qquad u=w+H(t)r .
-\]
+```
 
 Here `u` is physical radial velocity and `H` is the expansion rate saved with
 the field. The two angular integrations give `4 pi` for position and `2 pi`
@@ -61,10 +61,10 @@ for the tangential-velocity angle. The remaining velocity measure is
 The transformation from `w` to `u` has unit Jacobian at fixed radius and time.
 Consequently the mass distribution function in a bin is
 
-\[
+```math
   f = \frac{\sum_p m_p}
   {8\pi^2\,\Delta r\,\Delta u\,\Delta\eta},
-\]
+```
 
 where `m_p` is the weight of particle `p` in that bin. In the expanding
 density-contrast calculations this reconstructs the represented excess
@@ -78,9 +78,9 @@ and effective particle counts with each analysis product.
 
 For each particle calculate the instantaneous specific orbital energy
 
-\[
+```math
   \epsilon = \frac{u^2}{2}+\frac{\eta}{r^2}+\Phi(r,t),
-\]
+```
 
 where `Phi` is the saved total potential in a static run and the saved peculiar
 potential in an expanding run. The `L=0` centrifugal term has its regular zero

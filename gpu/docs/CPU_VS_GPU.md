@@ -58,9 +58,9 @@ host records explicitly.
 Floating-point addition is not associative. CPU `long double` accumulation
 and CUDA double atomics can add the same terms in different orders. Therefore
 
-\[
+```math
 (a+b)+c\ne a+(b+c)
-\]
+```
 
 in the last bits even though both implement the same discretization. CPU/GPU
 comparisons should distinguish four increasingly macroscopic levels:

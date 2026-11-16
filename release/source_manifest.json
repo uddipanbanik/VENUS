@@ -825,8 +825,8 @@
     },
     {
       "path": "cpu/docs/sc_ef_long_pair_gif.md",
-      "bytes": 4001,
-      "sha256": "d429603de3eb7f231c3073f1c4acc80e4e09ef062a221ba19254a340585f8a4d"
+      "bytes": 4016,
+      "sha256": "eca17fc9aba91bb8c41cd5279e9bf16546b69978f82747086a5b34c0fb862591"
     },
     {
       "path": "cpu/examples/einstein_vlasov_high_compactness_horizon_formation.ini",
@@ -1396,7 +1396,7 @@
     {
       "path": "cpu/scripts/slurm/README.md",
       "bytes": 28796,
-      "sha256": "01aa4a5b2f8d98f72a2a959ec700000a887c8d4f1b6e23b1ca4c69605199a596"
+      "sha256": "155c89f550f971307ad25f1b7fcdcb9269ca3261de5221c0192e8f4320c6be21"
     },
     {
       "path": "cpu/scripts/slurm/ias_einstein_vlasov_wpic.sbatch",
@@ -1935,8 +1935,8 @@
     },
     {
       "path": "docs/relativistic_boltzmann.md",
-      "bytes": 11056,
-      "sha256": "d6b4eccac5c0b69961379fed888edae91857294eb5b1fddb49eaaf1782072d8d"
+      "bytes": 11044,
+      "sha256": "3fe94cd2bc0fba7d058766b026e987e62a1e5622305c688abfa79065a7de7c87"
     },
     {
       "path": "docs/venus_manual.pdf",
@@ -1985,28 +1985,28 @@
     },
     {
       "path": "gpu/docs/CPU_VS_GPU.md",
-      "bytes": 6408,
-      "sha256": "7dd50a81317795b3b365374bda1f9215dde681d528652432ab87b6b7ed7fecfc"
+      "bytes": 6414,
+      "sha256": "59271ba458a1f674738883a94b14d0d6ab0e9844a105f59c6ed53941fc178393"
     },
     {
       "path": "gpu/docs/MULTI_GPU.md",
-      "bytes": 4809,
-      "sha256": "6602315b7e219e28347132e09e1073ebad9836b0862a20d7c8b79ce9d4d146b6"
+      "bytes": 4821,
+      "sha256": "0fac21a395dfaeed79ed416e469d05be44e767ba7c7f30ae2c85a9cda3023ae1"
     },
     {
       "path": "gpu/docs/PHASE_SPACE_SNAPSHOTS.md",
-      "bytes": 5334,
-      "sha256": "3d4509544f1dff0229472647b20d27737645adc513c99537ed14e3f7ba6ea5d0"
+      "bytes": 5352,
+      "sha256": "1d04736caeac52ad97e4f7fa37424e244c4eb106e8c3bec7cdf11cbe32b3e07a"
     },
     {
       "path": "gpu/docs/WPIC_COLLISIONS.md",
-      "bytes": 13647,
-      "sha256": "700d13efba862b08390bcad0a85d304c8fca3754683cf6e956a46877b476dcc7"
+      "bytes": 13807,
+      "sha256": "de5af395c14da31f9d33ef7367503371ca5dfed9ab873312870960c96c08f4ec"
     },
     {
       "path": "gpu/docs/WPIC_VLASOV_POISSON.md",
-      "bytes": 11786,
-      "sha256": "aed38b3a785602e24955c8ea3e908b6c932a4f5aedce683647b3004eed6fd4b6"
+      "bytes": 11876,
+      "sha256": "5b87ed266336c87944883edbc1d05a4a50559ed70fc39cc52fcbb2e8ab4617b4"
     },
     {
       "path": "gpu/include/venus_gpu/collision_common.hpp",
@@ -11171,12 +11171,12 @@
     {
       "path": "notes/SCRIPT_REFERENCE.md",
       "bytes": 27477,
-      "sha256": "5098e4dccd437d6111bd1468dddc8dc14f1315d94aa48065c281bf24751697be"
+      "sha256": "3b9980eac98c10b88802f8447a468cca547269e4ea8a2b86760b2793d9520c7f"
     },
     {
       "path": "notes/SOLVER_MODULES.md",
-      "bytes": 58182,
-      "sha256": "fbcb62986839da9fd1a6a42ed76a37d54b5305d214a5a1d0914260fc8f6654b7"
+      "bytes": 58183,
+      "sha256": "d5ac768b2f23a996e6e8f2ceb08695b0a8055ca47460e784a802e6349645f03c"
     },
     {
       "path": "notes/sections/cpu/cpu_grid_solver_reference.tex",

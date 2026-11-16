@@ -171,7 +171,7 @@ Before scheduling long runs, verify locally that:
 5. the proposed `R_B`, `R_E`, and donor duration satisfy every crossing,
    vacuum, and provenance gate below.
 
-### Solved-null map with \(R_B<R_E\)
+### Solved-null map with $`R_B<R_E`$
 
 `VENUS_EXPORT_EF_NULL_INITIAL_DATA=/path/map.bin` selects a fresh evolving
 Schwarzschild donor. `VENUS_EF_NULL_DONOR_DURATION` sets its preflighted
@@ -241,7 +241,7 @@ the coordinate extraction and the numerical comparison in this order:
    certified executable and freezes the coordinate-neutral physical IC. The driver must accept the
    static continuum, invariant paired sampler, kick, fixed-ADM solve, support
    buffers, and positive realized binding before any member is initialized.
-3. **Per-\(s_L\) initialize-only gate.** Every requested strictly positive
+3. **Per-$`s_L`$ initialize-only gate.** Every requested strictly positive
    scale gets its own Schwarzschild setup job after the base. It reapplies
    `eta=(s_L ell0)^2/2`, performs the common fixed-ADM normalization, checks
    actual compactness/support and positive binding, and records a summary
