@@ -78,33 +78,33 @@ The steps below describe one call in the order implemented by the code.
 Each radial cell keeps its own collision time and random state. An encounter
 changes the particles, and the next proposal uses those changed particles.
 
-1. **Stream self-consistently.** Call [`eb::advance_sc` or `eb::advance_ef`](../cpu/include/ev/relativistic_boltzmann/coupled_evolution.hpp) with a coupled state, requested coordinate interval, maintained field grid, EV evolution controls, and `eb::SplitControls`. The state owns markers, global time, one persistent collision clock per radial cell, and the next unused packet ID. The EV step returns its actual `accepted_dt` and endpoint field. That accepted interval supplies the frozen collision exposure. A zero cross section returns the direct EV update with consistent coordinate clocks.
+**1. Stream self-consistently.** Call [`eb::advance_sc` or `eb::advance_ef`](../cpu/include/ev/relativistic_boltzmann/coupled_evolution.hpp) with a coupled state, requested coordinate interval, maintained field grid, EV evolution controls, and `eb::SplitControls`. The state owns markers, global time, one persistent collision clock per radial cell, and the next unused packet ID. The EV step returns its actual `accepted_dt` and endpoint field. That accepted interval supplies the frozen collision exposure. A zero cross section returns the direct EV update with consistent coordinate clocks.
 
-2. **Assign endpoint cells.** A binary search of increasing mesh faces assigns each streamed radius to its containing cell. The code refills cell packet lists and preserves each clock's random state, residual optical depth, carried number-weight majorant, and counters. Entering packets raise the majorant when needed. Source labels and fixed particle IDs remain distinct from cell membership. SC geometry uses eight-point radial quadrature for proper volume and volume-averaged lapse. EF geometry uses exact coordinate shell volume and the endpoint centre value of `b`.
+**2. Assign endpoint cells.** A binary search of increasing mesh faces assigns each streamed radius to its containing cell. The code refills cell packet lists and preserves each clock's random state, residual optical depth, carried number-weight majorant, and counters. Entering packets raise the majorant when needed. Source labels and fixed particle IDs remain distinct from cell membership. SC geometry uses eight-point radial quadrature for proper volume and volume-averaged lapse. EF geometry uses exact coordinate shell volume and the endpoint centre value of `b`.
 
-3. **Advance the proposal clock.** In [`eb::advance_cell`](../cpu/include/ev/relativistic_boltzmann/spherical_collisions.hpp), let $`N`$ be the current packet count and $`q_{\max}`$ the carried upper number-weight bound. Set $`D_{\max}=1`$ on SC and refresh $`D_{\max}=\max_i(\epsilon_{Ui}/P_i)`$ on EF at each proposal loop. With $`(A,V)=(e^\mu,V)`$ on SC or $`(b,V_0)`$ on EF,
+**3. Advance the proposal clock.** In [`eb::advance_cell`](../cpu/include/ev/relativistic_boltzmann/spherical_collisions.hpp), let $`N`$ be the current packet count and $`q_{\max}`$ the carried upper number-weight bound. Set $`D_{\max}=1`$ on SC and refresh $`D_{\max}=\max_i(\epsilon_{Ui}/P_i)`$ on EF at each proposal loop. With $`(A,V)=(e^\mu,V)`$ on SC or $`(b,V_0)`$ on EF,
 
-   $$
-   R=\frac{A\Sigma}{V}q_{\max}N(N-1)D_{\max}^2,\qquad \mathcal T=-\ln U,\qquad \Delta t_{\rm trial}=\mathcal T/R.
-   $$
+```math
+R=\frac{A\Sigma}{V}q_{\max}N(N-1)D_{\max}^2,\qquad \mathcal T=-\ln U,\qquad \Delta t_{\rm trial}=\mathcal T/R.
+```
 
-   Here $`U`$ is uniform on $`(0,1)`$, and $`\mathcal T`$ is carried optical depth. If the wait exceeds remaining exposure $`h`$, subtract $`Rh`$ and finish the cell. Otherwise advance its coordinate clock by the wait and process one proposal. Empty and one-packet cells advance without collision draws.
+Here $`U`$ is uniform on $`(0,1)`$, and $`\mathcal T`$ is carried optical depth. If the wait exceeds remaining exposure $`h`$, subtract $`Rh`$ and finish the cell. Otherwise advance its coordinate clock by the wait and process one proposal. Empty and one-packet cells advance without collision draws.
 
-4. **Choose and lift a pair.** Unbiased integer rejection draws two distinct indices. Two independent tangential azimuths lift their spherical momenta into physical local four-momenta. Compute the invariant flux and the slice factor $`B_{ij}=\mathcal F_{ij}/(\epsilon_i\epsilon_j)`$ on SC or $`B_{ij}=\mathcal F_{ij}/(P_iP_j)`$ on EF. An independent uniform draw accepts with
+**4. Choose and lift a pair.** Unbiased integer rejection draws two distinct indices. Two independent tangential azimuths lift their spherical momenta into physical local four-momenta. Compute the invariant flux and the slice factor $`B_{ij}=\mathcal F_{ij}/(\epsilon_i\epsilon_j)`$ on SC or $`B_{ij}=\mathcal F_{ij}/(P_iP_j)`$ on EF. An independent uniform draw accepts with
 
-   $$
-   \mathcal P_{ij}=\frac{\max(q_i,q_j)}{q_{\max}}\frac{B_{ij}}{2D_{\max}^2}.
-   $$
+```math
+\mathcal P_{ij}=\frac{\max(q_i,q_j)}{q_{\max}}\frac{B_{ij}}{2D_{\max}^2}.
+```
 
-   The unordered selection probability $`2/[N(N-1)]`$ times $`R\mathcal P_{ij}`$ gives the packet hazard above. The code checks the envelope before changing momenta.
+The unordered selection probability $`2/[N(N-1)]`$ times $`R\mathcal P_{ij}`$ gives the packet hazard above. The code checks the envelope before changing momenta.
 
-5. **Scatter and split.** Two direction draws select an isotropic centre-of-momentum angle. [`rb::scatter_isotropic`](../cpu/include/ev/relativistic_boltzmann/relativistic_collision.hpp) constructs the outgoing future-shell momenta and checks conditioning. Both scattered packets receive $`W_{\min}=\min(W_i,W_j)`$. The larger packet's remainder $`|W_i-W_j|`$ retains its incoming momentum and receives a new ID. Ancestry retains auxiliary marker properties. Represented number and local four-momentum are conserved.
+**5. Scatter and split.** Two direction draws select an isotropic centre-of-momentum angle. [`rb::scatter_isotropic`](../cpu/include/ev/relativistic_boltzmann/relativistic_collision.hpp) constructs the outgoing future-shell momenta and checks conditioning. Both scattered packets receive $`W_{\min}=\min(W_i,W_j)`$. The larger packet's remainder $`|W_i-W_j|`$ retains its incoming momentum and receives a new ID. Ancestry retains auxiliary marker properties. Represented number and local four-momentum are conserved.
 
-6. **Project and continue.** Divide outgoing local momenta by $`m_\chi`$. Store SC radial momentum $`w`$ and $`\eta=r^2|p_\perp|^2/2`$, where $`p_\perp`$ is transverse specific momentum. EF stores $`P=\epsilon_U+w_U`$, evaluated as $`\chi/(\epsilon_U-w_U)`$ for inward motion to preserve positivity. Renew optical depth after every accepted or rejected proposal, then recompute the current rate. Packet/proposal caps and representable-clock guards bound the update.
+**6. Project and continue.** Divide outgoing local momenta by $`m_\chi`$. Store SC radial momentum $`w`$ and $`\eta=r^2|p_\perp|^2/2`$, where $`p_\perp`$ is transverse specific momentum. EF stores $`P=\epsilon_U+w_U`$, evaluated as $`\chi/(\epsilon_U-w_U)`$ for inward motion to preserve positivity. Renew optical depth after every accepted or rejected proposal, then recompute the current rate. Packet/proposal caps and representable-clock guards bound the update.
 
-7. **Reconstruct the outgoing field.** After all cell batches, the code deposits outgoing stress and solves the Einstein constraints. SC retains its positive polar-areal gap stop. EF retains every active particle and requires the isolated vacuum outer boundary. The EF source uses $`T_{rr}=V_0^{-1}\sum_iW_iP_i`$ and $`S=V_0^{-1}\sum_iW_i\chi_i/P_i`$. It records an independent regular-centre ADM reconstruction before reapplying the conserved outer ADM condition. The source-feedback residual is returned to the caller.
+**7. Reconstruct the outgoing field.** After all cell batches, the code deposits outgoing stress and solves the Einstein constraints. SC retains its positive polar-areal gap stop. EF retains every active particle and requires the isolated vacuum outer boundary. The EF source uses $`T_{rr}=V_0^{-1}\sum_iW_iP_i`$ and $`S=V_0^{-1}\sum_iW_i\chi_i/P_i`$. It records an independent regular-centre ADM reconstruction before reapplying the conserved outer ADM condition. The source-feedback residual is returned to the caller.
 
-8. **Commit or retain the incoming state.** The entry points operate on a copy and replace the caller only after the complete update passes. A failed conditioning, capacity, boundary, or field check preserves the incoming markers, clocks, and random state. [`eb::serialize_cell`](../cpu/include/ev/relativistic_boltzmann/eb_restart.hpp) restores a model-bound local collision cell. A coupled restart additionally needs the global markers, field/grid controls, global time, next ID, and all persistent clocks.
+**8. Commit or retain the incoming state.** The entry points operate on a copy and replace the caller only after the complete update passes. A failed conditioning, capacity, boundary, or field check preserves the incoming markers, clocks, and random state. [`eb::serialize_cell`](../cpu/include/ev/relativistic_boltzmann/eb_restart.hpp) restores a model-bound local collision cell. A coupled restart additionally needs the global markers, field/grid controls, global time, next ID, and all persistent clocks.
 
 ## Initialize and call
 

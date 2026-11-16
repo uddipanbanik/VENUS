@@ -825,8 +825,8 @@
     },
     {
       "path": "cpu/docs/sc_ef_long_pair_gif.md",
-      "bytes": 4016,
-      "sha256": "eca17fc9aba91bb8c41cd5279e9bf16546b69978f82747086a5b34c0fb862591"
+      "bytes": 3998,
+      "sha256": "a766e01c5b5bd625b2d52ba417414c698950baffc7af232066503eed3a83cd1f"
     },
     {
       "path": "cpu/examples/einstein_vlasov_high_compactness_horizon_formation.ini",
@@ -1935,8 +1935,8 @@
     },
     {
       "path": "docs/relativistic_boltzmann.md",
-      "bytes": 11044,
-      "sha256": "3fe94cd2bc0fba7d058766b026e987e62a1e5622305c688abfa79065a7de7c87"
+      "bytes": 11032,
+      "sha256": "aa0e80a207fd5cb429ec839e7b5cef9ccc79026945540a25700770137002241e"
     },
     {
       "path": "docs/venus_manual.pdf",

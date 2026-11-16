@@ -57,16 +57,10 @@ The three panels overlay SC (solid blue) and EF (dashed red):
 1. Density: horizontal axis $`\log_{10}r`$, vertical axis
    $`\log_{10}\rho`$.
 2. Density slope: horizontal axis $`\log_{10}r`$, vertical axis
-
-   $$
-   \frac{\mathrm d\log\rho}{\mathrm d\log r}.
-   $$
+   $`\frac{\mathrm d\log\rho}{\mathrm d\log r}.`$
 
 3. Compactness: horizontal axis $`r`$, vertical axis
-
-   $$
-   \frac{2m(r)}{r}.
-   $$
+   $`\frac{2m(r)}{r}.`$
 
 The horizontal compactness level $`2m/r=1`$ marks the trapped-surface
 condition. The EF density shown before trapping is the same static-observer
