@@ -1,0 +1,459 @@
+{
+  "scope": "Example halo and Gaussian VP/BP density, signed logarithmic slope and physical virial-ratio evolution.",
+  "source_locations": "Dataset IDs and original native-file SHA256 values are retained in the frame ledgers.",
+  "temporal_sampling": "Gaussian movies advance by two physical time units per frame at 48 frames/s. Other movies retain their recorded physical clocks.",
+  "displayed_units": "Code units.",
+  "reference_guides": "reference_guides.json preserves the finite radial spans and normalization of example power-law guides.",
+  "original_profile_count": 24324,
+  "distinct_density_states": 24324,
+  "verified_example_anchor_profiles": 28,
+  "rows": [
+    {
+      "case": "g03_bp",
+      "physical_time": [
+        0.0,
+        10000.0
+      ],
+      "native_distinct_frames": 1002,
+      "encoded_frames": 1059,
+      "fps": 24,
+      "mp4_duration_seconds": 44.125,
+      "pixel_size": [
+        1920,
+        864
+      ],
+      "movie": "g03_bp.mp4",
+      "movie_sha256": "0e9a6099c105dbe1a7b5916634a4ab5a6f729b7e2f04d034247acbe7b742742c",
+      "frame_ledger": "g03_bp_frames.json",
+      "frame_ledger_sha256": "7f1826a4f96d5766e8112979844009df2a3bc6623de47eadf76dd1b9040d4638",
+      "gamma_i": 0.3,
+      "model": "BP",
+      "cache_sha256": "5079e425d155d5cb37db6ac7fe99a7b056430d2f652f3c20160da945b71341a4",
+      "initial_native_sha256": "4169dc48609b12b0476ee1f5c2c21d3f816f7a039ef3254b0e7439a5c29edd08",
+      "endpoint_native_sha256": "fa65ff136f626e70a41d3395f7a9a8512896d2825caf1a061c1371fa5b273052"
+    },
+    {
+      "case": "g05_bp",
+      "physical_time": [
+        0.0,
+        10000.0
+      ],
+      "native_distinct_frames": 1001,
+      "encoded_frames": 1058,
+      "fps": 24,
+      "mp4_duration_seconds": 44.083333333333336,
+      "pixel_size": [
+        1920,
+        864
+      ],
+      "movie": "g05_bp.mp4",
+      "movie_sha256": "0e4837972adf44f6df2e5509bbbfb5779e84026567f971c0e41ed817162cfdfb",
+      "frame_ledger": "g05_bp_frames.json",
+      "frame_ledger_sha256": "e72dd697a7c06e3f86b324fce602b8cecd768c38f68026f1dca3c71586dacb11",
+      "gamma_i": 0.5,
+      "model": "BP",
+      "cache_sha256": "cf542655a0b1380c6daab96d01cd468add424d1cb5cc8b75a54c052d15208d95",
+      "execution": "CUDA"
+    },
+    {
+      "case": "g05_vp",
+      "movie": "g05_vp.mp4",
+      "sha256": "08bdbabb42e462a96752651dcbdbd389268c659ce61558fb2df2128a0ad0facb",
+      "frame_ledger": "g05_vp_frames.json",
+      "frame_ledger_sha256": "d30b2ec462b175c7204ed4ff199d0c5338ece899dabba9d5289a50b56eaf7fe1",
+      "physical_time": [
+        0,
+        10000
+      ],
+      "fps": 24,
+      "encoded_frames": 1058,
+      "duration_seconds": 44.083333333333336,
+      "execution": "CUDA",
+      "movie_sha256": "6daa074033dfac279a3b00429a5045ec4e169b80e38601e37b567f82369d0e65",
+      "native_distinct_frames": 1001,
+      "mp4_duration_seconds": 44.083333333333336,
+      "pixel_size": [
+        1920,
+        864
+      ]
+    },
+    {
+      "case": "g08_bp",
+      "physical_time": [
+        0.0,
+        10000.0
+      ],
+      "native_distinct_frames": 1003,
+      "encoded_frames": 1060,
+      "fps": 24,
+      "mp4_duration_seconds": 44.166666666666664,
+      "pixel_size": [
+        1920,
+        864
+      ],
+      "movie": "g08_bp.mp4",
+      "movie_sha256": "43ab27456215078704dc00128c5ab01e49c656cf98c8ae74695f96e712eedf5f",
+      "frame_ledger": "g08_bp_frames.json",
+      "frame_ledger_sha256": "67cd3a17b541e8146b15d7e4b968c6ce1d5a60d75aaf1848d3fbc4d4d4ebaa2d",
+      "gamma_i": 0.8,
+      "model": "BP",
+      "cache_sha256": "52b7efd4c1bdd0f8931642df30036e48fe0999256846c52c4148c032a4c28b2c",
+      "initial_native_sha256": "8460f0764d85a2f52bafa29f836d1834baeb0d15378162ac535a10ca1e0e7a3e",
+      "endpoint_native_sha256": "08086f09ec67d6148dbb99becf754b8fcc7bc18e45084780f800122968bf8ada"
+    },
+    {
+      "case": "g12_bp",
+      "physical_time": [
+        0.0,
+        10000.0
+      ],
+      "native_distinct_frames": 1003,
+      "encoded_frames": 1060,
+      "fps": 24,
+      "mp4_duration_seconds": 44.166666666666664,
+      "pixel_size": [
+        1920,
+        864
+      ],
+      "movie": "g12_bp.mp4",
+      "movie_sha256": "299c05bd84afd3b8084e5361201bfcba1fd23701f712ab8e9be1cc9eec0df087",
+      "frame_ledger": "g12_bp_frames.json",
+      "frame_ledger_sha256": "77a161933662477b19bf074d6751ea8e351d7d06594b92a64035f62b420f9445",
+      "gamma_i": 1.2,
+      "model": "BP",
+      "cache_sha256": "c92bf66b8cf6d8c3a4285f56512d0db094c77b82a64d30177f8207f4248414c6"
+    },
+    {
+      "case": "g15_bp",
+      "physical_time": [
+        0,
+        10000
+      ],
+      "native_distinct_frames": 1002,
+      "encoded_frames": 1059,
+      "fps": 24,
+      "mp4_duration_seconds": 44.125,
+      "pixel_size": [
+        1920,
+        864
+      ],
+      "movie": "g15_bp.mp4",
+      "movie_sha256": "58d1376c3e1baa160f4d62273f8ec368ad0a4bb8608d48e2dd8da2135d248694",
+      "frame_ledger": "g15_bp_frames.json",
+      "frame_ledger_sha256": "324ed1a7d22261287ffef520a4b4537ba276cb0d0416d93c7498dd01536676f4",
+      "gamma_i": 1.5,
+      "model": "BP",
+      "cache_sha256": "f4e9c99818d6f7886b9c2fc5dc81cd24471a7b4e47d1d4fecd1869a204033a31"
+    },
+    {
+      "case": "g20_bp",
+      "physical_time": [
+        0.0,
+        10000.0
+      ],
+      "native_distinct_frames": 1004,
+      "encoded_frames": 1022,
+      "fps": 8,
+      "mp4_duration_seconds": 127.75,
+      "pixel_size": [
+        1920,
+        864
+      ],
+      "movie": "g20_bp.mp4",
+      "movie_sha256": "13d57717a212815633039ffdc1d995fc046aa2b5eb5b1c1fb366bf549e1fc0f5",
+      "frame_ledger": "g20_bp_frames.json",
+      "frame_ledger_sha256": "82f7a222b0906517390655067c2151171d0276e934cfda4fe753aea89526a1a9",
+      "gamma_i": 2.0,
+      "model": "BP",
+      "cache_sha256": "ff2a1ccd001fd19f1e072a4159fac2d52ce97c59be6222b525cf0f0bf4831ea1"
+    },
+    {
+      "case": "halo_virialization",
+      "movie": "halo_virialization.mp4",
+      "sha256": "0f2344284eb90dc253395aecbbbdf81a4147a8427aead9b0fe3086b862558e0a",
+      "frame_ledger": "halo_virialization_frames.json",
+      "frame_ledger_sha256": "956db9694b1c2782151dcfa416608022e07251245b4eeafbcac8d5e9cbe5b196",
+      "physical_time": [
+        0,
+        10000
+      ],
+      "fps": 24,
+      "encoded_frames": 1204,
+      "duration_seconds": 50.166666666666664,
+      "moment_definition": "Q=2K_physical/abs(W_phi+(Hdot+H^2)I)",
+      "populations": "Four expanding power-law halos, two complete-particle Gaussian VP samples, five converged static power-law selections and one static Gaussian negative-energy selection.",
+      "native_reveal_frames": 1147,
+      "movie_sha256": "165e9bbdc29a19a771d2bed91b505d543ed8ea173608d4ca0ba34364a0be2959",
+      "native_distinct_frames": 1147,
+      "mp4_duration_seconds": 50.166666666666664,
+      "pixel_size": [
+        1920,
+        864
+      ],
+      "native_saved_states": 1147
+    },
+    {
+      "case": "gaussian_static_vp",
+      "movie": "gaussian_static_vp.mp4",
+      "sha256": "249606d0c24ad45ce211b07104a8672aec96babb75ffbe771e330dbcad9ace98",
+      "frame_ledger": "../completed_vp/gaussian_static_vp_frames.json",
+      "frame_ledger_sha256": "6ccab779873726cd8341f3345cd4c80503a6ed2a33d9dd38a86b5688435a06fa",
+      "physical_time": [
+        0,
+        10000
+      ],
+      "fps": 48,
+      "encoded_frames": 5001,
+      "duration_seconds": 104.1875,
+      "model": "VP",
+      "native_saved_states": 5004,
+      "source_scope": "Complete positive native radial support, with centered 21-cell logarithmic slopes. Heavy segments have Neff>=32. Displayed log10 density is [-15,1] and signed slope is [-10,5]. Dashed slope guides mark -3, -1.5 and -1.",
+      "movie_sha256": "a9ffa8e7839344aad6b5e9c07b7fdfa497dcf68c3203589fdb825aa56393eb98",
+      "native_distinct_frames": 5001,
+      "mp4_duration_seconds": 104.1875,
+      "pixel_size": [
+        1920,
+        864
+      ],
+      "cache_sha256": "f7210ee60367e2c595051bd89d2db71dfb7339c40802657e4cfa71e9c85aff37",
+      "display_limits": {
+        "log10_density": [
+          -15,
+          1
+        ],
+        "signed_slope": [
+          -10,
+          5
+        ]
+      },
+      "slope_reference_guides": {
+        "values": [
+          -3.0,
+          -1.5,
+          -1.0
+        ],
+        "line_style": "dashed",
+        "numeric_labels": "Four points above each line. Right-aligned at x=.97 for -3/-1 and x=.90 for -1.5 to separate labels."
+      },
+      "displayed_distinct_states": 5001,
+      "renderer_sha256": "cfca0c44fb5691235c5dac9022004e7455b10ed209e68b047637b4967ff577f3",
+      "physical_units_per_playback_second": 96,
+      "physical_step": 2,
+      "time_scope": "Linear physical-time playback at 48 frames/s. One actual 2-unit profile per frame, from 0 through 10000, with no repeated opening or final hold."
+    },
+    {
+      "case": "gaussian_expanding_vp",
+      "movie": "gaussian_expanding_vp.mp4",
+      "sha256": "b0430683ae760764962e3e0d427cdf355f3886fc2745cc9fe1df6af398c59727",
+      "frame_ledger": "../completed_vp/gaussian_expanding_vp_frames.json",
+      "frame_ledger_sha256": "5046d6523fa985ee3711096f3c362a2e8ca225fecd255244c539a456ed45522f",
+      "physical_time": [
+        0,
+        10000
+      ],
+      "fps": 48,
+      "encoded_frames": 5001,
+      "duration_seconds": 104.1875,
+      "model": "VP",
+      "native_saved_states": 5002,
+      "source_scope": "Complete positive native radial support, with centered 21-cell logarithmic slopes. Heavy segments have Neff>=32. Displayed log10 density is [-15,1] and signed slope is [-10,5]. Dashed slope guides mark -3, -1.5 and -1.",
+      "movie_sha256": "521bdf495e4aaa974b755152165f2fd81bdd616aa9ddd32f4f28b782ad71130a",
+      "native_distinct_frames": 5001,
+      "mp4_duration_seconds": 104.1875,
+      "pixel_size": [
+        1920,
+        864
+      ],
+      "cache_sha256": "d5af1207ad7da381ea0b373691dc226a4df57fa0f22c80b12714001bc99a9ea3",
+      "display_limits": {
+        "log10_density": [
+          -15,
+          1
+        ],
+        "signed_slope": [
+          -10,
+          5
+        ]
+      },
+      "slope_reference_guides": {
+        "values": [
+          -3.0,
+          -1.5,
+          -1.0
+        ],
+        "line_style": "dashed",
+        "numeric_labels": "Four points above each line. Right-aligned at x=.97 for -3/-1 and x=.90 for -1.5 to separate labels."
+      },
+      "displayed_distinct_states": 5001,
+      "renderer_sha256": "cfca0c44fb5691235c5dac9022004e7455b10ed209e68b047637b4967ff577f3",
+      "physical_units_per_playback_second": 96,
+      "physical_step": 2,
+      "time_scope": "Linear physical-time playback at 48 frames/s. One actual 2-unit profile per frame, from 0 through 10000, with no repeated opening or final hold."
+    },
+    {
+      "case": "static_g05_vp",
+      "movie": "static_g05_vp.mp4",
+      "sha256": "4205199a9c819a6ce6821ef0d175f56dd24ee2566dce0dcaa83ff3cef302af97",
+      "frame_ledger": "../completed_vp/static_g05_vp_frames.json",
+      "frame_ledger_sha256": "6a57345fa1f1c42bd62e4579e26955084c89d8559729368bdd9c1254434d4685",
+      "physical_time": [
+        0,
+        10000
+      ],
+      "fps": 24,
+      "encoded_frames": 1058,
+      "duration_seconds": 44.083333333333336,
+      "model": "VP",
+      "native_saved_states": 1001,
+      "source_scope": "All positive native density bins and finite centered21-cell slopes, with Neff>=32 heavy segments.",
+      "movie_sha256": "f4a2f7fa4f20e0899977bcd576e4e4df9171b9d0b12635409e1f95c127c6f492",
+      "native_distinct_frames": 1001,
+      "mp4_duration_seconds": 44.083333333333336,
+      "pixel_size": [
+        1920,
+        864
+      ],
+      "cache_sha256": "ae32e1353eca9931931699de8e37bd583a63313b4a8acad986eb11760fec2e60"
+    },
+    {
+      "case": "gaussian_static_bp",
+      "movie": "gaussian_static_bp.mp4",
+      "physical_time": [
+        0,
+        5254.0
+      ],
+      "fps": 48,
+      "encoded_frames": 2628,
+      "duration_seconds": 54.75,
+      "model": "BP",
+      "native_saved_states": 2631,
+      "displayed_distinct_states": 2628,
+      "renderer_sha256": "cfca0c44fb5691235c5dac9022004e7455b10ed209e68b047637b4967ff577f3",
+      "frame_ledger_sha256": "9002029d4450e7778cc9d86969dfffe4d630010250bd1c6f09013f2468b04a17",
+      "physical_step": 2,
+      "physical_units_per_playback_second": 96,
+      "frame_ledger": "../gaussian/gaussian_static_bp_frames.json",
+      "sha256": "5182a66926566aac815df330a9a1d8217edab983c6eb4d9a0452001aea48a08a",
+      "movie_sha256": "4abd93b7d736a0f5ccbc3593c3b4c1bc46ca4bfb54760fcd245342167a6fefd0",
+      "native_distinct_frames": 2628,
+      "mp4_duration_seconds": 54.75,
+      "pixel_size": [
+        1920,
+        864
+      ],
+      "cache_sha256": "c8f6842c547f858dca5cb112ce48410e32994c198218055d302858f59e6e25fc",
+      "background": "static",
+      "encounter_strength": 0.1,
+      "last_profile_time": 5254.0,
+      "last_native_time": 5254.067378775472
+    },
+    {
+      "case": "gaussian_expanding_bp",
+      "movie": "gaussian_expanding_bp.mp4",
+      "physical_time": [
+        0,
+        7326.0
+      ],
+      "fps": 48,
+      "encoded_frames": 3664,
+      "duration_seconds": 76.33333333333333,
+      "model": "BP",
+      "native_saved_states": 3670,
+      "displayed_distinct_states": 3664,
+      "renderer_sha256": "cfca0c44fb5691235c5dac9022004e7455b10ed209e68b047637b4967ff577f3",
+      "frame_ledger_sha256": "54cfb870b50b0743fd1c921b807d4a59f916d4df656b0df1d7e1466bef4d009b",
+      "physical_step": 2,
+      "physical_units_per_playback_second": 96,
+      "frame_ledger": "../gaussian/gaussian_expanding_bp_frames.json",
+      "sha256": "52a5c887fd076fb367aac3cc33e04529a2a47de5a2b96277ddeedbeb215b2b76",
+      "movie_sha256": "2dd07c33c91905bb60e4b30d96736b2d72676472b284a23061e80c11cb3bacd6",
+      "native_distinct_frames": 3664,
+      "mp4_duration_seconds": 76.33333333333333,
+      "pixel_size": [
+        1920,
+        864
+      ],
+      "cache_sha256": "5114a35d07ac122ad901ba98410de9c75b57141a6879bbc52a6a0bf7a3b66d6e",
+      "background": "expanding",
+      "encounter_strength": 0.1,
+      "last_profile_time": 7326.0,
+      "last_native_time": 7327.034336802388
+    }
+  ],
+  "renderers": {
+    "render_halo_movies.py": "880ad103d2a7cce87507cd3005f9f1c2ba4bb26662b9bc9811db18360edbaf13",
+    "render_virialization_movie.py": "058323b313520a26cd929a0b584d6fab67047beb8cc99e7b35dac97036e2754e",
+    "render_completed_vp_movies.py": "fe3724c0deee4039901da1442a64f3ca96c24d6290f30147eddfc4d3e3f2daa0",
+    "render_gaussian_movies.py": "79471833c7140fbac8665296f85c7f7b2faa44ea1483a235880457f31deb5a92"
+  },
+  "inputs": {
+    "cache/g03_bp.npz": "5079e425d155d5cb37db6ac7fe99a7b056430d2f652f3c20160da945b71341a4",
+    "cache/g03_bp_source_frames.json": "898857a8eb3705d52becbada90c16238c46a2e34128b9b74c2d7f3a82f3004a3",
+    "cache/g05_bp.npz": "cf542655a0b1380c6daab96d01cd468add424d1cb5cc8b75a54c052d15208d95",
+    "cache/g05_bp_source_frames.json": "43743f4fac0e5bd8eb44eeb97e6b7773c5e0f3babcd6ca6f78953051ef91dbab",
+    "cache/g05_vp.npz": "dd467d9b6853275b1074a78b2fdbc66c4285438960846c9630683b56705c99d6",
+    "cache/g05_vp_source_frames.json": "188eee57a2fa848367b742581d1b68c253d3591ca572595c3747eec2b35bbd23",
+    "cache/g08_bp.npz": "52b7efd4c1bdd0f8931642df30036e48fe0999256846c52c4148c032a4c28b2c",
+    "cache/g08_bp_source_frames.json": "ee502b2d2df13432b5a3a4529416c02c21c88d5f871f3b60a9622f673fc5f05c",
+    "cache/g12_bp.npz": "c92bf66b8cf6d8c3a4285f56512d0db094c77b82a64d30177f8207f4248414c6",
+    "cache/g12_bp_source_frames.json": "f7777eceb1c7e331da14ee3c4a44e547e9c6d0d9220729a9421232445a5b5b65",
+    "cache/g15_bp.npz": "f4e9c99818d6f7886b9c2fc5dc81cd24471a7b4e47d1d4fecd1869a204033a31",
+    "cache/g15_bp_source_frames.json": "a9918ae1a061f0d5b07659c7dd661815736fc5880e9ccecc8e142081649a8df4",
+    "cache/g20_bp.npz": "ff2a1ccd001fd19f1e072a4159fac2d52ce97c59be6222b525cf0f0bf4831ea1",
+    "cache/g20_bp_source_frames.json": "dcf28e21df63bfa444057154ad176710111d867f3ba89393d09ae7cc1f8d6611",
+    "g03_bp_frames.json": "7f1826a4f96d5766e8112979844009df2a3bc6623de47eadf76dd1b9040d4638",
+    "g05_bp_frames.json": "e72dd697a7c06e3f86b324fce602b8cecd768c38f68026f1dca3c71586dacb11",
+    "g05_vp_frames.json": "d30b2ec462b175c7204ed4ff199d0c5338ece899dabba9d5289a50b56eaf7fe1",
+    "g08_bp_frames.json": "67cd3a17b541e8146b15d7e4b968c6ce1d5a60d75aaf1848d3fbc4d4d4ebaa2d",
+    "g12_bp_frames.json": "77a161933662477b19bf074d6751ea8e351d7d06594b92a64035f62b420f9445",
+    "g15_bp_frames.json": "324ed1a7d22261287ffef520a4b4537ba276cb0d0416d93c7498dd01536676f4",
+    "g20_bp_frames.json": "82f7a222b0906517390655067c2151171d0276e934cfda4fe753aea89526a1a9",
+    "movie_cache_manifest.json": "d8b0c92f1d1b10e167f5dd6c9e2c04d449d9fce51a5da2530107121e1773c9ec",
+    "reference_guides.json": "d1d34860345a8c70bee7557900336d7204d1030237bd614af9072961140806ae",
+    "reproduction_checks.json": "7c205d4fc6463f9a13556eeb03ec52a3ac97c15eb756b9fd73448bd1f110ab66",
+    "halo_virialization_frames.json": "956db9694b1c2782151dcfa416608022e07251245b4eeafbcac8d5e9cbe5b196",
+    "../completed_vp/gaussian_static_vp_sources.json": "3f6fa941f4004e241f8f173b3d5b572633f67dfb86fc6e0d4917d4073d9bdc9b",
+    "../completed_vp/static_g05_vp.npz": "ae32e1353eca9931931699de8e37bd583a63313b4a8acad986eb11760fec2e60",
+    "../completed_vp/gaussian_expanding_vp_frames.json": "5046d6523fa985ee3711096f3c362a2e8ca225fecd255244c539a456ed45522f",
+    "../completed_vp/gaussian_static_vp_frames.json": "6ccab779873726cd8341f3345cd4c80503a6ed2a33d9dd38a86b5688435a06fa",
+    "../completed_vp/gaussian_static_vp_movie.json": "f948747cb8d554668341113b3a050d877da0a8cb659871b33334adab9dcfbf1b",
+    "../completed_vp/cache_manifest.json": "92aeb94c757106dabae904700562f5cb0d157231d01fe0b9a3c97e4a588b69f0",
+    "../completed_vp/static_g05_vp_movie.json": "863f54125e88404d6436cde0b91babe9c8294b92a3316327aa8ed1f295878c90",
+    "../completed_vp/gaussian_expanding_vp_movie.json": "c8e395fea24d0f3de81d9441701925dddb952d8bd78738d3a425e6634b17d729",
+    "../completed_vp/gaussian_static_vp.npz": "f7210ee60367e2c595051bd89d2db71dfb7339c40802657e4cfa71e9c85aff37",
+    "../completed_vp/gaussian_expanding_vp_sources.json": "bb7f5ae2fbdbbc8a4107121f0fb7cd658d38f33aeabf88b3cbc4b3a02b561493",
+    "../completed_vp/gaussian_expanding_vp.npz": "d5af1207ad7da381ea0b373691dc226a4df57fa0f22c80b12714001bc99a9ea3",
+    "../completed_vp/static_g05_vp_frames.json": "6a57345fa1f1c42bd62e4579e26955084c89d8559729368bdd9c1254434d4685",
+    "../completed_vp/static_g05_vp_sources.json": "91225a74b508d3800ad6ba9b2bba2e71f9a6184f883cdfde78bbfdf4af1c3cf3",
+    "../gaussian/cache_manifest.json": "ec3955a9c5e314b022e5e98efc0146eedbd27c5258bc702832fd507477370713",
+    "../gaussian/gaussian_static_bp.npz": "c8f6842c547f858dca5cb112ce48410e32994c198218055d302858f59e6e25fc",
+    "../gaussian/gaussian_static_bp_sources.json": "84ee48a4fd15474a1ca832bef3193c065d6a5bc8f9610b4dab15d0f8213de2a9",
+    "../gaussian/gaussian_static_bp_frames.json": "9002029d4450e7778cc9d86969dfffe4d630010250bd1c6f09013f2468b04a17",
+    "../gaussian/gaussian_static_bp_movie.json": "4e23c0ad2c6ca38d19108996f98f16b6cce6b6c671ca0dfc8f4eead7b7c7b5c5",
+    "../gaussian/gaussian_expanding_bp.npz": "5114a35d07ac122ad901ba98410de9c75b57141a6879bbc52a6a0bf7a3b66d6e",
+    "../gaussian/gaussian_expanding_bp_sources.json": "cc97570241c382d171c23885de1a0b7c52844bc944905cfdab21f9d298874441",
+    "../gaussian/gaussian_expanding_bp_frames.json": "54cfb870b50b0743fd1c921b807d4a59f916d4df656b0df1d7e1466bef4d009b",
+    "../gaussian/gaussian_expanding_bp_movie.json": "2a3cee3864e66478909abf0a923e533b3a9a008126ee0c1f8d7c87b574cbe873"
+  },
+  "verified_completed_VP_reference_comparisons": 31,
+  "virial_inputs": {
+    "root": "repository",
+    "definition": "Four resolved power-law histories, two complete-particle Gaussian histories, five converged power-law bound points and one single-selection Gaussian own-gravity endpoint.",
+    "files": {
+      "analysis/data/virial_summary/catalog.json": "2bf377b371ba9b9d7d8d410c8b2e1470d4df6b6c2d81d122639b5113c1c405d6",
+      "analysis/data/virial_summary/cold_static_vp.csv": "da54d5778b7dfdd3c6ad945ebc3079f1e8a7995460cd72be36a48a3e7c5ec968",
+      "analysis/data/virial_summary/cold_static_vp_bound.csv": "5113efbdfd94615c5a48a70a9ac0d9fad9eef3efe032565ba7d2508612bca89e",
+      "analysis/data/virial_summary/g03_bp.csv": "05d9b728cb895c24f78f6567bae2962928c87ed9aa8babe3a27144559136be16",
+      "analysis/data/virial_summary/g05_bp.csv": "d060ac105b40a57d09a3932bf75c7400f754c1b65a13d0cd9edb86fc7605d2e5",
+      "analysis/data/virial_summary/g05_vp.csv": "d78091127a18b08ede01520d54692b8f6a2a67e057d95d82e2f47a950cb1cd03",
+      "analysis/data/virial_summary/g08_bp.csv": "815c6a035eb7ec8d767ec2e0d538311694ab4718c60c14ede4511efd4e6b4642",
+      "analysis/data/virial_summary/gaussian_expanding_vp.csv": "a3114322e181a7fe1a34bc2128bb214ec56bee602a9454a63eb9c0054e8a7f28",
+      "analysis/data/virial_summary/gaussian_static_vp.csv": "685dbd9e71b8453ef2f91c0fa8220910fb049f29749b257ac7d59bbcca3aa4de",
+      "analysis/data/virial_summary/static_g05_iterative_bound.csv": "0c5539dd2d7bc09ffd3dc603aba2cfe694a8f9c634a846b205f4bff3b13c2acc",
+      "analysis/data/virial_summary/gaussian_static_bound.csv": "827aa9c19cc77c04ebdd09c4355370d279947e0868071d099d43deacf01e7dcb"
+    }
+  },
+  "verified_example_anchor_scope": "The 28 expanding power-law example anchors retain their existing verification.",
+  "gaussian_example_profile_count": 32,
+  "temporal_color": "Evolving profiles use plasma_r, yellow at early times and dark blue at late times. Virial curves retain run colors; current-time markers use the temporal palette."
+}

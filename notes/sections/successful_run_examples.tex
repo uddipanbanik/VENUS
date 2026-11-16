@@ -1,0 +1,41 @@
+\section{Reproducing Example Calculations}
+\label{sec:successful-examples}
+
+The example data catalogue maps each figure to its numerical inputs and
+plotting script. The corresponding commands are collected in
+\path{analysis/README.md}. The supplied caches contain physical profiles, particle projections,
+moments, and coordinate clocks. Plotting reads these arrays directly, so a
+figure can be regenerated without repeating the simulation.
+The movie catalogue in \path{movies/README.md} describes each physical
+evolution and defines the plotted observables.
+
+\begin{center}
+\small
+\begin{tabular}{ll}
+\hline
+Physical calculation & Saved numerical data \\
+\hline
+Expanding subhalo VP/BP & \path{movies/data/halos}, \path{analysis/data/phase_through10000} \\
+Physical virial moments & \path{analysis/data/virial_summary} \\
+Cold collisionless collapse & \path{analysis/data/cold_vp} \\
+Static and expanding Gaussian VP/BP & \path{analysis/data/gaussian_vp} \\
+Material SIDM evolution & \path{analysis/data/sidm} \\
+Relativistic shell collapse & \path{analysis/data/relativistic} \\
+\hline
+\end{tabular}
+\end{center}
+
+The Gaussian generator in
+\path{cpu/tools/generate_bound_gaussian_shell_restart.py} writes the same
+physical particle realization in static and expanding coordinates. Its
+companion example in
+\path{cpu/examples/modular/vp_bound_gaussian_shell_gpu.md} explains the
+initial distribution, physical normalization and solver commands.
+
+For another physical problem, choose the equation and initial distribution
+first. Then set the boundaries, material law, and numerical resolution in the
+corresponding solver interface.
+The input-format examples under \path{cpu/examples/modular} and the custom
+sampling script \path{cpu/examples/user_distribution.py} explain the grid
+and particle conventions. The initial-condition chapter derives their
+normalization and the model-specific restrictions.

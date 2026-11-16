@@ -1,0 +1,36 @@
+{
+  "definition": "E=.5w\u00b2+eta/r\u00b2+Phi_full<0, with Phi(infinity)=0 and unchanged physical velocities/weights/IDs",
+  "native_sha256": "2044ba99a5870a638dc8d4afb5650f5fa90ff5a2a13eb10347e95525c0c2aff7",
+  "actual_full_field_sha256": "b9f0319d2f8554b2c2f5c54145adc640bd5a466137fc48171b1d016d2e9ce851",
+  "membership": {
+    "definition": "E=.5w\u00b2+eta/r\u00b2+Phi_full<0, with Phi(infinity)=0 and unchanged physical velocities/weights/IDs",
+    "N": 799732,
+    "mass_fraction": 0.7626838684082031,
+    "selected_ID_sha256": "ec79953f907ea954c40129d33e52475035df531947d6ba59792c755837ebd3af"
+  },
+  "moments_in_full_field": {
+    "mass": 2.7432554750639175,
+    "N": 799732,
+    "K_physical": 1.095077501478096,
+    "W_phi": -2.187586319603299,
+    "Q": 1.001174208912295,
+    "I": 4726.315759785634,
+    "potential_energy_half_counted": -2.187863716011381,
+    "negative_instantaneous_E_mass": 2.7432554750639175,
+    "nonnegative_instantaneous_E_mass": 0.0,
+    "scope": "Static physical radial velocity is w; transverse speed squared2eta/r\u00b2. Force virial uses the supplied constant-line PIC source. Internal carrier energy is retained in the native and is separate from orbital kinetic energy."
+  },
+  "moments_in_own_field": {
+    "mass": 2.7432554750639175,
+    "N": 799732,
+    "K_physical": 1.095077501478096,
+    "W_phi": -2.1875863195936085,
+    "Q": 1.0011742089167301,
+    "I": 4726.315759785634,
+    "potential_energy_half_counted": -2.1876446762393416,
+    "negative_instantaneous_E_mass": 2.7431011152329017,
+    "nonnegative_instantaneous_E_mass": 0.00015435983101573563,
+    "scope": "Static physical radial velocity is w; transverse speed squared2eta/r\u00b2. Force virial uses the supplied constant-line PIC source. Internal carrier energy is retained in the native and is separate from orbital kinetic energy."
+  },
+  "scope": "One-pass instantaneous full-Phi selection. Own-field E signs are reported without silently replacing that membership by iterative unbinding. Q uses the selected population own PIC force. The reflecting domain and actual endpoint state remain fixed. Finite-wall influence and long-time isolation require separate evidence."
+}

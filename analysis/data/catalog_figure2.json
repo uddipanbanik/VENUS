@@ -1,0 +1,2528 @@
+{
+  "title": "VENUS example figure data",
+  "figures": [
+    {
+      "number": 1,
+      "stem": "sorting_algorithms",
+      "files": {
+        "pdf": {
+          "sha256": "4a12821a3ffa2fe297f2a6295b63321036cdab12b7442cf9e76d2f6aacc0a2c6",
+          "bytes": 30940,
+          "file": "../plots/sorting_algorithms.pdf"
+        },
+        "png": {
+          "sha256": "b60041e691278adcf630150748e5f2487fe06b9ea79ec3d43e0ba1ddc0d48f83",
+          "bytes": 222187,
+          "file": "../plots/sorting_algorithms.png"
+        }
+      }
+    },
+    {
+      "number": 2,
+      "stem": "halo_virialization_summary",
+      "files": {
+        "pdf": {
+          "sha256": "4603d45840f66cf2d0c46e50ce6c0fe0cecc764855b619602a023a4be19ea03d",
+          "bytes": 24938,
+          "file": "../plots/halo_virialization_summary.pdf"
+        },
+        "png": {
+          "sha256": "75b9cf72f64f0f67ca13714358ee29a783aa1e6f36cf9de2cb254c71fec53877",
+          "bytes": 227618,
+          "file": "../plots/halo_virialization_summary.png"
+        }
+      }
+    },
+    {
+      "number": 3,
+      "stem": "halo_multigamma_density_slopes_shallow",
+      "files": {
+        "pdf": {
+          "file": "../plots/halo_multigamma_density_slopes_shallow.pdf",
+          "sha256": "f04770faf9a42711ae1882284f39484f258edd290a29d63696331374bea9e48a"
+        },
+        "png": {
+          "file": "../plots/halo_multigamma_density_slopes_shallow.png",
+          "sha256": "1bc41c0e3bba2d7ac6ed2612bf8553ce32e97b58e76008a99241c2f7dcdf6e7b"
+        }
+      }
+    },
+    {
+      "number": 4,
+      "stem": "halo_multigamma_density_slopes_steep",
+      "files": {
+        "pdf": {
+          "file": "../plots/halo_multigamma_density_slopes_steep.pdf",
+          "sha256": "c145aebf65e1ed993158b671b62ed248d3fefb7d12c52500eb16748846d276f6",
+          "bytes": 65821
+        },
+        "png": {
+          "file": "../plots/halo_multigamma_density_slopes_steep.png",
+          "sha256": "59247e130524e816016f89cfcc9e12e926796a13ae9a5e5293e2234945c851d7",
+          "bytes": 719834
+        }
+      }
+    },
+    {
+      "number": 5,
+      "stem": "halo_g05_bp_vp_density_slopes",
+      "files": {
+        "pdf": {
+          "file": "../plots/halo_g05_bp_vp_density_slopes.pdf",
+          "sha256": "1cd41b20eecec31c56a4ce861fe617d7ea65314e892d786ab42db2247dfa1528"
+        },
+        "png": {
+          "file": "../plots/halo_g05_bp_vp_density_slopes.png",
+          "sha256": "44b8d576a2b3ccba8a7039a60af6fa3f59caa8c05d6c8ed2fb63f93ff1721d36"
+        }
+      }
+    },
+    {
+      "number": 6,
+      "stem": "g05_bp_phase_distribution",
+      "files": {
+        "pdf": {
+          "file": "../plots/g05_bp_phase_distribution.pdf",
+          "sha256": "ef682e268c17dd1fc79cbf4d696ed93164433da6060f2364f90764a4d5ec9410"
+        },
+        "png": {
+          "file": "../plots/g05_bp_phase_distribution.png",
+          "sha256": "301254db0b257e9d976d8ddfcfa4ec9dd5d2cd5adf09eaaae05a456254727c95"
+        }
+      }
+    },
+    {
+      "number": 7,
+      "stem": "g05_bp_energy_distribution",
+      "files": {
+        "pdf": {
+          "file": "../plots/g05_bp_energy_distribution.pdf",
+          "sha256": "71ae12c458c67a2706d49ab7bc5c0f7fcf3ff0df8548cfa79f5908129a101417"
+        },
+        "png": {
+          "file": "../plots/g05_bp_energy_distribution.png",
+          "sha256": "8b78447e99ef433d504f3aa0c4fa2453e1804e8edced0c81b2ce485055963d15"
+        }
+      }
+    },
+    {
+      "number": 8,
+      "stem": "cold_vp_static_expanding_virial",
+      "files": {
+        "pdf": {
+          "file": "../plots/cold_vp_static_expanding_virial.pdf",
+          "sha256": "361cdc6ff20e9deb0d0ffd601b4c56c5af2f6bb8dc68b3980183310804b7bebf"
+        },
+        "png": {
+          "file": "../plots/cold_vp_static_expanding_virial.png",
+          "sha256": "aed17cc22971f16118e734f0a6adc7bfc617ce78347a562c172dabc32ebb0e64"
+        }
+      }
+    },
+    {
+      "stem": "gaussian_vp_full_radius_density_slopes",
+      "description": "Gaussian shell density and logarithmic slopes under VP and BP dynamics in static and expanding backgrounds.",
+      "files": {
+        "pdf": {
+          "sha256": "b061f0f61e77b932a8746ecf227710cc7503186ba32df71af838202df06b3d79",
+          "bytes": 313882,
+          "file": "../plots/gaussian_vp_full_radius_density_slopes.pdf"
+        },
+        "png": {
+          "sha256": "b82a577cc8125b2469436f65f48b46a02b94681a398912e498ba462fcd1893e1",
+          "bytes": 817000,
+          "file": "../plots/gaussian_vp_full_radius_density_slopes.png"
+        }
+      },
+      "number": 9
+    },
+    {
+      "number": 10,
+      "stem": "sidm_collapse_and_outer_dispersion",
+      "files": {
+        "pdf": {
+          "file": "../plots/sidm_collapse_and_outer_dispersion.pdf",
+          "sha256": "296d334323ba2208406419ab932fbc5569d4bdac22d0b5532fc37a7848b22942",
+          "bytes": 82107
+        },
+        "png": {
+          "file": "../plots/sidm_collapse_and_outer_dispersion.png",
+          "sha256": "6b4941d6e4cf71007964fe5e0b8af16f7b62ffef1bee8f07bd31f60b044e3df7",
+          "bytes": 696720
+        }
+      }
+    },
+    {
+      "number": 11,
+      "stem": "bh_coordinates",
+      "files": {
+        "pdf": {
+          "file": "../plots/bh_coordinates.pdf",
+          "sha256": "14a698a0329b4eba5c888cfdc3aac1e70acae36c91033d9e8836119851428139"
+        },
+        "png": {
+          "file": "../plots/bh_coordinates.png",
+          "sha256": "e1f7c80a19e83492948a66b873b23f82abd2bb76379ba67e68730a10b8a56326"
+        }
+      }
+    },
+    {
+      "number": 12,
+      "stem": "bh_interior",
+      "files": {
+        "pdf": {
+          "file": "../plots/bh_interior.pdf",
+          "sha256": "6a5205d912124be733f254c84872d40e1c88bc91a58be4f3231ed48fedd36eaa"
+        },
+        "png": {
+          "file": "../plots/bh_interior.png",
+          "sha256": "c493bbdafe88b568985c387abede1a61dba8efc3e0e07db106ef77c3d641e036"
+        }
+      }
+    }
+  ],
+  "data_files": [
+    {
+      "file": "data/halo/g03_bp/profile_00.csv.gz",
+      "sha256": "a445eb6917a01a0ce34ef71f0c74d1128e92ed12ccca8ba82acfc35057833d8d",
+      "rows": 256,
+      "columns": [
+        "time",
+        "radius",
+        "density",
+        "neff"
+      ],
+      "native_source": {
+        "filename": "profile_00000.csv",
+        "sha256": "ccce364e215f51867a72eb604978ad22c20d11e535ed271c5d8c7bbce18d3323"
+      }
+    },
+    {
+      "file": "data/halo/g03_bp/profile_01.csv.gz",
+      "sha256": "37d41014dfdf0ed6b7908a0d099b8f0339da72a2d9bb683ab6bf56a6033b4d74",
+      "rows": 256,
+      "columns": [
+        "time",
+        "radius",
+        "density",
+        "neff"
+      ],
+      "native_source": {
+        "filename": "profile_00010.csv",
+        "sha256": "8abb42710fc20e7d20fba589e875929c70899f0f8c53605430d1d49edb8f5a39"
+      }
+    },
+    {
+      "file": "data/halo/g03_bp/profile_02.csv.gz",
+      "sha256": "27586c98feace58d1e7767671c09aa733d7e7f8fa8083d043506d1752545e988",
+      "rows": 256,
+      "columns": [
+        "time",
+        "radius",
+        "density",
+        "neff"
+      ],
+      "native_source": {
+        "filename": "profile_00080.csv",
+        "sha256": "a41a4e393f9ddd63cd54a5d65becdf868066d44b65a3f58eaa255b636f2c5447"
+      }
+    },
+    {
+      "file": "data/halo/g03_bp/profile_03.csv.gz",
+      "sha256": "efa2b806b488567873dc425fb5677b9a5dc5b4eb9cf068b1bc1bfc3f7729c130",
+      "rows": 256,
+      "columns": [
+        "time",
+        "radius",
+        "density",
+        "neff"
+      ],
+      "native_source": {
+        "filename": "profile_01000.csv",
+        "sha256": "b5e689d05b256a840fe7b0d2037d704ecc03b8d3a6b64a9570a619897e3eb402"
+      }
+    },
+    {
+      "file": "data/halo/g05_bp/profile_00.csv.gz",
+      "sha256": "c6118b6c9f18cb74528df6d98ceedc11c1df4abbd029278ee25628d5bff92aca",
+      "rows": 256,
+      "columns": [
+        "time",
+        "radius",
+        "density",
+        "neff"
+      ],
+      "native_source": {
+        "filename": "profile_00000.csv",
+        "sha256": "7034ef3cd4373fb6228b2b8d063cb6a07b61c9ad9d220afdab99a08607e6cac4"
+      }
+    },
+    {
+      "file": "data/halo/g05_bp/profile_01.csv.gz",
+      "sha256": "8e30ef1fdb0acca30042ab1db9be78ebe61acdb8014df9174a4f1d92f796d2f9",
+      "rows": 256,
+      "columns": [
+        "time",
+        "radius",
+        "density",
+        "neff"
+      ],
+      "native_source": {
+        "filename": "profile_00010.csv",
+        "sha256": "ef5246c5327af4bdc244f0beb6b52f6eca0ec524056622569ae42f27e8f30e5f"
+      }
+    },
+    {
+      "file": "data/halo/g05_bp/profile_02.csv.gz",
+      "sha256": "004e8fa69a99d84a3475dc3e516f983479ed3749a8b74ae397652a91305027c3",
+      "rows": 256,
+      "columns": [
+        "time",
+        "radius",
+        "density",
+        "neff"
+      ],
+      "native_source": {
+        "filename": "profile_00080.csv",
+        "sha256": "907c01c2316810419ac99665e7f9e3d9c5a6342e07001efc45022f8b32aeeb2c"
+      }
+    },
+    {
+      "file": "data/halo/g05_bp/profile_03.csv.gz",
+      "sha256": "cbc1bb98e1f66ff7ebbd1faba052de449885c43a95a8f80502851490320f9166",
+      "rows": 256,
+      "columns": [
+        "time",
+        "radius",
+        "density",
+        "neff"
+      ],
+      "native_source": {
+        "filename": "profile_01000.csv",
+        "sha256": "bce461ce0d66dacd4230f1f90f299278acb81eaf7579d8795023e1a768977514"
+      }
+    },
+    {
+      "file": "data/halo/g08_bp/profile_00.csv.gz",
+      "sha256": "03f75caf54c5475ac563b7d4c6007d6143db4d405acc18befd496d580d1d3bf3",
+      "rows": 256,
+      "columns": [
+        "time",
+        "radius",
+        "density",
+        "neff"
+      ],
+      "native_source": {
+        "id": "g08_bp/frame_00000",
+        "sha256": "3d5b4be5916c5e921ec5a270d9903deb3df8f15022ffeb614efe86371ae8ac1a"
+      }
+    },
+    {
+      "file": "data/halo/g08_bp/profile_01.csv.gz",
+      "sha256": "da0e45bff2f3dd903913dfde381fda3e1742b004ee96926d6175a789c666f3b3",
+      "rows": 256,
+      "columns": [
+        "time",
+        "radius",
+        "density",
+        "neff"
+      ],
+      "native_source": {
+        "id": "g08_bp/frame_00010",
+        "sha256": "e273c7d685e7f232cd440e59c0a287cf84581f52107cd088fbee3abb2f135b84"
+      }
+    },
+    {
+      "file": "data/halo/g08_bp/profile_02.csv.gz",
+      "sha256": "c80b0572d67fed77f8ffdcbf5360549c0365410a9e6e654826581fdb17659852",
+      "rows": 256,
+      "columns": [
+        "time",
+        "radius",
+        "density",
+        "neff"
+      ],
+      "native_source": {
+        "id": "g08_bp/frame_00080",
+        "sha256": "348d4ace6c38b8e865ada3c0c5892ec29b12a20d2add6112dda9072cdfa9c8f0"
+      }
+    },
+    {
+      "file": "data/halo/g08_bp/profile_03.csv.gz",
+      "sha256": "4bb4d985e309f10ebb27c73c1b2589c6ef84ce60e3f3d875eded4f7687341728",
+      "rows": 256,
+      "columns": [
+        "time",
+        "radius",
+        "density",
+        "neff"
+      ],
+      "native_source": {
+        "id": "g08_bp/frame_01002",
+        "sha256": "d019a6539411f1a225fa329dd5de6a4179a45111edbf83fe322125eaef0f4c48"
+      }
+    },
+    {
+      "file": "data/halo/g12_bp/profile_00.csv.gz",
+      "sha256": "b06b41be177cb574fcc7fa6ee1aa264d2c310d60340427b0a579f36b7d5f7b36",
+      "rows": 256,
+      "columns": [
+        "time",
+        "radius",
+        "density",
+        "neff"
+      ],
+      "native_source": {
+        "id": "g12_bp/frame_00000",
+        "sha256": "c3d182bc45d09accae6e2b8f25bce2534f4953c8045c81055ea7d1fc42727036"
+      }
+    },
+    {
+      "file": "data/halo/g12_bp/profile_01.csv.gz",
+      "sha256": "1ce120f662e5a6676afbf79be8ed511e4da351ae44edc7a30666028c99021f9f",
+      "rows": 256,
+      "columns": [
+        "time",
+        "radius",
+        "density",
+        "neff"
+      ],
+      "native_source": {
+        "id": "g12_bp/frame_00010",
+        "sha256": "c00b00301b56b9c5e33714ec4691728e6c21495e712914addaa5e73432abfb26"
+      }
+    },
+    {
+      "file": "data/halo/g12_bp/profile_02.csv.gz",
+      "sha256": "fffd3d31fa5425b669314029a4efae62b1e3a694bf4af9f7e6b8730400f124f1",
+      "rows": 256,
+      "columns": [
+        "time",
+        "radius",
+        "density",
+        "neff"
+      ],
+      "native_source": {
+        "id": "g12_bp/frame_00080",
+        "sha256": "f5459619b9f48934d13795aca1ec4637ccf538eb2d83507259825ef96b7bdc15"
+      }
+    },
+    {
+      "file": "data/halo/g12_bp/profile_03.csv.gz",
+      "sha256": "4bb359bc8699f986750e4dbeae1fd593e7c810b3b6bd39bf2db4d247aa08355f",
+      "rows": 256,
+      "columns": [
+        "time",
+        "radius",
+        "density",
+        "neff"
+      ],
+      "native_source": {
+        "id": "g12_bp/frame_01002",
+        "sha256": "e7d6f0acc5318935c5dee0e76a0d16be56d2dfa921d4e2c2740ddb409026324e"
+      }
+    },
+    {
+      "file": "data/halo/g15_bp/profile_00.csv.gz",
+      "sha256": "b5db5bd20d870af82ec0ad52fd87035330e804de5656d4011e07a3e9ace54181",
+      "rows": 256,
+      "columns": [
+        "time",
+        "radius",
+        "density",
+        "neff"
+      ],
+      "native_source": {
+        "filename": "profile_00000.csv",
+        "sha256": "ef60f090773e38aa08459018164599a6751d10efbeaa5f0b1dbcfb45ea690fcc"
+      }
+    },
+    {
+      "file": "data/halo/g15_bp/profile_01.csv.gz",
+      "sha256": "2a3df26648c5b5940a4be50ae8482a36dce3eb2d4acfb658742967b7f0e2e01b",
+      "rows": 256,
+      "columns": [
+        "time",
+        "radius",
+        "density",
+        "neff"
+      ],
+      "native_source": {
+        "filename": "profile_00010.csv",
+        "sha256": "656ba0d4a8c2b593efd2d39c836b7895db6fcc055eb5b9aa4b909eb337b3a54a"
+      }
+    },
+    {
+      "file": "data/halo/g15_bp/profile_02.csv.gz",
+      "sha256": "a61e370a37ae8e0e375525de52f0cab4941939ebd3682ea413147449a402c4fa",
+      "rows": 256,
+      "columns": [
+        "time",
+        "radius",
+        "density",
+        "neff"
+      ],
+      "native_source": {
+        "filename": "profile_00080.csv",
+        "sha256": "9e1ed969b8b2e2bb0381a2d856a8cc7ff5c5614d8835d89be49a60f184298ef3"
+      }
+    },
+    {
+      "file": "data/halo/g15_bp/profile_03.csv.gz",
+      "sha256": "5b8c7c9cdcc8818354f825d957c4e4ac071262adc78535a1b40230247a51edc0",
+      "rows": 256,
+      "columns": [
+        "time",
+        "radius",
+        "density",
+        "neff"
+      ],
+      "native_source": {
+        "filename": "profile_01000.csv",
+        "sha256": "3f4e91e4543de1e3b3b5dd3fee5f2c2a3750e653292770a1e2f755efe9e6e1bf"
+      }
+    },
+    {
+      "file": "data/halo/g20_bp/profile_00.csv.gz",
+      "sha256": "af75a786ff9993292a4886357d1a105b1be6a1af112e3ca6d277f43bd12971c9",
+      "rows": 256,
+      "columns": [
+        "time",
+        "radius",
+        "density",
+        "neff"
+      ],
+      "native_source": {
+        "id": "g20_bp/frame_00000",
+        "sha256": "d40f65b2b95bf5d114cc9de051c870971adad4f57a26ed6e9722d03b5c8d3571"
+      }
+    },
+    {
+      "file": "data/halo/g20_bp/profile_01.csv.gz",
+      "sha256": "08a442ccf8997cd7b5e199e60691a21fa618943b0959d7ae463fced9544677bd",
+      "rows": 256,
+      "columns": [
+        "time",
+        "radius",
+        "density",
+        "neff"
+      ],
+      "native_source": {
+        "id": "g20_bp/frame_00010",
+        "sha256": "a316d6ae85ff462ec06ae6b4c7370fb688560965f315eece7b4933d21c7fe0fc"
+      }
+    },
+    {
+      "file": "data/halo/g20_bp/profile_02.csv.gz",
+      "sha256": "2ecf71786c8042d648073af81ac448c2a81ec5af3b8b1733f4f730db0f4cbd4a",
+      "rows": 256,
+      "columns": [
+        "time",
+        "radius",
+        "density",
+        "neff"
+      ],
+      "native_source": {
+        "id": "g20_bp/frame_00080",
+        "sha256": "b3223fd48c2d614341f88bb8de926e0e7cebd5f55500bf10ba9cf236d30a305f"
+      }
+    },
+    {
+      "file": "data/halo/g20_bp/profile_03.csv.gz",
+      "sha256": "f854ccfbc781d02aafb8519a242802e90b8b44bd7cf5fd274f86c9b993b1d558",
+      "rows": 256,
+      "columns": [
+        "time",
+        "radius",
+        "density",
+        "neff"
+      ],
+      "native_source": {
+        "id": "g20_bp/frame_01003",
+        "sha256": "4959fa0c2ff825e1984ac470cea8af04939c56cf3a222c2c2daf29e642bff5ca"
+      }
+    },
+    {
+      "file": "data/halo/g05_vp/profile_00.csv.gz",
+      "sha256": "a5c24112da49e3d47302097d726629681e467dd1d086f24ccb2d055bbeb00b93",
+      "rows": 256,
+      "columns": [
+        "time",
+        "radius",
+        "density",
+        "neff"
+      ],
+      "native_source": {
+        "filename": "profile_00000.csv",
+        "sha256": "503d0fc20fdbf784c2d35033c2adae021a8219e4e77a010857be8257921ff7b6"
+      }
+    },
+    {
+      "file": "data/halo/g05_vp/profile_01.csv.gz",
+      "sha256": "5807793657797fdb9e43956e541395a0802f7d03d9734a3df863453764ed5a36",
+      "rows": 256,
+      "columns": [
+        "time",
+        "radius",
+        "density",
+        "neff"
+      ],
+      "native_source": {
+        "filename": "profile_00010.csv",
+        "sha256": "a8bd151eb173a4c78d2af8318c1cf81ab91e4743cc9029eafbd6a2022a15e6e7"
+      }
+    },
+    {
+      "file": "data/halo/g05_vp/profile_02.csv.gz",
+      "sha256": "7efccf20f402dc1cf07a069a6a31791845d69b4d50b372854ef3c94cca77267f",
+      "rows": 256,
+      "columns": [
+        "time",
+        "radius",
+        "density",
+        "neff"
+      ],
+      "native_source": {
+        "filename": "profile_00080.csv",
+        "sha256": "2f355f7e9ca2289351ede57be5d2cffc617a825c6c3f0ee0fe5f4a4222ae3054"
+      }
+    },
+    {
+      "file": "data/halo/g05_vp/profile_03.csv.gz",
+      "sha256": "13f001d012c5b8674e69072360a407842b61cfc86c1e9a38bf70e7b66b889f9e",
+      "rows": 256,
+      "columns": [
+        "time",
+        "radius",
+        "density",
+        "neff"
+      ],
+      "native_source": {
+        "filename": "profile_01000.csv",
+        "sha256": "e8cd50d659aa9d5c7aeafcd9441ce3fbe331ed4f421bb6abdf55fb6ebfe4fcf9"
+      }
+    },
+    {
+      "file": "data/sidm/nfw_00.csv.gz",
+      "sha256": "7cfa777c1813a1a2a78345f3ae4db025d1ed7cfc9340827e52e70615a2c3f1a6",
+      "rows": 512,
+      "columns": [
+        "radius",
+        "density",
+        "variance",
+        "population"
+      ],
+      "native_source": {
+        "filename": "profile_00000000.csv",
+        "sha256": "95d60b4c90c4057219e94671bbc7863eacf853ccb7be826fe7534beb6e7ec271"
+      }
+    },
+    {
+      "file": "data/sidm/nfw_01.csv.gz",
+      "sha256": "cda3074749ae2dda4d0a0b306dd5ea788a86c1ffe411258e7c01aa3fb65b9a2d",
+      "rows": 512,
+      "columns": [
+        "radius",
+        "density",
+        "variance",
+        "population"
+      ],
+      "native_source": {
+        "filename": "profile_00001650.csv",
+        "sha256": "229adde1e492c31c46b41df1b34e1793e887fd9d1b48548ea656ea216ecd9a62"
+      }
+    },
+    {
+      "file": "data/sidm/nfw_02.csv.gz",
+      "sha256": "2c2b71f9978c963437885e8d302ec9d29d7b2d66008ce45cc563bae6ee072a6c",
+      "rows": 512,
+      "columns": [
+        "radius",
+        "density",
+        "variance",
+        "population"
+      ],
+      "native_source": {
+        "filename": "profile_00023280.csv",
+        "sha256": "a650ca690af5c5b8b6e57f457f2bb2262ebb126f19b69e292b3c2610305645a6"
+      }
+    },
+    {
+      "file": "data/sidm/nfw_03.csv.gz",
+      "sha256": "725b539b07a304436d40d3b4e7304126b36dc44093e527813ef9beb698af24af",
+      "rows": 1024,
+      "columns": [
+        "radius",
+        "density",
+        "variance",
+        "population"
+      ],
+      "native_source": {
+        "filename": "profile_00846010.csv",
+        "sha256": "b1e826f879850264839302708be65c4cc9ee114f7a1359e36adf6a76135a0dbe"
+      }
+    },
+    {
+      "file": "data/sidm/nfw_04.csv.gz",
+      "sha256": "770d4934e8dd78835db1aad5de6b914d7dbc27787023ac1209772f4ddef5f11f",
+      "rows": 1024,
+      "columns": [
+        "radius",
+        "density",
+        "variance",
+        "population"
+      ],
+      "native_source": {
+        "filename": "profile_00883940.csv",
+        "sha256": "f96f3a8d8ce2d857e4d7d6522248891fa43a9e39d1dcc989d98b499ba839b6f7"
+      }
+    },
+    {
+      "file": "data/sidm/cored_00.csv.gz",
+      "sha256": "61669201e4dec54ec57a9d0bdcb5e6c552414f6faa12486bb3e72ce19c3ba3e3",
+      "rows": 128,
+      "columns": [
+        "radius",
+        "density",
+        "variance",
+        "population"
+      ],
+      "native_source": {
+        "filename": "profile_step_0000000.csv",
+        "sha256": "e516cf6f5e7340878d59c4e9d7c9c0159f4489daa14fa3059db0802d98f7bd6f"
+      }
+    },
+    {
+      "file": "data/sidm/cored_01.csv.gz",
+      "sha256": "86e0bdea86d8e1b1b1efdf9cbb292b08bf0744c12f501de9de81b78569ad8316",
+      "rows": 128,
+      "columns": [
+        "radius",
+        "density",
+        "variance",
+        "population"
+      ],
+      "native_source": {
+        "filename": "profile_step_0038100.csv",
+        "sha256": "11ddbe85172f84639d6bea683220788f19d815152039ec2eb12106044d8431f4"
+      }
+    },
+    {
+      "file": "data/sidm/cored_02.csv.gz",
+      "sha256": "0f8c62d74ea26fcd24d77cd331311a15910afe98e5370c44d0b359721c7ef6f2",
+      "rows": 128,
+      "columns": [
+        "radius",
+        "density",
+        "variance",
+        "population"
+      ],
+      "native_source": {
+        "filename": "profile_step_0540800.csv",
+        "sha256": "820fc8ddb0cccf66a085aea82642a81d02467f47299b8b241cf1b747f9973193"
+      }
+    },
+    {
+      "file": "data/sidm/cored_03.csv.gz",
+      "sha256": "305e23d54f6408435978f586631dc3eb33c3b1bacccf4deea836a40d9790738a",
+      "rows": 128,
+      "columns": [
+        "radius",
+        "density",
+        "variance",
+        "population"
+      ],
+      "native_source": {
+        "filename": "profile_step_5948300.csv",
+        "sha256": "a8bc6631c34530b935c2bd0018a199502986c48dd2b76c4235a7ca418c912ef4"
+      }
+    },
+    {
+      "file": "data/relativistic/schwarzschild_history.csv.gz",
+      "sha256": "693e7953b2cc9449618e23d4ab300c446f293bf14c39a4c271647287a4554bbb",
+      "rows": 8002,
+      "columns": [
+        "time",
+        "max_compactness",
+        "min_lapse"
+      ],
+      "native_source": {
+        "filename": "high_compactness_history.csv",
+        "sha256": "d4e03a7e69137c9e18d971bfc50826b7b271ae7429173f0980a12e889abac341"
+      }
+    },
+    {
+      "file": "data/relativistic/ef_history.csv.gz",
+      "sha256": "a6bd4657dc0ec802affd5d06c66f66eb5f7060ec9b9f74a6e03a707845015b31",
+      "rows": 401,
+      "columns": [
+        "advanced_time",
+        "step",
+        "apparent_horizon_radius",
+        "active_min_radius",
+        "active_rest_weight",
+        "active_trapped_rest_weight",
+        "total_rest_weight"
+      ],
+      "native_source": {
+        "filename": "history.csv",
+        "sha256": "2e113306b2bc79890032ae7364b811765ab10afac3d5cbc317f27fed233d3fa8"
+      }
+    },
+    {
+      "file": "data/relativistic/ef_profiles.csv.gz",
+      "sha256": "d89e82ee8d13d6abd15d6d18a6ce46b614f03d3b35833d81240041d5f04d8684",
+      "rows": 40960,
+      "columns": [
+        "advanced_time",
+        "step",
+        "r",
+        "rho_infall",
+        "compactness"
+      ],
+      "native_source": {
+        "filename": "profiles.csv",
+        "sha256": "5e307c1f3946c91c8bec279c9190a886ebe3018892da1476e7ea0e3bf184b46f"
+      }
+    },
+    {
+      "file": "data/halo/g05_gpu/profile_00000.csv.gz",
+      "sha256": "6b96eb8bb5ccae94fd1d21070732dde4694f762eb5c555f3a49430565284da64",
+      "rows": 256,
+      "columns": [
+        "time",
+        "radius",
+        "density",
+        "neff"
+      ],
+      "native_source": {
+        "filename": "profile_00000.csv",
+        "sha256": "0bd3cb6fc11398286edc75c6809395128317a491c2d3f9e5df511180292bead8"
+      }
+    },
+    {
+      "file": "data/halo/g05_gpu/profile_00100.csv.gz",
+      "sha256": "380537413e3c2e825b81de39788f03ba99561209e635fe912bcd8f9b2f6a6ace",
+      "rows": 256,
+      "columns": [
+        "time",
+        "radius",
+        "density",
+        "neff"
+      ],
+      "native_source": {
+        "filename": "profile_00010.csv",
+        "sha256": "36f93490625c46c3e3a035e617291dcfc9d6bdcb0a0d82ae9bc4f69486f257dc"
+      }
+    },
+    {
+      "file": "data/halo/g05_gpu/profile_00800.csv.gz",
+      "sha256": "c21641f6254096c1dc014298e49536d6e40bdd8ae8280fb9307758438bae0498",
+      "rows": 256,
+      "columns": [
+        "time",
+        "radius",
+        "density",
+        "neff"
+      ],
+      "native_source": {
+        "filename": "profile_00080.csv",
+        "sha256": "a40ec813ff3cabb94a9a9a1eefba66e636b7d4b300d18039e7ce7ca517213191"
+      }
+    },
+    {
+      "file": "data/halo/g05_gpu/profile_10000.csv.gz",
+      "sha256": "d642820dcd8f5614ee6ac79d6de3fc79846e590c6c65eec40724a53ad1e4bb0f",
+      "rows": 256,
+      "columns": [
+        "time",
+        "radius",
+        "density",
+        "neff"
+      ],
+      "native_source": {
+        "filename": "profile_01000.csv",
+        "sha256": "f1e2a57c69bc0a9fd26a1590e1ffca17fdd08d870bda0361c7be03ff35d72f43"
+      }
+    },
+    {
+      "file": "data/cold_vp/cold_static_vp/virial_budget.csv.gz",
+      "sha256": "46428f12461eb7abf896e52a5151df38b56d22020a1e8f18f61f1acdc7d6742a",
+      "rows": 1596,
+      "columns": [
+        "time",
+        "I",
+        "C",
+        "K_physical",
+        "W_force",
+        "H",
+        "H_dot"
+      ],
+      "native_source": {
+        "filename": "cold_static_vp/virial_budget.csv",
+        "sha256": "de4b23b3a6a4da9c150611fa662529d3e72716c8dfe3796d0a72273a9c77a308"
+      }
+    },
+    {
+      "file": "data/cold_vp/cold_static_vp/history.csv.gz",
+      "sha256": "0a45ebe27235ebd787e70fdaf4c460f8f5339f8f2dba5aa24ff2b6150cb43856",
+      "rows": 1596,
+      "columns": [
+        "time",
+        "step",
+        "mobile_mass",
+        "wall_seconds"
+      ],
+      "native_source": {
+        "filename": "cold_static_vp/history.csv",
+        "sha256": "b80290788acbbf04710a8314aa7c99dac4a485548cc653d740f13cf7c43f4304"
+      }
+    },
+    {
+      "file": "data/cold_vp/cold_static_vp/boundary_history.csv.gz",
+      "sha256": "c17e612b182526e9b908ce74bc29c4e7f279bdbf83be0aeb2130318c7c374270",
+      "rows": 701,
+      "columns": [
+        "time",
+        "outer_wall_impacts"
+      ],
+      "native_source": {
+        "filename": "cold_static_vp/boundary_history.csv",
+        "sha256": "e7d998a755cb07829f75eba9ebef27513345a0499487858650069ae0e9af0e24"
+      }
+    },
+    {
+      "file": "data/cold_vp/cold_expanding_vp/virial_budget.csv.gz",
+      "sha256": "00272ef6c4a707f1a40f6a793e52477e7b21c7d8e708a5f26620d1da657926d9",
+      "rows": 1596,
+      "columns": [
+        "time",
+        "I",
+        "C",
+        "K_physical",
+        "W_force",
+        "H",
+        "H_dot"
+      ],
+      "native_source": {
+        "filename": "cold_expanding_vp/virial_budget.csv",
+        "sha256": "ba581f66a611956566c73716ce1e793fbbe0eb5e5ea17dfa48dc171170f0cace"
+      }
+    },
+    {
+      "file": "data/cold_vp/cold_expanding_vp/history.csv.gz",
+      "sha256": "adf6bd17ab066a5646739fb24c96bda7969bf90323366fc5bb7e328656d13888",
+      "rows": 1596,
+      "columns": [
+        "time",
+        "step",
+        "mobile_mass",
+        "wall_seconds"
+      ],
+      "native_source": {
+        "filename": "cold_expanding_vp/history.csv",
+        "sha256": "beb040f98d83cda54a82c2598f7a7656a61232048e72774d8f6b6661137578ec"
+      }
+    },
+    {
+      "file": "data/cold_vp/cold_expanding_vp/boundary_history.csv.gz",
+      "sha256": "73850cc39dfa9f8cd40bdb89a718b270d230c583267a2ad87993a9eba016641e",
+      "rows": 701,
+      "columns": [
+        "time",
+        "outer_wall_impacts"
+      ],
+      "native_source": {
+        "filename": "cold_expanding_vp/boundary_history.csv",
+        "sha256": "fde55c791cca304b10d0d154ecbe42c11994e2106cd62eb526e895f5c4335783"
+      }
+    },
+    {
+      "file": "data/cold_vp/outer_control_extended_virial.csv.gz",
+      "sha256": "f23c0f71d8bfd1e97315cfd047ca50a7f1a3e4644b2219426334711bb97f4915",
+      "rows": 316,
+      "columns": [
+        "time",
+        "I"
+      ],
+      "native_source": {
+        "filename": "outer_control_extended_virial.csv",
+        "sha256": "94d2ae55ce8d2211f7f2ee6b606fc0e445e88d12383527e33d2769606871a97b"
+      }
+    },
+    {
+      "file": "data/cold_vp/moments.json",
+      "sha256": "b84fdab77e5bc6e8aa32bf21a18ecbfefe7b2c373ba6a823be46531826fcbe23",
+      "source": "Initial and endpoint particle reductions; physical moments and static energy selections."
+    },
+    {
+      "file": "data/virial_summary/cold_static_vp.csv",
+      "sha256": "da54d5778b7dfdd3c6ad945ebc3079f1e8a7995460cd72be36a48a3e7c5ec968"
+    },
+    {
+      "file": "data/virial_summary/g03_bp.csv",
+      "sha256": "05d9b728cb895c24f78f6567bae2962928c87ed9aa8babe3a27144559136be16",
+      "bytes": 301526,
+      "scope": "Portable completed-particle/profile diagnostic input."
+    },
+    {
+      "file": "data/virial_summary/g05_bp.csv",
+      "sha256": "d060ac105b40a57d09a3932bf75c7400f754c1b65a13d0cd9edb86fc7605d2e5",
+      "bytes": 281071,
+      "scope": "Portable completed-particle/profile diagnostic input."
+    },
+    {
+      "file": "data/virial_summary/g08_bp.csv",
+      "sha256": "815c6a035eb7ec8d767ec2e0d538311694ab4718c60c14ede4511efd4e6b4642",
+      "bytes": 299792,
+      "scope": "Portable completed-particle/profile diagnostic input."
+    },
+    {
+      "file": "data/halo/g05_vp_gpu/profile_00000.csv.gz",
+      "sha256": "1f3f363d81e45684e8ed90a2a76ea302d538d610af1735871613d9051280cf00"
+    },
+    {
+      "file": "data/halo/g05_vp_gpu/profile_00100.csv.gz",
+      "sha256": "2b238cbb8d73c05d5723dd877ed850fa7f356e6b3816317506a8f16d1887c8e5"
+    },
+    {
+      "file": "data/halo/g05_vp_gpu/profile_00800.csv.gz",
+      "sha256": "cc6ca2cc3ae94fe0a42a2f2062a8e8d2d8134ed152d20fe81ff6478d072aa859"
+    },
+    {
+      "file": "data/halo/g05_vp_gpu/profile_10000.csv.gz",
+      "sha256": "e3c07b415b730915f37b27a6c4f155ed4d27f281b838d4f1e9cd4f3d985b0f4d"
+    },
+    {
+      "file": "data/virial_summary/g05_vp.csv",
+      "sha256": "d78091127a18b08ede01520d54692b8f6a2a67e057d95d82e2f47a950cb1cd03",
+      "bytes": 279507,
+      "scope": "Portable completed-particle/profile diagnostic input."
+    },
+    {
+      "file": "data/virial_summary/catalog.json",
+      "sha256": "2bf377b371ba9b9d7d8d410c8b2e1470d4df6b6c2d81d122639b5113c1c405d6",
+      "bytes": 4649,
+      "scope": "Portable completed-particle/profile diagnostic input."
+    },
+    {
+      "file": "data/virial_summary/cold_static_vp_bound.csv",
+      "sha256": "5113efbdfd94615c5a48a70a9ac0d9fad9eef3efe032565ba7d2508612bca89e",
+      "rows": 3,
+      "columns": [
+        "time",
+        "Q_physical_bound_self_force"
+      ]
+    },
+    {
+      "file": "data/sorting_algorithms/records.json",
+      "sha256": "3a631ae77393ea5704fb1479e40932cde5ce0efcf5c2226e3dcb1836e9cf4b60",
+      "records": 4,
+      "fields": [
+        "id",
+        "key",
+        "color"
+      ],
+      "meaning": "Fixed identifiers and decimal teaching keys for insertion and stable radix sorting."
+    },
+    {
+      "file": "data/virial_summary/static_g05_iterative_bound.csv",
+      "sha256": "0c5539dd2d7bc09ffd3dc603aba2cfe694a8f9c634a846b205f4bff3b13c2acc",
+      "bytes": 1908,
+      "scope": "Portable completed-particle/profile diagnostic input."
+    },
+    {
+      "file": "data/virial_summary/gaussian_expanding_vp.csv",
+      "sha256": "a3114322e181a7fe1a34bc2128bb214ec56bee602a9454a63eb9c0054e8a7f28",
+      "bytes": 3249,
+      "scope": "Narrow Gaussian VP exact plotting columns, actual native moments or explicit source/boundary definitions."
+    },
+    {
+      "file": "data/virial_summary/gaussian_static_bound.csv",
+      "sha256": "827aa9c19cc77c04ebdd09c4355370d279947e0868071d099d43deacf01e7dcb",
+      "bytes": 161,
+      "scope": "Narrow Gaussian VP exact plotting columns, actual native moments or explicit source/boundary definitions."
+    },
+    {
+      "file": "data/virial_summary/gaussian_static_vp.csv",
+      "sha256": "685dbd9e71b8453ef2f91c0fa8220910fb049f29749b257ac7d59bbcca3aa4de",
+      "bytes": 2658,
+      "scope": "Narrow Gaussian VP exact plotting columns, actual native moments or explicit source/boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/catalog.json",
+      "sha256": "b07633a823652605b54e0a393c6c5a0a4f5fa2b6229a6e879372bf7fbee27007",
+      "bytes": 15288,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/expanding_bp/profile_0.csv.gz",
+      "sha256": "1083739cc237307084413bce52c377aac3ff1248975875ad8deb8a6ebd9c13b0",
+      "bytes": 6071,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/expanding_bp/profile_10.csv.gz",
+      "sha256": "cd27fef2322db5893c4a6a97bdac7e969b4b7e9d8245ae7f51875bc818d597ad",
+      "bytes": 7188,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/expanding_bp/profile_100.csv.gz",
+      "sha256": "afb3188a5c79609206524e74b0c07e7007a3ee4cb191bdcb00369d9e0ffbedc2",
+      "bytes": 21378,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/expanding_bp/profile_20.csv.gz",
+      "sha256": "a4b4a2b9e3661842789e6f43952df75520d24ac8892c21cc390f64ff35f281e3",
+      "bytes": 8523,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/expanding_bp/profile_26.csv.gz",
+      "sha256": "39eb2dc66a39bd704a13d0e686f3585e03ca1e6d2c7ba1b9818b14e72f4a910a",
+      "bytes": 16026,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/expanding_bp/profile_50.csv.gz",
+      "sha256": "248201fbbf2e3f514ca267923d74b82e59427847131c6a5a7a83beb50ac927d9",
+      "bytes": 19318,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/expanding_bp/profile_7326.csv.gz",
+      "sha256": "ec6b226eaf25e6b352e1a5c5f7aada9a2736790eaaa4297b1b5a2ede181073b6",
+      "bytes": 30292,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/expanding_bp/profile_800.csv.gz",
+      "sha256": "d30dd43d83d11323dacf82ac93d602ffe4f78732901fa69231d019a8c8bb3acc",
+      "bytes": 25528,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/expanding_vp/endpoint_occupancy.json",
+      "sha256": "f11df69e6de9d695df5a56ac07be0c8392f96145ef82e2d6241282f4f009d44b",
+      "bytes": 2964,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/expanding_vp/moment_sources.json",
+      "sha256": "690646006fa4510956a1d260f0edeb33f7c53c532ad63f21266ca323b0ab79e9",
+      "bytes": 2444,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/expanding_vp/moments.csv",
+      "sha256": "a3114322e181a7fe1a34bc2128bb214ec56bee602a9454a63eb9c0054e8a7f28",
+      "bytes": 3249,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/expanding_vp/profile_00000.csv.gz",
+      "sha256": "d8001481d0565bca3f199cc241ea27e4255ba5f262aedb6063a013aa0dcac4e3",
+      "bytes": 5065,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/expanding_vp/profile_00010.csv.gz",
+      "sha256": "7cf5457f54e5784d91051255fee7185a0294da85f550b02f77516c2c869e06f7",
+      "bytes": 5540,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/expanding_vp/profile_00020.csv.gz",
+      "sha256": "b2a71d7fd706f3180e70069687d5d6751bdf0a3f703ae03f35363d62888ed0cd",
+      "bytes": 6126,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/expanding_vp/profile_00026.csv.gz",
+      "sha256": "b84a8a0aa8660513a57e94cdc75eaa144b273ffd70261a098a8eec53f898a26c",
+      "bytes": 9231,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/expanding_vp/profile_00030.csv.gz",
+      "sha256": "78d983023f1f92cacd89547f5ce68b1f1dc9d6c4611e6e474e89a46c6797e824",
+      "bytes": 8956,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/expanding_vp/profile_00050.csv.gz",
+      "sha256": "5b34094816baff0473ff369cf30e3024c8f2cbf45d815868e1655d9ed72f0d9a",
+      "bytes": 10544,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/expanding_vp/profile_00100.csv.gz",
+      "sha256": "6bf473c23eeaf6529834cedccabe075e2e8ef2a536c8f87c33f149b5e45ccd2e",
+      "bytes": 11340,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/expanding_vp/profile_00300.csv.gz",
+      "sha256": "2b9843968454d7b1354c66002f36297e00375fc08ccb9ed011697103e4aa678a",
+      "bytes": 12435,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/expanding_vp/profile_00800.csv.gz",
+      "sha256": "9573183f697794cb844d3c9546df9d5353d155f3320b62f5db8f9676baa642b5",
+      "bytes": 13079,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/expanding_vp/profile_02000.csv.gz",
+      "sha256": "24d1ab9f95bfb3535b27163c61732d2eb00a72e039aeb341a28d3e98d9b4219c",
+      "bytes": 13510,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/expanding_vp/profile_05000.csv.gz",
+      "sha256": "b695a886390738ef61486f0f6a911749aa3717630b5e8c72fc4d7bc2f0a9360f",
+      "bytes": 14292,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/expanding_vp/profile_10000.csv.gz",
+      "sha256": "9daab9215a028f739eaf4b932c5d606dd6f404423e31ac6fcf3f8ce70c05bc13",
+      "bytes": 14632,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/initial_distribution.json",
+      "sha256": "3cf4126cb1f346930ece0d50a39aa98a669e398b1f2cae2183e22d5355a4a392",
+      "bytes": 1039,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/resource_costs.json",
+      "sha256": "0519d64560552b1b621235c4f0b2b8d948456672af3212bcc92129761c2957f7",
+      "bytes": 3817,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/static_bp/profile_0.csv.gz",
+      "sha256": "54fe3b6612815355960a1b978eeb187969f6e610696a2bb96ae9be20c5ec31cb",
+      "bytes": 6066,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/static_bp/profile_10.csv.gz",
+      "sha256": "420ed33fd188babea0b2131af78a18a2e532bda3db6ae4c681adb02be81fda55",
+      "bytes": 7058,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/static_bp/profile_100.csv.gz",
+      "sha256": "b06bd363d7f8f995751673830b4e582eab7124f68391b56c65066cb99a0525fd",
+      "bytes": 21556,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/static_bp/profile_20.csv.gz",
+      "sha256": "58d1ff8efef4c4e624bb53d4286a5b61349cfd685297126d8cd67246de1b1b7a",
+      "bytes": 8205,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/static_bp/profile_30.csv.gz",
+      "sha256": "accd4424f8b327833e48a0e04c2817fcc3139477fa0cff0a4c69b9bd03d3c08e",
+      "bytes": 17352,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/static_bp/profile_50.csv.gz",
+      "sha256": "6443bd3e33123542119d1f0361b934d95f33bb0cea7ab58651ab4520565b2ee2",
+      "bytes": 19145,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/static_bp/profile_5254.csv.gz",
+      "sha256": "76fab531d8caacafcd0fc9af8aab4ca5d8100f9ca7e61d1b15a47dce79c81efc",
+      "bytes": 30626,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/static_bp/profile_800.csv.gz",
+      "sha256": "2d82af89dd910ad7f8d82d3dc3ed40f6eb2607eff1084857a52eda9964bd2b54",
+      "bytes": 26475,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/static_vp/bound_component.json",
+      "sha256": "cf14ca61d3d8959f0c44073d0a80e0a22a5023942b9a7f1af776a085668035c0",
+      "bytes": 2187,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/static_vp/endpoint_occupancy.json",
+      "sha256": "419dac1f842d336b515082a13b8bab2755215fe6cb5b1144f309a1b67c04f1d8",
+      "bytes": 3430,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/static_vp/moment_sources.json",
+      "sha256": "eca2aa7c841da0238361c98fbfa7590d4b86a30e48b34aa7b3371a72544f90e5",
+      "bytes": 2444,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/static_vp/moments.csv",
+      "sha256": "685dbd9e71b8453ef2f91c0fa8220910fb049f29749b257ac7d59bbcca3aa4de",
+      "bytes": 2658,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/static_vp/profile_00000.csv.gz",
+      "sha256": "291c2533790c21bff3c1acfc941404f3b26f2bb21bb832d1e558e832069137be",
+      "bytes": 5072,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/static_vp/profile_00010.csv.gz",
+      "sha256": "71acfcb753909a69c9290864e98495436cdc2334845d3c5bef69b8b81c875b79",
+      "bytes": 5496,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/static_vp/profile_00020.csv.gz",
+      "sha256": "120f5f2094dbbf726c848f038d78768e6937776a2079b967c4bafac9af9561da",
+      "bytes": 5970,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/static_vp/profile_00028.csv.gz",
+      "sha256": "e1d32eab36092cb0cea5a1b96f6a6d05453e5d863d24d68af32a4fa9f6e1bdca",
+      "bytes": 7367,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/static_vp/profile_00030.csv.gz",
+      "sha256": "52b0aaf04ac4d11400d5fceecdcc18448cb15b8732c566dc1bac41d20dcfe213",
+      "bytes": 9768,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/static_vp/profile_00050.csv.gz",
+      "sha256": "79df465b09c88303fbed9b5ab63f8761be19ec11166d5169e5d872ae2714d946",
+      "bytes": 10369,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/static_vp/profile_00100.csv.gz",
+      "sha256": "09e415e23975faf0c420782e2c13e3945f44385184161db94c0ab206f8e7253e",
+      "bytes": 11592,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/static_vp/profile_00300.csv.gz",
+      "sha256": "6e69e55d3d4aa0d17a27330ed253ab25fb8611c7975bd71745e086cb4bdaff17",
+      "bytes": 12299,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/static_vp/profile_00800.csv.gz",
+      "sha256": "2e31a894466f84f1ac072d2a1db9e6eb7cb0b85acc94779761d9fcff8d1f1a60",
+      "bytes": 13261,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/static_vp/profile_02000.csv.gz",
+      "sha256": "6a14eed7c16ee9fbfdfe8ab6e8491f8632f6a431f90ad7fd0f86a0497589a008",
+      "bytes": 14199,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/static_vp/profile_05000.csv.gz",
+      "sha256": "23dbb9b057a89ba674ff746a9c6dbbfbddc6d9c4c90c92171ffc209dc53f0402",
+      "bytes": 14928,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    },
+    {
+      "file": "data/gaussian_vp/static_vp/profile_10000.csv.gz",
+      "sha256": "c8f3b7bc3e5a1bdea907689e4cd4a7ddcf65a6d4ff06975cea16602ce4d14315",
+      "bytes": 14834,
+      "scope": "Gaussian shell native profiles, physical moments or initial and boundary definitions."
+    }
+  ],
+  "halo_profiles": {
+    "g03_bp": [
+      {
+        "time": 0.0,
+        "file": "data/halo/g03_bp/profile_00.csv.gz"
+      },
+      {
+        "time": 100.0,
+        "file": "data/halo/g03_bp/profile_01.csv.gz"
+      },
+      {
+        "time": 799.9999999993892,
+        "file": "data/halo/g03_bp/profile_02.csv.gz"
+      },
+      {
+        "time": 10000.0,
+        "file": "data/halo/g03_bp/profile_03.csv.gz"
+      }
+    ],
+    "g05_bp": [
+      {
+        "time": 0.0,
+        "file": "data/halo/g05_gpu/profile_00000.csv.gz"
+      },
+      {
+        "time": 100.0,
+        "file": "data/halo/g05_gpu/profile_00100.csv.gz"
+      },
+      {
+        "time": 800.0,
+        "file": "data/halo/g05_gpu/profile_00800.csv.gz"
+      },
+      {
+        "time": 10000.0,
+        "file": "data/halo/g05_gpu/profile_10000.csv.gz"
+      }
+    ],
+    "g08_bp": [
+      {
+        "time": 0.0,
+        "file": "data/halo/g08_bp/profile_00.csv.gz"
+      },
+      {
+        "time": 100.0,
+        "file": "data/halo/g08_bp/profile_01.csv.gz"
+      },
+      {
+        "time": 800.0,
+        "file": "data/halo/g08_bp/profile_02.csv.gz"
+      },
+      {
+        "time": 10000.0,
+        "file": "data/halo/g08_bp/profile_03.csv.gz"
+      }
+    ],
+    "g12_bp": [
+      {
+        "time": 0.0,
+        "file": "data/halo/g12_bp/profile_00.csv.gz"
+      },
+      {
+        "time": 100.0,
+        "file": "data/halo/g12_bp/profile_01.csv.gz"
+      },
+      {
+        "time": 800.0,
+        "file": "data/halo/g12_bp/profile_02.csv.gz"
+      },
+      {
+        "time": 10000.0,
+        "file": "data/halo/g12_bp/profile_03.csv.gz"
+      }
+    ],
+    "g15_bp": [
+      {
+        "time": 0.0,
+        "file": "data/halo/g15_bp/profile_00.csv.gz"
+      },
+      {
+        "time": 100.0,
+        "file": "data/halo/g15_bp/profile_01.csv.gz"
+      },
+      {
+        "time": 800.0,
+        "file": "data/halo/g15_bp/profile_02.csv.gz"
+      },
+      {
+        "time": 10000.0,
+        "file": "data/halo/g15_bp/profile_03.csv.gz"
+      }
+    ],
+    "g20_bp": [
+      {
+        "time": 0.0,
+        "file": "data/halo/g20_bp/profile_00.csv.gz"
+      },
+      {
+        "time": 100.0,
+        "file": "data/halo/g20_bp/profile_01.csv.gz"
+      },
+      {
+        "time": 800.0,
+        "file": "data/halo/g20_bp/profile_02.csv.gz"
+      },
+      {
+        "time": 10000.0,
+        "file": "data/halo/g20_bp/profile_03.csv.gz"
+      }
+    ],
+    "g05_vp": [
+      {
+        "time": 0,
+        "file": "data/halo/g05_vp_gpu/profile_00000.csv.gz"
+      },
+      {
+        "time": 100,
+        "file": "data/halo/g05_vp_gpu/profile_00100.csv.gz"
+      },
+      {
+        "time": 800,
+        "file": "data/halo/g05_vp_gpu/profile_00800.csv.gz"
+      },
+      {
+        "time": 10000,
+        "file": "data/halo/g05_vp_gpu/profile_10000.csv.gz"
+      }
+    ]
+  },
+  "sidm_profiles": {
+    "nfw": [
+      {
+        "time": 0.0,
+        "file": "data/sidm/nfw_00.csv.gz"
+      },
+      {
+        "time": 20.070260888011436,
+        "file": "data/sidm/nfw_01.csv.gz"
+      },
+      {
+        "time": 159.9971642972194,
+        "file": "data/sidm/nfw_02.csv.gz"
+      },
+      {
+        "time": 191.46972584126996,
+        "file": "data/sidm/nfw_03.csv.gz"
+      },
+      {
+        "time": 193.98405058811878,
+        "file": "data/sidm/nfw_04.csv.gz"
+      }
+    ],
+    "cored": [
+      {
+        "time": 0.0,
+        "file": "data/sidm/cored_00.csv.gz"
+      },
+      {
+        "time": 38.12952484245129,
+        "file": "data/sidm/cored_01.csv.gz"
+      },
+      {
+        "time": 59.42873822304635,
+        "file": "data/sidm/cored_02.csv.gz"
+      },
+      {
+        "time": 68.41751326571196,
+        "file": "data/sidm/cored_03.csv.gz"
+      }
+    ]
+  },
+  "relativistic": {
+    "schwarzschild_history": "data/relativistic/schwarzschild_history.csv.gz",
+    "ef_history": "data/relativistic/ef_history.csv.gz",
+    "ef_profiles": "data/relativistic/ef_profiles.csv.gz",
+    "selected_advanced_times": [
+      0.0,
+      28.005921404464765,
+      31.4986988431783,
+      31.702073666976375,
+      31.850982890418557,
+      32.002733599747906,
+      32.19757417749405,
+      32.30237089945672,
+      32.40297696754228,
+      32.49976078148166
+    ],
+    "particles": 65536,
+    "initial_target_ADM_mass": 0.85,
+    "outer_radius": 48,
+    "clock_normalization_radius": 18,
+    "advanced_time_at_normalization_radius": "v=tau+28",
+    "physical_initial_condition_sha256": "dc72311d5e62297aee0386cb1af939663e06d1b8b51fdeb12881d980ae1da7fa"
+  },
+  "run_configuration": {
+    "halos": {
+      "g03_bp": [
+        {
+          "gamma_i": 0.3,
+          "vp_universe": "expanding",
+          "vp_alpha": 0.6666666666666666,
+          "vp_time_offset": 12,
+          "radial_cells": 256,
+          "radial_minimum": 0.1,
+          "radial_maximum": 1000,
+          "particles_per_radial_cell": 65536,
+          "subhalo_collision_strength": 0.1,
+          "subhalo_velocity_scale": 0.1,
+          "subhalo_plummer_area_per_mass": 1
+        }
+      ],
+      "g05_bp": [
+        {
+          "gamma_i": 0.5,
+          "vp_universe": "expanding",
+          "vp_alpha": 0.6666666666666666,
+          "vp_time_offset": 12,
+          "radial_cells": 256,
+          "radial_minimum": 0.1,
+          "radial_maximum": 1000,
+          "particles_per_radial_cell": 16384,
+          "subhalo_collision_strength": 0.1,
+          "subhalo_velocity_scale": 0.1,
+          "subhalo_plummer_area_per_mass": 1
+        }
+      ],
+      "g08_bp": [
+        {
+          "gamma_i": 0.8,
+          "vp_universe": "expanding",
+          "vp_alpha": 0.6666666666666666,
+          "vp_time_offset": 12,
+          "radial_cells": 256,
+          "radial_minimum": 0.1,
+          "radial_maximum": 1000,
+          "particles_per_radial_cell": 65536,
+          "subhalo_collision_strength": 0.1,
+          "subhalo_velocity_scale": 0.1,
+          "subhalo_plummer_area_per_mass": 1
+        }
+      ],
+      "g12_bp": [
+        {
+          "gamma_i": 1.2,
+          "vp_universe": "expanding",
+          "vp_alpha": 0.6666666666666666,
+          "vp_time_offset": 12,
+          "radial_cells": 256,
+          "radial_minimum": 0.1,
+          "radial_maximum": 1000,
+          "particles_per_radial_cell": 16384,
+          "subhalo_collision_strength": 0.1,
+          "subhalo_velocity_scale": 0.1,
+          "subhalo_plummer_area_per_mass": 1
+        }
+      ],
+      "g15_bp": [
+        {
+          "gamma_i": 1.5,
+          "vp_universe": "expanding",
+          "vp_alpha": 0.6666666666666666,
+          "vp_time_offset": 12,
+          "radial_cells": 256,
+          "radial_minimum": 0.1,
+          "radial_maximum": 1000,
+          "particles_per_radial_cell": 4096,
+          "subhalo_collision_strength": 0.1,
+          "subhalo_velocity_scale": 0.1,
+          "subhalo_plummer_area_per_mass": 1
+        }
+      ],
+      "g20_bp": [
+        {
+          "gamma_i": 2,
+          "vp_universe": "expanding",
+          "vp_alpha": 0.6666666666666666,
+          "vp_time_offset": 12,
+          "radial_cells": 256,
+          "radial_minimum": 0.1,
+          "radial_maximum": 1000,
+          "particles_per_radial_cell": 8192,
+          "subhalo_collision_strength": 0.1,
+          "subhalo_velocity_scale": 0.1,
+          "subhalo_plummer_area_per_mass": 1,
+          "backend": "CUDA",
+          "initial_marker_count": 1253376,
+          "final_marker_count": 837174,
+          "maximum_timestep": 0.015,
+          "dynamical_fraction": 0.04,
+          "subhalo_collision_interval": 1.0,
+          "subhalo_collision_timescale_fraction": 0.05,
+          "subhalo_collision_cfl": 0.2,
+          "subhalo_locality_maximum_ratio": 1.0,
+          "subhalo_collision_lanes": 8,
+          "subhalo_inner_collision_cells": 1,
+          "subhalo_adaptive_cell_timestep": true,
+          "subhalo_adaptive_batch_substeps": 256,
+          "subhalo_low_speed_regularization": 0.05,
+          "poisson_source": "density_contrast",
+          "poisson_reconstruction": "constant_line_mass",
+          "reflecting_outer_radius": 1000.0,
+          "binary_sha256": "0052bcfefd2f26de827fb16e093eace827001a4fbe9f94b0a854b1c4ffa8227d",
+          "initial_native_sha256": "277e83a38afc57980055cc6085482d67b83cd26e3f42843fccdee6ddcd9e72c5",
+          "final_native_sha256": "ba7578434ddc2932459cb8e250f2569785f80c46e4cf14e2fb792b036046365d",
+          "final_time": 10000.0,
+          "final_step": 5240886,
+          "device_model": "unrecorded"
+        }
+      ],
+      "g05_vp": [
+        {
+          "gamma_i": 0.5,
+          "vp_universe": "expanding",
+          "vp_alpha": 0.6666666666666666,
+          "vp_time_offset": 12,
+          "radial_cells": 256,
+          "radial_minimum": 0.1,
+          "radial_maximum": 1000,
+          "particles_per_radial_cell": 16384,
+          "subhalo_collision_strength": 0,
+          "subhalo_velocity_scale": 0.1,
+          "subhalo_plummer_area_per_mass": 1
+        }
+      ]
+    },
+    "cold_static": {
+      "equations": "Vlasov-Poisson",
+      "gamma_i": 0.5,
+      "initial_physical_velocity_factor": 0.25,
+      "particles": 174080,
+      "particles_per_occupied_initial_radial_cell": 1024,
+      "radial_cells": 256,
+      "inner_resolved_radius": 0.02,
+      "outer_wall": 1000,
+      "inner_boundary": "origin_parity",
+      "outer_boundary": "reflecting",
+      "maximum_orbit_step": 0.015,
+      "dynamical_fraction": 0.04,
+      "completed_time": 3000,
+      "G": 1,
+      "allocated_cpu_slots": 8,
+      "solver_threads": 8,
+      "nodes": 1,
+      "background": "static",
+      "H": 0,
+      "solver_seconds": 8010.961930007,
+      "allocation_seconds": 8012,
+      "allocated_cpu_slot_hours": 17.804444444444446
+    },
+    "sidm_nfw": {
+      "equations": "Boltzmann-Poisson, material SIDM WPIC",
+      "parent_concentration": 30,
+      "particles": 4000000,
+      "cross_section_per_mass": 20.106192982974676,
+      "total_mass_Ms": 4.932490538002525,
+      "truncation_radius_rs": 1212.397252469905,
+      "lowering_energy_Zt": 0.00796262087451626
+    },
+    "sidm_cored": {
+      "equations": "Boltzmann-Poisson, material SIDM SphDSMC",
+      "particles": 1000000,
+      "cross_section_per_mass": 32.3723,
+      "total_mass_Ms": 1.1252580933331495,
+      "construction_radius_rs": 1000000.0,
+      "density": "rho/rho_s=x^(-0.1)*(1+x^4)^(-0.975)"
+    },
+    "relativistic": {
+      "equations": "Einstein-Vlasov",
+      "coordinates": [
+        "Schwarzschild",
+        "ingoing Eddington-Finkelstein"
+      ],
+      "radial_cells_SC": 2048,
+      "radial_cells_EF": 4096,
+      "particles": 65536,
+      "target_initial_ADM_mass": 0.85,
+      "static_shell_cutoff_power": 2,
+      "construction_amplitude": 0.5,
+      "construction_L0": 1,
+      "construction_logE0_minus_mu_center": 0.38,
+      "angular_momentum_factor": 0.95,
+      "radial_inward_kick": 0.01,
+      "retained_particles": 65536
+    },
+    "g05_bp_cuda": {
+      "equations": "Boltzmann-Poisson, whole-subhalo encounters",
+      "gamma_i": 0.5,
+      "vp_universe": "expanding",
+      "vp_alpha": 0.6666666666666666,
+      "vp_time_offset": 12,
+      "radial_cells": 256,
+      "radial_minimum": 0.1,
+      "physical_wall": 1000,
+      "initial_markers": 2539520,
+      "final_markers": 1601231,
+      "collision_strength": 0.1,
+      "subhalo_velocity_scale": 0.1,
+      "subhalo_plummer_area_per_mass": 1,
+      "completed_time": 10000,
+      "device": "NVIDIA A100-PCIE-40GB",
+      "devices": 1,
+      "allocated_cpu_slots": 4,
+      "gpu_hours": 9.7475,
+      "allocated_cpu_slot_hours": 38.99
+    },
+    "cold_expanding": {
+      "equations": "Vlasov-Poisson",
+      "gamma_i": 0.5,
+      "initial_physical_velocity_factor": 0.25,
+      "particles": 174080,
+      "particles_per_occupied_initial_radial_cell": 1024,
+      "radial_cells": 256,
+      "inner_resolved_radius": 0.02,
+      "outer_wall": 1000,
+      "inner_boundary": "origin_parity",
+      "outer_boundary": "reflecting",
+      "maximum_orbit_step": 0.015,
+      "dynamical_fraction": 0.04,
+      "completed_time": 3000,
+      "G": 1,
+      "allocated_cpu_slots": 8,
+      "solver_threads": 8,
+      "nodes": 1,
+      "background": "expanding",
+      "H": "2/[3(t+12)]",
+      "H_dot": "-2/[3(t+12)^2]",
+      "scale_factor": "((t+12)/12)^(2/3)",
+      "solver_seconds": 3671.616374248,
+      "allocation_seconds": 3672,
+      "allocated_cpu_slot_hours": 8.16
+    },
+    "g05_vp_cuda": {
+      "initial_markers": 2539520,
+      "radial_cells": 256,
+      "end_time": 10000,
+      "initial_native_sha256": "c5ce794e416f2133300883cc49ad1ea4f2219b8d86f27601993602e4c34a2e2b",
+      "binary_sha256": "69310689dbef7cc1d3d07fce9ae155ff8ff5651c3d3754e7dbca476fe8a61d7c",
+      "final_native_sha256": "8804dc24fe23342955f602b88859ae6c0e3363d6b26dd9c9b47c4aab1daf817f",
+      "nodes": 1,
+      "gpus": 1,
+      "allocated_cpu_slots": 4,
+      "allocation_wall_hours": 4.288055555555555,
+      "allocated_gpu_hours": 4.288055555555555,
+      "allocated_cpu_slot_hours": 17.15222222222222
+    },
+    "g15_bp_cuda": {
+      "equations": "Boltzmann-Poisson, whole-subhalo encounters",
+      "gamma_i": 1.5,
+      "vp_universe": "expanding",
+      "vp_alpha": 0.6666666666666666,
+      "vp_time_offset": 12,
+      "radial_cells": 256,
+      "radial_minimum": 0.1,
+      "physical_wall": 1000,
+      "initial_markers": 630784,
+      "final_markers": 387751,
+      "collision_strength": 0.1,
+      "subhalo_velocity_scale": 0.1,
+      "subhalo_plummer_area_per_mass": 1,
+      "maximum_collision_interval": 1,
+      "collision_cfl": 0.2,
+      "collision_timescale_fraction": 0.05,
+      "completed_time": 10000,
+      "device": "GPU model unrecorded",
+      "devices": 1,
+      "allocated_cpu_slots": 4,
+      "gpu_hours": 9.880277777777778,
+      "allocated_cpu_slot_hours": 39.52111111111111
+    },
+    "g03_bp_cuda": {
+      "equations": "Boltzmann-Poisson, whole-subhalo encounters",
+      "gamma_i": 0.3,
+      "vp_universe": "expanding",
+      "vp_alpha": 0.6666666666666666,
+      "vp_time_offset": 12,
+      "poisson_source": "density_contrast",
+      "poisson_reconstruction": "constant_line_mass",
+      "radial_cells": 256,
+      "radial_minimum": 0.1,
+      "physical_wall": 1000,
+      "inner_boundary": "origin_parity",
+      "outer_boundary": "reflecting",
+      "initial_markers": 10158080,
+      "final_markers": 6866437,
+      "particles_per_radial_cell": 65536,
+      "initial_marker_mass_range": [
+        2.460658311032711e-19,
+        7.482064458862676e-07
+      ],
+      "collision_strength": 0.1,
+      "subhalo_velocity_scale": 0.1,
+      "subhalo_plummer_area_per_mass": 1,
+      "maximum_collision_interval": 1,
+      "collision_timescale_fraction": 0.1,
+      "collision_cfl": 0.2,
+      "collision_maximum_substeps": 1048576,
+      "inner_collision_cells": 1,
+      "collision_lanes": 32,
+      "adaptive_cell_timestep": true,
+      "adaptive_batch_substeps": 256,
+      "maximum_locality_ratio": 1,
+      "maximum_orbit_step": 0.015,
+      "dynamical_fraction": 0.04,
+      "completed_time": 10000,
+      "device": "GPU model unrecorded",
+      "devices": 1,
+      "allocated_cpu_slots": 4,
+      "gpu_hours": 13.889166666666666,
+      "allocated_cpu_slot_hours": 55.556666666666665,
+      "resource_scope": "Aggregate allocated resources for the calculation; queue time excluded.",
+      "initial_native_sha256": "4169dc48609b12b0476ee1f5c2c21d3f816f7a039ef3254b0e7439a5c29edd08",
+      "final_native_sha256": "fa65ff136f626e70a41d3395f7a9a8512896d2825caf1a061c1371fa5b273052",
+      "binary_sha256": "0052bcfefd2f26de827fb16e093eace827001a4fbe9f94b0a854b1c4ffa8227d"
+    },
+    "g12_bp_cuda": {
+      "equations": "Boltzmann-Poisson, whole-subhalo encounters",
+      "gamma_i": 1.2,
+      "vp_universe": "expanding",
+      "vp_alpha": 0.6666666666666666,
+      "vp_time_offset": 12,
+      "radial_cells": 256,
+      "radial_minimum": 0.1,
+      "physical_wall": 1000,
+      "initial_markers": 2523136,
+      "final_markers": 1509586,
+      "collision_strength": 0.1,
+      "subhalo_velocity_scale": 0.1,
+      "subhalo_plummer_area_per_mass": 1,
+      "maximum_collision_interval": 0.5,
+      "collision_cfl": 0.2,
+      "collision_timescale_fraction": 0.05,
+      "completed_time": 10000,
+      "device": "GPU model unrecorded",
+      "devices": 1,
+      "allocated_cpu_slots": 4,
+      "gpu_hours": 17.41722222222222,
+      "allocated_cpu_slot_hours": 69.66888888888889
+    },
+    "g08_bp_cuda": {
+      "equations": "Boltzmann-Poisson, whole-subhalo encounters",
+      "gamma_i": 0.8,
+      "vp_universe": "expanding",
+      "vp_alpha": 0.6666666666666666,
+      "vp_time_offset": 12,
+      "poisson_source": "density_contrast",
+      "poisson_reconstruction": "constant_line_mass",
+      "radial_cells": 256,
+      "radial_minimum": 0.1,
+      "physical_wall": 1000,
+      "inner_boundary": "origin_parity",
+      "outer_boundary": "reflecting",
+      "initial_markers": 10092544,
+      "final_markers": 6051703,
+      "particles_per_radial_cell": 65536,
+      "initial_marker_mass_range": [
+        6.540021615305697e-19,
+        6.44787465891412e-07
+      ],
+      "collision_strength": 0.1,
+      "subhalo_velocity_scale": 0.1,
+      "subhalo_plummer_area_per_mass": 1,
+      "maximum_collision_interval": 1,
+      "collision_timescale_fraction": 0.1,
+      "collision_cfl": 0.2,
+      "collision_maximum_substeps": 1048576,
+      "inner_collision_cells": 1,
+      "collision_lanes": 32,
+      "adaptive_cell_timestep": true,
+      "adaptive_batch_substeps": 256,
+      "maximum_locality_ratio": 1,
+      "maximum_orbit_step": 0.015,
+      "dynamical_fraction": 0.04,
+      "completed_time": 10000,
+      "device": "GPU model unrecorded",
+      "devices": 1,
+      "allocated_cpu_slots": 4,
+      "gpu_hours": 22.862222222222222,
+      "allocated_cpu_slot_hours": 91.44888888888889,
+      "resource_scope": "Aggregate allocated resources for the calculation; queue time excluded.",
+      "initial_native_sha256": "8460f0764d85a2f52bafa29f836d1834baeb0d15378162ac535a10ca1e0e7a3e",
+      "final_native_sha256": "08086f09ec67d6148dbb99becf754b8fcc7bc18e45084780f800122968bf8ada",
+      "binary_sha256": "0052bcfefd2f26de827fb16e093eace827001a4fbe9f94b0a854b1c4ffa8227d"
+    }
+  },
+  "units": {
+    "halos": "G=1; physical radius and peculiar velocity in code units; alpha=2/3,t0=12 for expanding cases.",
+    "sidm": "G=Ms=rs=1; rho_s=Ms/(4*pi*rs^3),vs^2=G*Ms/rs,ts=rs/vs.",
+    "relativistic": "G=c=1; unit particle rest mass; r is areal radius; v is saved advanced time.",
+    "cold_vp": "G=1; physical radii and u=w+Hr. I=sum(m*r^2); W_physical=W_force+(H_dot+H^2)I."
+  },
+  "reference_environment": {
+    "numpy": "2.5.4",
+    "pandas": "3.1.1",
+    "python": "3.12.14",
+    "matplotlib": "3.11.2",
+    "pillow": "13.0.0"
+  },
+  "figure_input_scopes": {
+    "1": "Four labeled records demonstrate insertion sorting and stable decimal radix sorting. The actual radius routine uses eight stable base-256 byte passes.",
+    "2": "Four resolved power-law curves, two Gaussian full-particle datasets at11 actual native times, five stable power-law own-bound samples joined at their actual times, and one Gaussian E_full<0 own-gravity endpoint. Gaussian connecting lines guide the eye.",
+    "3": "All three rows use CUDA BP calculations at their actual saved times.",
+    "4": "All three CUDA BP calculations reach time10000, using native times0,100,800,10000. Native positive density and finite centered21-cell slopes are retained; Neff>=32 marks emphasized sections.",
+    "5": "CUDA VP and BP calculations with identical initial marker masses and orbital phase coordinates; both reach time 10000. The same BP profiles also supply Figure3.",
+    "6,7": "All marker mass enters each reduction of the CUDA gamma_i=0.5 BP calculation. Energy is instantaneous subhalo-center orbital energy.",
+    "7": "Mean orbital phase-space distribution M_bin/Delta_Omega and nine-bin quadratic logarithmic energy derivative. Energy is instantaneous; dashed bins/windows meet the stated inner-field criterion.",
+    "8": "Complete static and expanding collisionless trajectories from time 0 to 3000, with static endpoint energy selections and a larger-wall control from 2406.32 to 3000.",
+    "9": "Four Gaussian cases,512 native radial cells,positive densities and21-cell logarithmic slopes. Eight actual times per case include the initial collapse and latest displayed state. Thick portions have center-cell effective count at least32.",
+    "10": "The original nine SIDM profiles retain exact density, centered radial variance and population values. New slope subpanels use the existing21-cell centered quadratic fit with positive-density windows, center population8/32 for thin/heavy segments, and the published long-mean-free-path SIDM envelope reference -2.19 (Balberg,Shapiro,Inagaki2002)."
+  },
+  "cold_vp": {
+    "tables": {
+      "cold_static_vp/virial_budget.csv": "data/cold_vp/cold_static_vp/virial_budget.csv.gz",
+      "cold_static_vp/history.csv": "data/cold_vp/cold_static_vp/history.csv.gz",
+      "cold_static_vp/boundary_history.csv": "data/cold_vp/cold_static_vp/boundary_history.csv.gz",
+      "cold_expanding_vp/virial_budget.csv": "data/cold_vp/cold_expanding_vp/virial_budget.csv.gz",
+      "cold_expanding_vp/history.csv": "data/cold_vp/cold_expanding_vp/history.csv.gz",
+      "cold_expanding_vp/boundary_history.csv": "data/cold_vp/cold_expanding_vp/boundary_history.csv.gz",
+      "outer_control_extended_virial.csv": "data/cold_vp/outer_control_extended_virial.csv.gz"
+    },
+    "moments": "data/cold_vp/moments.json",
+    "physical_force": "W_physical=W_force+(H_dot+H^2)I",
+    "outer_wall": 1000,
+    "larger_static_wall": 2051.36,
+    "first_static_wall_impact_bracket": [
+      2590,
+      2595
+    ]
+  },
+  "halo_profile_display": "Thin curves show positive native densities and finite 21-cell quadratic slopes; thick sections require effective marker population Neff>=32 at their centers.",
+  "virial_summary": {
+    "sources": {
+      "g03_bp": {
+        "file": "g03_bp.csv",
+        "sha256": "05d9b728cb895c24f78f6567bae2962928c87ed9aa8babe3a27144559136be16",
+        "first_time": 0.0,
+        "last_time": 10000.0,
+        "rows": 1002,
+        "kind": "constant-line saved source and resolved physical velocity moments",
+        "metadata_sha256": "f37662386961dd524f90dfdc21b3d4b632921ecbf85068c2fa609efac6d9a4e1"
+      },
+      "g05_bp": {
+        "file": "g05_bp.csv",
+        "sha256": "d060ac105b40a57d09a3932bf75c7400f754c1b65a13d0cd9edb86fc7605d2e5",
+        "first_time": 0.0,
+        "last_time": 10000.0,
+        "rows": 1001,
+        "metadata_sha256": "fd467ae283dadd88658afd8f0b78f9b9ff665e35508b60506da552feaa583bb0",
+        "kind": "constant-line source and resolved physical velocity moments"
+      },
+      "g08_bp": {
+        "file": "g08_bp.csv",
+        "sha256": "815c6a035eb7ec8d767ec2e0d538311694ab4718c60c14ede4511efd4e6b4642",
+        "first_time": 0.0,
+        "last_time": 10000.0,
+        "rows": 1003,
+        "metadata_sha256": "6cb0c5f8157e3a104fa5ae753a762295cebad65a4fc3689c3f0f7d9735d92d29",
+        "kind": "constant-line saved source and resolved physical velocity moments"
+      },
+      "g05_vp": {
+        "file": "g05_vp.csv",
+        "sha256": "d78091127a18b08ede01520d54692b8f6a2a67e057d95d82e2f47a950cb1cd03",
+        "first_time": 0.0,
+        "last_time": 10000,
+        "rows": 1001,
+        "metadata_sha256": "4edb8f27c4d654489c63d11d0aa0587f48246b6a04240ae14f1fa05c34189658",
+        "kind": "constant-line source and resolved physical velocity moments"
+      },
+      "static_g05_bound": {
+        "file": "static_g05_iterative_bound.csv",
+        "sha256": "0c5539dd2d7bc09ffd3dc603aba2cfe694a8f9c634a846b205f4bff3b13c2acc",
+        "kind": "Instantaneous own-potential iterative unbinding at unchanged physical velocities; plot stable membership only; Phi(infinity)=0",
+        "valid_sample_times": [
+          300,
+          800,
+          2000,
+          5000,
+          10000
+        ],
+        "unresolved_times": [
+          0,
+          10,
+          30,
+          100
+        ],
+        "display": "The five converged own-bound measurements are joined by straight segments at their actual times; four unresolved early selections remain excluded."
+      },
+      "gaussian_static_vp": {
+        "file": "gaussian_static_vp.csv",
+        "sha256": "685dbd9e71b8453ef2f91c0fa8220910fb049f29749b257ac7d59bbcca3aa4de",
+        "kind": "Complete-particle physical kinetic and applied halo force moments; background force included once",
+        "rows": 11,
+        "scenario_id": "narrow_gaussian_shell_vp",
+        "scope": "Eleven actual full-particle native snapshots; symbols are measurements and connecting lines guide the eye."
+      },
+      "gaussian_expanding_vp": {
+        "file": "gaussian_expanding_vp.csv",
+        "sha256": "a3114322e181a7fe1a34bc2128bb214ec56bee602a9454a63eb9c0054e8a7f28",
+        "kind": "Complete-particle physical kinetic and applied halo force moments; background force included once",
+        "rows": 11,
+        "scenario_id": "narrow_gaussian_shell_vp",
+        "scope": "Eleven actual full-particle native snapshots; symbols are measurements and connecting lines guide the eye."
+      },
+      "gaussian_static_bound": {
+        "file": "gaussian_static_bound.csv",
+        "sha256": "827aa9c19cc77c04ebdd09c4355370d279947e0868071d099d43deacf01e7dcb",
+        "rows": 1,
+        "valid_sample_times": [
+          10000
+        ],
+        "kind": "One-pass E_full<0 static Gaussian endpoint, with unchanged velocities and reconstructed own gravity.",
+        "selected_mass_fraction": 0.7626838684082031,
+        "selected_ID_sha256": "ec79953f907ea954c40129d33e52475035df531947d6ba59792c755837ebd3af"
+      }
+    },
+    "Q_definition": "2*K_physical/abs(W_phi+(Hdot+H^2)*I)",
+    "physical_scope": "Expanding power-law curves use approved resolved-profile moments. Gaussian curves use emitted complete-particle applied-force moments. Static gamma=.5 symbols use iterative self-bound subsets in their own reconstructed field at five stable snapshots. Cold controls remain a distinct figure.",
+    "static_bound_definition": {
+      "file": "static_g05_iterative_bound.csv",
+      "sha256": "0c5539dd2d7bc09ffd3dc603aba2cfe694a8f9c634a846b205f4bff3b13c2acc",
+      "kind": "Instantaneous own-potential iterative unbinding at unchanged physical velocities; plot stable membership only; Phi(infinity)=0",
+      "valid_sample_times": [
+        300,
+        800,
+        2000,
+        5000,
+        10000
+      ],
+      "unresolved_times": [
+        0,
+        10,
+        30,
+        100
+      ],
+      "display": "The five converged own-bound measurements are joined by straight segments at their actual times; four unresolved early selections remain excluded."
+    }
+  },
+  "cpu_density_comparison_profiles": {
+    "g05_bp": [
+      {
+        "time": 0.0,
+        "file": "data/halo/g05_bp/profile_00.csv.gz"
+      },
+      {
+        "time": 100.0,
+        "file": "data/halo/g05_bp/profile_01.csv.gz"
+      },
+      {
+        "time": 800.0,
+        "file": "data/halo/g05_bp/profile_02.csv.gz"
+      },
+      {
+        "time": 10000.0,
+        "file": "data/halo/g05_bp/profile_03.csv.gz"
+      }
+    ],
+    "g05_vp": [
+      {
+        "time": 0.0,
+        "file": "data/halo/g05_vp/profile_00.csv.gz"
+      },
+      {
+        "time": 100.0,
+        "file": "data/halo/g05_vp/profile_01.csv.gz"
+      },
+      {
+        "time": 800.0,
+        "file": "data/halo/g05_vp/profile_02.csv.gz"
+      },
+      {
+        "time": 10000.0,
+        "file": "data/halo/g05_vp/profile_03.csv.gz"
+      }
+    ]
+  },
+  "sorting_algorithms": {
+    "input": {
+      "file": "data/sorting_algorithms/records.json",
+      "sha256": "3a631ae77393ea5704fb1479e40932cde5ce0efcf5c2226e3dcb1836e9cf4b60",
+      "records": 4,
+      "fields": [
+        "id",
+        "key",
+        "color"
+      ],
+      "meaning": "Fixed identifiers and decimal teaching keys for insertion and stable radix sorting."
+    },
+    "label": "ID identifies a fixed record. K is its teaching key.",
+    "current_radius_order": "After the latest drift, a permutation orders the current radii. Each identifier retains its particle properties.",
+    "force_scope": "SphDSMC uses the ordered mass prefix and half of the shell own mass for shell gravity. WPIC orders collision partners and computes gravity from deposited mesh mass.",
+    "decimal_scope": "Units and tens passes illustrate stable digit distribution. The implementation uses eight bytes on finite nonnegative binary64 radius keys."
+  },
+  "gaussian_vp": {
+    "scenario_id": "narrow_gaussian_shell_vp",
+    "description": "Narrow Gaussian shells under VP and BP evolution in static and prescribed expanding backgrounds.",
+    "G": 1,
+    "mass": 3.5968447592701334,
+    "marker_count": 1048576,
+    "radial_cells": 512,
+    "radial_minimum": 0.01,
+    "reflecting_wall_radius": 10000.0,
+    "maximum_timestep": 0.0075,
+    "density_source": "Positive mass with the homogeneous background prescribed through expansion.",
+    "velocity_convention": "Physical radial velocity u=w+H*r; eta=r^2*v_t^2/2.",
+    "virial_definition": "Q=2*K_physical/abs(W_force+(H_dot+H^2)*I)",
+    "virial_scope": "Eleven exact full-particle native samples. The halo force is the actual applied constant-line PIC force.",
+    "boundary_scope": "Saved endpoint occupancy and energy. Cumulative GPU wall-impact counts are unavailable.",
+    "cases": {
+      "static_vp": {
+        "label": "VP, static",
+        "profile_times": [
+          0,
+          10,
+          20,
+          30,
+          50,
+          100,
+          800,
+          10000
+        ],
+        "profiles": [
+          {
+            "file": "static_vp/profile_00000.csv.gz",
+            "sha256": "291c2533790c21bff3c1acfc941404f3b26f2bb21bb832d1e558e832069137be",
+            "source_csv_sha256": "cdcd75280868ca4fe628092c672e8019c77e8f026346b63532ceba2e4faf361a",
+            "nominal_time": 0,
+            "actual_time": 0.0,
+            "rows": 512
+          },
+          {
+            "file": "static_vp/profile_00010.csv.gz",
+            "sha256": "71acfcb753909a69c9290864e98495436cdc2334845d3c5bef69b8b81c875b79",
+            "source_csv_sha256": "c73f7c7f09969275721271226aebf3c4b106284ba7ba4a43a54b68ce6106f2b1",
+            "nominal_time": 10,
+            "actual_time": 10.0,
+            "rows": 512
+          },
+          {
+            "file": "static_vp/profile_00020.csv.gz",
+            "sha256": "120f5f2094dbbf726c848f038d78768e6937776a2079b967c4bafac9af9561da",
+            "source_csv_sha256": "adaded6a274390a2d1f0d2380d2d06d1ad0e52c92cb680f9bd0af8c41ef58bb2",
+            "nominal_time": 20,
+            "actual_time": 20.0,
+            "rows": 512
+          },
+          {
+            "file": "static_vp/profile_00030.csv.gz",
+            "sha256": "52b0aaf04ac4d11400d5fceecdcc18448cb15b8732c566dc1bac41d20dcfe213",
+            "source_csv_sha256": "7f1f4fd99fb8bbe9b3cc6276d90f8c49db7dab10685d769bd4ddc6986140efba",
+            "nominal_time": 30,
+            "actual_time": 30.0,
+            "rows": 512
+          },
+          {
+            "file": "static_vp/profile_00050.csv.gz",
+            "sha256": "79df465b09c88303fbed9b5ab63f8761be19ec11166d5169e5d872ae2714d946",
+            "source_csv_sha256": "f898e1747eccee3fcc092ab71f8396ad859986a4a5062c24af2d79c20b10e9c8",
+            "nominal_time": 50,
+            "actual_time": 50.0,
+            "rows": 512
+          },
+          {
+            "file": "static_vp/profile_00100.csv.gz",
+            "sha256": "09e415e23975faf0c420782e2c13e3945f44385184161db94c0ab206f8e7253e",
+            "source_csv_sha256": "3af6ed9281bdf149f6bdf5db2e6f7b8bfdf5f12054563cb94caac65b361ccbf4",
+            "nominal_time": 100,
+            "actual_time": 100.0,
+            "rows": 512
+          },
+          {
+            "file": "static_vp/profile_00800.csv.gz",
+            "sha256": "2e31a894466f84f1ac072d2a1db9e6eb7cb0b85acc94779761d9fcff8d1f1a60",
+            "source_csv_sha256": "574a8438b1637987e07a61afe8ec1b13b39e494ec808b1007d4bfda1fecf4e89",
+            "nominal_time": 800,
+            "actual_time": 800.0,
+            "rows": 512
+          },
+          {
+            "file": "static_vp/profile_10000.csv.gz",
+            "sha256": "c8f3b7bc3e5a1bdea907689e4cd4a7ddcf65a6d4ff06975cea16602ce4d14315",
+            "source_csv_sha256": "32c5dff029667a384c1dce00a835ddaf31b04e4a6555778ceb2539fbb9c18b55",
+            "nominal_time": 10000,
+            "actual_time": 10000.0,
+            "rows": 512
+          }
+        ],
+        "moments": {
+          "file": "static_vp/moments.csv",
+          "sha256": "685dbd9e71b8453ef2f91c0fa8220910fb049f29749b257ac7d59bbcca3aa4de"
+        },
+        "moment_sources": {
+          "file": "static_vp/moment_sources.json",
+          "sha256": "eca2aa7c841da0238361c98fbfa7590d4b86a30e48b34aa7b3371a72544f90e5"
+        },
+        "endpoint_occupancy": {
+          "file": "static_vp/endpoint_occupancy.json",
+          "sha256": "419dac1f842d336b515082a13b8bab2755215fe6cb5b1144f309a1b67c04f1d8"
+        },
+        "actual_acquisition_sha256": "96b5760169366067fb6144bc2090d11f03b45bfd92b4e8a6fa622e27c42c59a1",
+        "initial_native_sha256": "e1a8be50078571f5013d715a4e0da591c6028f45867731bce52df7a26018adec",
+        "final_native_sha256": "2044ba99a5870a638dc8d4afb5650f5fa90ff5a2a13eb10347e95525c0c2aff7",
+        "complete_native_profile_count": 5004,
+        "packed_profile_array_sha256": "455e517e6fa275d577eb1218681adbf77e0915eaba23085286c55701c56cb542"
+      },
+      "expanding_vp": {
+        "label": "VP, expanding",
+        "profile_times": [
+          0,
+          10,
+          20,
+          26,
+          50,
+          100,
+          800,
+          10000
+        ],
+        "profiles": [
+          {
+            "file": "expanding_vp/profile_00000.csv.gz",
+            "sha256": "d8001481d0565bca3f199cc241ea27e4255ba5f262aedb6063a013aa0dcac4e3",
+            "source_csv_sha256": "172998bd3dc32f4cb1eb9511b2721a28ff18c3324678f6f7ac3827b9e5ea7f83",
+            "nominal_time": 0,
+            "actual_time": 0.0,
+            "rows": 512
+          },
+          {
+            "file": "expanding_vp/profile_00010.csv.gz",
+            "sha256": "7cf5457f54e5784d91051255fee7185a0294da85f550b02f77516c2c869e06f7",
+            "source_csv_sha256": "738e2b738714de4a2520089ad2a32526431f32418ac398408438128939c0be08",
+            "nominal_time": 10,
+            "actual_time": 10.0,
+            "rows": 512
+          },
+          {
+            "file": "expanding_vp/profile_00020.csv.gz",
+            "sha256": "b2a71d7fd706f3180e70069687d5d6751bdf0a3f703ae03f35363d62888ed0cd",
+            "source_csv_sha256": "4301f6a4589c722d86268e2c511025a561c48e97131544f8a8193fe644ca7cf1",
+            "nominal_time": 20,
+            "actual_time": 20.0,
+            "rows": 512
+          },
+          {
+            "file": "expanding_vp/profile_00026.csv.gz",
+            "sha256": "b84a8a0aa8660513a57e94cdc75eaa144b273ffd70261a098a8eec53f898a26c",
+            "source_csv_sha256": "8d59b96c6e7343428eb1e3e194bb6c950f92859e021b78188de647e7670527f6",
+            "nominal_time": 26,
+            "actual_time": 26.0,
+            "rows": 512
+          },
+          {
+            "file": "expanding_vp/profile_00050.csv.gz",
+            "sha256": "5b34094816baff0473ff369cf30e3024c8f2cbf45d815868e1655d9ed72f0d9a",
+            "source_csv_sha256": "a0968da3c77b9d909f9315f6bf5937e76af170832db5c77d8093a7d2d2b64a0b",
+            "nominal_time": 50,
+            "actual_time": 50.0,
+            "rows": 512
+          },
+          {
+            "file": "expanding_vp/profile_00100.csv.gz",
+            "sha256": "6bf473c23eeaf6529834cedccabe075e2e8ef2a536c8f87c33f149b5e45ccd2e",
+            "source_csv_sha256": "133ede212d632eadb5c01c265aa9217ae5c30499a55254e06c2adbecd7acb4c3",
+            "nominal_time": 100,
+            "actual_time": 100.0,
+            "rows": 512
+          },
+          {
+            "file": "expanding_vp/profile_00800.csv.gz",
+            "sha256": "9573183f697794cb844d3c9546df9d5353d155f3320b62f5db8f9676baa642b5",
+            "source_csv_sha256": "3343f5afe38fa4ab7034b5cc1371373607ca318df70a71116dfcbb6e7e6645d7",
+            "nominal_time": 800,
+            "actual_time": 800.0,
+            "rows": 512
+          },
+          {
+            "file": "expanding_vp/profile_10000.csv.gz",
+            "sha256": "9daab9215a028f739eaf4b932c5d606dd6f404423e31ac6fcf3f8ce70c05bc13",
+            "source_csv_sha256": "5269fe62ad324f0783814d01e94f871979afd0d673c2719aef79381e2c308a78",
+            "nominal_time": 10000,
+            "actual_time": 10000.0,
+            "rows": 512
+          }
+        ],
+        "moments": {
+          "file": "expanding_vp/moments.csv",
+          "sha256": "a3114322e181a7fe1a34bc2128bb214ec56bee602a9454a63eb9c0054e8a7f28"
+        },
+        "moment_sources": {
+          "file": "expanding_vp/moment_sources.json",
+          "sha256": "690646006fa4510956a1d260f0edeb33f7c53c532ad63f21266ca323b0ab79e9"
+        },
+        "endpoint_occupancy": {
+          "file": "expanding_vp/endpoint_occupancy.json",
+          "sha256": "f11df69e6de9d695df5a56ac07be0c8392f96145ef82e2d6241282f4f009d44b"
+        },
+        "actual_acquisition_sha256": "72179e0f62525a4ac3a1e8e06a1f5ea5cf7a256fe86ac5feed851285b0b81257",
+        "initial_native_sha256": "1967589c72d411ed2a61c1d4ca3e3094941dc2525e9e2c1c4584bac96fe54bc9",
+        "final_native_sha256": "f07d552726c35869a881bb0fe97b94a48038fb5458ec89267f27dbbda1593c8a",
+        "complete_native_profile_count": 5002,
+        "packed_profile_array_sha256": "a3ad628b8bb5e673ce29c024282936985e7b91eb216ec44c39e23b5fbb6f2ac1"
+      },
+      "static_bp": {
+        "label": "BP, static",
+        "profile_times": [
+          0.0,
+          10.0,
+          20.0,
+          30.0,
+          50.0,
+          100.0,
+          800.0,
+          5254.0
+        ],
+        "profiles": [
+          {
+            "file": "static_bp/profile_0.csv.gz",
+            "sha256": "54fe3b6612815355960a1b978eeb187969f6e610696a2bb96ae9be20c5ec31cb",
+            "source_csv_sha256": "f31f160f353e3946a61a3994da53a5292eacb98febd0572e810105e53f039c8a",
+            "nominal_time": 0.0,
+            "actual_time": 0.0,
+            "rows": 512
+          },
+          {
+            "file": "static_bp/profile_10.csv.gz",
+            "sha256": "420ed33fd188babea0b2131af78a18a2e532bda3db6ae4c681adb02be81fda55",
+            "source_csv_sha256": "8567e3250ca6486f50d5855a73a3ceb1baa5ff2e52d70b6ca77a4ff951d56435",
+            "nominal_time": 10.0,
+            "actual_time": 10.0,
+            "rows": 512
+          },
+          {
+            "file": "static_bp/profile_20.csv.gz",
+            "sha256": "58d1ff8efef4c4e624bb53d4286a5b61349cfd685297126d8cd67246de1b1b7a",
+            "source_csv_sha256": "f8513e4da3ff23a651db7734625edc805700a13f9e025bec59b4eb3cfaf44b16",
+            "nominal_time": 20.0,
+            "actual_time": 20.0,
+            "rows": 512
+          },
+          {
+            "file": "static_bp/profile_30.csv.gz",
+            "sha256": "accd4424f8b327833e48a0e04c2817fcc3139477fa0cff0a4c69b9bd03d3c08e",
+            "source_csv_sha256": "aefb80cf4248dac956c0c4902f09690efc6f82a477852976ea4769284009483c",
+            "nominal_time": 30.0,
+            "actual_time": 30.0,
+            "rows": 512
+          },
+          {
+            "file": "static_bp/profile_50.csv.gz",
+            "sha256": "6443bd3e33123542119d1f0361b934d95f33bb0cea7ab58651ab4520565b2ee2",
+            "source_csv_sha256": "088fa3d8d8c95edff919ce4032059f856ebc2ce1674939d5ce780efd7e4d6afd",
+            "nominal_time": 50.0,
+            "actual_time": 50.0,
+            "rows": 512
+          },
+          {
+            "file": "static_bp/profile_100.csv.gz",
+            "sha256": "b06bd363d7f8f995751673830b4e582eab7124f68391b56c65066cb99a0525fd",
+            "source_csv_sha256": "34b05d75adc1727ee3e922323d4d6ac9d7e28160540ef32baca442d4aea3af16",
+            "nominal_time": 100.0,
+            "actual_time": 100.0,
+            "rows": 512
+          },
+          {
+            "file": "static_bp/profile_800.csv.gz",
+            "sha256": "2d82af89dd910ad7f8d82d3dc3ed40f6eb2607eff1084857a52eda9964bd2b54",
+            "source_csv_sha256": "9f9b1d9f4ea67fabe5729d0478ac4b9fd4f5942d1df4f8aa98d4eae646e978a4",
+            "nominal_time": 800.0,
+            "actual_time": 800.0,
+            "rows": 512
+          },
+          {
+            "file": "static_bp/profile_5254.csv.gz",
+            "sha256": "76fab531d8caacafcd0fc9af8aab4ca5d8100f9ca7e61d1b15a47dce79c81efc",
+            "source_csv_sha256": "ab07dd2ba7d72d900317572bbe57706b7059a9529d8c069aea24384c6d90c877",
+            "nominal_time": 5254.0,
+            "actual_time": 5254.0,
+            "rows": 512
+          }
+        ],
+        "accepted_native_sha256": "2037334a346933552147fe8160edf36ce63a7d1ee0fdea495c4f2fdd9200c2cf",
+        "accepted_native_time": 5254.067378775472
+      },
+      "expanding_bp": {
+        "label": "BP, expanding",
+        "profile_times": [
+          0.0,
+          10.0,
+          20.0,
+          26.0,
+          50.0,
+          100.0,
+          800.0,
+          7326.0
+        ],
+        "profiles": [
+          {
+            "file": "expanding_bp/profile_0.csv.gz",
+            "sha256": "1083739cc237307084413bce52c377aac3ff1248975875ad8deb8a6ebd9c13b0",
+            "source_csv_sha256": "c3b5d662e11bb91d86995fe0059d524ab519186b47dd60473a87ce3d53689714",
+            "nominal_time": 0.0,
+            "actual_time": 0.0,
+            "rows": 512
+          },
+          {
+            "file": "expanding_bp/profile_10.csv.gz",
+            "sha256": "cd27fef2322db5893c4a6a97bdac7e969b4b7e9d8245ae7f51875bc818d597ad",
+            "source_csv_sha256": "0369104a55e6bb7f7438f2c64b4a644b81ffb855117ab81bcf5b1b383ee67d29",
+            "nominal_time": 10.0,
+            "actual_time": 10.0,
+            "rows": 512
+          },
+          {
+            "file": "expanding_bp/profile_20.csv.gz",
+            "sha256": "a4b4a2b9e3661842789e6f43952df75520d24ac8892c21cc390f64ff35f281e3",
+            "source_csv_sha256": "264bdc10022e022806baa17c28b059b6bd721c5d773f95b900c587e00c940a0a",
+            "nominal_time": 20.0,
+            "actual_time": 20.0,
+            "rows": 512
+          },
+          {
+            "file": "expanding_bp/profile_26.csv.gz",
+            "sha256": "39eb2dc66a39bd704a13d0e686f3585e03ca1e6d2c7ba1b9818b14e72f4a910a",
+            "source_csv_sha256": "f225047fe42ab4432dea2b45fe2fafe8b79a0ebe76ca32fbb0ae64504dc1302f",
+            "nominal_time": 26.0,
+            "actual_time": 26.0,
+            "rows": 512
+          },
+          {
+            "file": "expanding_bp/profile_50.csv.gz",
+            "sha256": "248201fbbf2e3f514ca267923d74b82e59427847131c6a5a7a83beb50ac927d9",
+            "source_csv_sha256": "655dde1cb62fcef9e8ddf26ca5082c9973f457092a769e93f92afdf0cf7b7640",
+            "nominal_time": 50.0,
+            "actual_time": 50.0,
+            "rows": 512
+          },
+          {
+            "file": "expanding_bp/profile_100.csv.gz",
+            "sha256": "afb3188a5c79609206524e74b0c07e7007a3ee4cb191bdcb00369d9e0ffbedc2",
+            "source_csv_sha256": "3d503f90337414ad5f8ee5aba76e7220758fb297124f47e9397a11eb4eff759e",
+            "nominal_time": 100.0,
+            "actual_time": 100.0,
+            "rows": 512
+          },
+          {
+            "file": "expanding_bp/profile_800.csv.gz",
+            "sha256": "d30dd43d83d11323dacf82ac93d602ffe4f78732901fa69231d019a8c8bb3acc",
+            "source_csv_sha256": "d32c50d1b90b77613f599fd03648c2d19af45c200fab858aff1eb947b540ce30",
+            "nominal_time": 800.0,
+            "actual_time": 800.0,
+            "rows": 512
+          },
+          {
+            "file": "expanding_bp/profile_7326.csv.gz",
+            "sha256": "ec6b226eaf25e6b352e1a5c5f7aada9a2736790eaaa4297b1b5a2ede181073b6",
+            "source_csv_sha256": "e93515fbcada8fb42f29667619e29f5188be974d1073fcea14a9d327e7014670",
+            "nominal_time": 7326.0,
+            "actual_time": 7326.0,
+            "rows": 512
+          }
+        ],
+        "accepted_native_sha256": "0b8f0417eb1c5873164c5bac4abb12483663a092aaa57bb69d794c88150a9542",
+        "accepted_native_time": 7327.034336802388
+      }
+    },
+    "log_density_limits": [
+      -15,
+      1
+    ],
+    "log_radius_limits": [
+      -2.083925318456323,
+      4.084004369043677
+    ],
+    "signed_slope_limits": [
+      -10,
+      5
+    ],
+    "marker_count_scope": "Initial equal-mass realization. BP mergers change the number of objects while conserving mass."
+  }
+}

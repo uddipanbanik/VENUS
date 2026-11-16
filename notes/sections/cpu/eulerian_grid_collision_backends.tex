@@ -1,0 +1,1144 @@
+\subsection{Eulerian Grid Collision Backends}
+\label{sec:eulerian-grid-collisions}
+
+\subsubsection{Scope, task executables, and operator names}
+
+The modular CPU solver can add a radially local collision source to the
+Vlasov--Poisson equation.  Here \(t\) is time, \(r\) is areal radius,
+\(H(t)\) is the prescribed expansion rate, \(\Phi(t,r)\) is the Newtonian
+gravitational potential, and a dot denotes differentiation along a particle
+trajectory.  The symbol \(C[f]\) denotes the collision-induced rate of change
+of the distribution \(f(t,r,w,L)\).  Its phase-space variables are the
+peculiar radial velocity \(w\), meaning radial velocity after subtracting
+the expansion speed \(Hr\), and the specific angular-momentum magnitude
+\(L=rv_t\), where \(v_t\) is tangential-speed magnitude.  Cell-integrated
+grids use the equivalent angular coordinate \(\eta=L^2/2\).  With these
+definitions, the transport equation is
+\[
+ \frac{\partial f}{\partial t}
+ +\dot r\,\frac{\partial f}{\partial r}
+ +\dot w\,\frac{\partial f}{\partial w}
+ =C[f],
+ \qquad
+ \dot r=Hr+w,\qquad
+ \dot w=\frac{L^2}{r^3}-\Phi_r-Hw.                 \tag{EGC1}
+\]
+Here a subscript \(r\) means a radial derivative, so
+\(\Phi_r=\partial\Phi/\partial r\).  The first term in
+\(\dot w\) is the centrifugal acceleration, the second is gravity, and the
+third removes the change in peculiar velocity caused by expansion.  At fixed
+radius, the represented three-dimensional velocity-volume element is
+\[
+ \dd^3v=\frac{2\pi}{r^2}\,\dd w\,\dd\eta
+       =\frac{2\pi}{r^2}L\,\dd w\,\dd L.            \tag{EGC2}
+\]
+
+\subsubsection{Cross-section conventions}
+
+The Fokker--Planck (FP) and finite-angle operators represent different angular
+limits of scattering.  Each kernel therefore uses the cross-section
+convention derived below, even when the input parameter names coincide.
+
+In the formulas below, \(u=|\boldsymbol v_1-\boldsymbol v_2|\) is the
+relative speed of two particles.  The dimensionless factor
+\(A=\code{bp_collision_strength}\) scales the collision rate;
+\(\sigma_0\) is the configured reference area; \(u_0\) softens a power law
+near zero speed; and \(n\) is its speed exponent.  For the Yukawa--Born law,
+the numerical parameters \(\alpha_\chi,m_\chi,m_\phi\) set the amplitude
+\(4\pi\alpha_\chi^2m_\chi^2/m_\phi^4\) and speed scale
+\(m_\phi/m_\chi\).  The grid interprets the amplitude as an area in its
+simulation units.  Material marker modules instead use area per mass, with
+the physical conversion derived in Section~\ref{sec:yukawa-material-units}.
+The total encounter area is
+\(\sigma_{\rm tot}\).  The auxiliary areas \(\sigma_{\rm sat}\) and
+\(\sigma_{\rm high}\), used by the softened-gravity law, are defined in
+equation~(EGC4).
+
+\paragraph{Total and differential finite-angle cross sections.}
+The exact and reversible finite-angle branches use
+\[
+ \sigma_{\rm tot}(u)=
+ \begin{cases}
+ A\sigma_0,
+   &\code{constant},\\
+ A\sigma_0(u^2+u_0^2)^{-n/2},
+   &\code{powerlaw},\\
+ A\left(\sigma_{\rm sat}^{-1}+\sigma_{\rm high}^{-1}\right)^{-1},
+   &\code{softened_gravity},\\
+ \displaystyle
+ A\frac{4\pi\alpha_\chi^2m_\chi^2}
+ {m_\phi^4\left(1+m_\chi^2u^2/m_\phi^2\right)},
+   &\code{yukawa_born}.
+ \end{cases}                                             \tag{EGC5}
+\]
+The differential cross section \(\dd\sigma/\dd\Omega\) is encounter area per
+unit outgoing solid angle \(\Omega\).  For an isotropic kernel, all outgoing
+directions are equally likely:
+\[
+ \frac{\dd\sigma}{\dd\Omega}=\frac{\sigma_{\rm tot}}{4\pi}.
+                                                               \tag{EGC6}
+\]
+Let \(\theta\) be the scattering deflection angle and
+\(\mu=\cos\theta\).  For the Yukawa--Born kernel,
+\[
+ \frac{\dd\sigma}{\dd\Omega}
+ =
+ A\frac{\alpha_\chi^2m_\chi^2}
+ {\left[m_\phi^2+\frac12m_\chi^2u^2(1-\mu)\right]^2},
+ \qquad \mu=\cos\theta.                                  \tag{EGC7}
+\]
+With \path{bp_boltzmann_kernel=auto}, equation~(EGC7) is selected only for
+\path{bp_cross_section=yukawa_born}; the other laws use isotropic scattering.
+Notice that the Yukawa transfer cross section in equation~(EGC3) is not the
+same object as the total and differential laws in equations~(EGC5)--(EGC7).
+
+\subsubsection[Deterministic finite-angle quadrature]{
+Deterministic finite-angle quadrature:
+\code{boltzmann_exact}}
+
+\paragraph{Meaning of ``exact''.}
+The finite-angle continuum operator is
+\[
+ C[f](\boldsymbol v_1)=
+ \int\dd^3v_2\int\dd\Omega\,
+ u\frac{\dd\sigma}{\dd\Omega}
+ \left[f(\boldsymbol v'_1)f(\boldsymbol v'_2)
+       -f(\boldsymbol v_1)f(\boldsymbol v_2)\right].      \tag{EGC26}
+\]
+The vectors \(\boldsymbol v_1\) and \(\boldsymbol v_2\) are the two incoming
+velocities, primes mark their outgoing values after a collision, and
+\(\dd\Omega\) is an element of outgoing solid angle.  The gain term samples
+states that scatter into \(\boldsymbol v_1\); the loss term samples particles
+that scatter out of it.
+The label \code{boltzmann_exact} refers to deterministic enumeration of every
+retained Eulerian velocity-cell pair.  Angular quadrature, velocity boundaries,
+time integration, and the outgoing remap still introduce discretization
+errors.  The following derivation identifies each of these approximations.
+
+At radial node \(i\), whose radius is \(r_i\), let \(a\) and \(b\) label the
+two incoming velocity cells.  The angle \(\phi\) is their relative tangential
+azimuth.  The unresolved incoming azimuth is represented by
+\[
+ \boldsymbol v_1=(w_a,L_a/r_i,0),\qquad
+ \boldsymbol v_2=(w_b,(L_b/r_i)\cos\phi,
+                  (L_b/r_i)\sin\phi).                    \tag{EGC27}
+\]
+The incoming \(\phi\) and outgoing azimuth \(\psi\) integrals use midpoint
+rules.  The outgoing polar cosine is \(\mu=\cos\theta\), where \(\theta\) is
+the deflection angle, and uses Gauss--Legendre quadrature.  The counts
+\(N_{\phi,\rm pair}\), \(N_\mu\), and \(N_\psi\) are respectively the numbers
+of incoming-azimuth, polar-cosine, and outgoing-azimuth nodes.  The parameter
+consistency check requires at least
+\[
+ (N_{\phi,\rm pair},N_\mu,N_\psi)=(4,2,4),               \tag{EGC28}
+\]
+and defaults to \((4,4,4)\).
+
+The occupation \(n_a\) of velocity cell \(a\) is
+\[
+ n_a=f_a\Delta^3v_a,\qquad
+ \Delta^3v_a=\frac{2\pi}{r_i^2}\Delta w_a\,L_a\Delta L_a.
+                                                               \tag{EGC29}
+\]
+For one unordered cell pair and angular node, define \(S_{ab}=1\) when
+\(a\ne b\) and \(S_{aa}=1/2\), so a same-cell pair is not counted twice.
+Let \(\omega_\mu\) be the Gauss--Legendre weight, let \(K(\mu;u)\) be the
+selected angular kernel, and let \(\Delta t\) be the collision substep.  The
+event occupation is
+\[
+ \Delta n=
+ S_{ab}n_an_bu\sigma_{\rm tot}\Delta t\,
+ \frac{1}{N_{\phi,\rm pair}}\,
+ \frac{\omega_\mu K(\mu;u)}
+      {\sum_{\mu'}\omega_{\mu'}K(\mu';u)}\,
+ \frac{1}{N_\psi},                                      \tag{EGC30}
+\]
+The denominator normalizes the discrete polar probabilities to one.
+
+Equal-mass centre-of-mass scattering gives
+\[
+ \boldsymbol V=\frac{\boldsymbol v_1+\boldsymbol v_2}{2},
+ \qquad
+ \boldsymbol v'_{1,2}=\boldsymbol V
+ \pm\frac{u}{2}\widehat{\boldsymbol n}(\mu,\psi).         \tag{EGC31}
+\]
+
+\paragraph{Outgoing remap and boundaries.}
+Each outgoing velocity is converted to
+\[
+ w'=v'_r,\qquad
+ \eta'=\frac{r_i^2}{2}\left[(v'_\theta)^2+(v'_\phi)^2\right]
+                                                               \tag{EGC32}
+\]
+and deposited bilinearly into at most four \((w,\eta)\) cells.  There is no
+velocity reflection or extrapolation.  If either member of the outgoing pair
+lies outside the stored \(w\) or \(L\) domain, the entire pair event is
+omitted.  The code separately records \(w\)- and \(L\)-overflow activity and
+aborts if the aggregate skipped fraction exceeds
+\code{bp_boltzmann_remap_max_skipped_fraction}.
+
+Cells below the configured distribution floor are inactive.
+\code{bp_boltzmann_mass_tol}>0 removes the least populated active cells up to
+that cumulative shell fraction; zero retains full represented support.
+
+\paragraph{Time integration and repair.}
+The operator is always explicit.  It estimates the largest loss frequency and
+requires
+\[
+ \Delta t_{\rm coll}
+ \le\frac{\code{bp_collision_cfl}}{\nu_{\max}}.           \tag{EGC33}
+\]
+It recomputes the loss bound and subcycles until the requested source interval
+is consumed, aborting above \code{bp_collision_max_substeps}.
+
+After clipping negative values, the optional
+\code{bp_boltzmann_conserve_moments=true} repair adjusts each radial shell
+toward its pre-collision mass, radial momentum, and kinetic energy:
+\[
+ f_q\leftarrow
+ \max\!\left[
+ 0,\,
+ f_q\{1+\alpha(\lambda_0+\lambda_1w_q+\lambda_2E_q)\}
+ \right].                                                \tag{EGC34}
+\]
+Here \(q\) labels a velocity cell, \(E_q\) is its kinetic energy, and the
+three multipliers \(\lambda_0,\lambda_1,\lambda_2\) are chosen to correct
+mass, radial momentum, and kinetic energy.  The limiter \(\alpha\) keeps the
+multiplicative correction positive.  A
+singular \(3\times3\) repair system returns without a failure flag.  This
+post-hoc repair does not establish detailed balance or a discrete
+\(H\)-theorem.
+
+The settings \code{bp_collision_flux},
+\code{bp_collision_integrator}, \code{bp_sts_max_stages}, all bath and
+coefficient-table controls, and \code{bp_collision_l_min_rel} are ignored by
+\code{boltzmann_exact}.  In particular, Chang--Cooper and RKL2 must never be
+listed as algorithms used by an exact finite-angle run merely because those
+keys remain in its parameter file.
+
+The dense cost scales approximately as
+\[
+ {\cal O}\!\left[
+ N_rN_{\rm active}^2
+ N_{\phi,\rm pair}N_\mu N_\psi
+ \right].                                                \tag{EGC35}
+\]
+Radial shells are threaded dynamically; a sufficiently expensive shell also
+uses pair-level parallelism with thread-private gain/loss arrays.
+
+\subsubsection[Complete reversible finite-angle graph]{
+Complete reversible finite-angle graph:
+\code{boltzmann_reversible}}
+
+This backend retains the finite-angle quadrature of
+equations~(EGC26)--(EGC31) but replaces the independent outgoing remap with a
+joint nonnegative pair projection.  It requires:
+\codesource{Complete reversible-backend admissibility checks}{\path{cpu/include/ev/initial_data.hpp} and \path{cpu/include/ev/reversible_finite_angle_boltzmann.hpp}}{Requires a cell-integrated kinetic grid, conservative semi-Lagrangian transport, Strang splitting, zero mass pruning, and radial-velocity reflection closure}
+\begin{lstlisting}
+kinetic_grid = cell_average_eta
+vp_interpolation = conservative_sldg
+# or another cell-integrated SLDG option
+bp_collision_splitting = strang
+bp_boltzmann_mass_tol = 0
+\end{lstlisting}
+The radial-velocity grid must be closed under \(w\mapsto-w\).
+
+For a velocity cell \(q\),
+\[
+ V_q=\frac{2\pi}{r_i^2}\Delta w_q\Delta\eta_q,\qquad
+ E_q=\frac12\left(w_q^2+\frac{2\eta_q}{r_i^2}\right).     \tag{EGC36}
+\]
+For every outgoing continuous pair, the code searches an expanding candidate
+stencil for nonnegative pair weights \(\alpha_m\) satisfying
+\[
+ \sum_m\alpha_m=1,                                       \tag{EGC37}
+\]
+\[
+ \sum_m\alpha_m(w_{m1}+w_{m2})=w'_1+w'_2,                \tag{EGC38}
+\]
+\[
+ \sum_m\alpha_m(E_{m1}+E_{m2})=E'_1+E'_2.                \tag{EGC39}
+\]
+The search begins at radius one and expands through
+\code{bp_reversible_candidate_radius}.  A velocity outside the stored domain
+is a domain omission; an in-domain pair for which no feasible nonnegative
+hull is found is a projection omission.  Neither is reflected.
+
+Each retained angular channel becomes a reversible reaction with coefficient
+\[
+ \kappa=
+ \frac14V_aV_bu\sigma_{\rm tot}\,
+ W_{\phi}W_\mu W_\psi.                                  \tag{EGC40}
+\]
+The factors \(W_\phi\), \(W_\mu\), and \(W_\psi\) are the normalized weights
+of the incoming azimuth, outgoing polar cosine, and outgoing azimuth nodes.
+Let \(\nu_q\) be its net population change and \(p_q\) its product exponent.
+The reaction flux is
+\[
+ J=\kappa\left(f_af_b-\prod_q f_q^{p_q}\right),\qquad
+ \frac{\dd f_q}{\dd t}=\frac{\nu_q}{V_q}J.               \tag{EGC41}
+\]
+This is implemented through logarithms:
+\codesource{Complete reversible reaction flux}{\path{cpu/include/ev/reversible_finite_angle_boltzmann.hpp}}{Evaluates forward and reverse activities in a positivity-aware logarithmic form and accumulates each species population change conservatively}
+\begin{lstlisting}[language=C++]
+forward = f[incoming_first] * f[incoming_second];
+log_reverse += species.product_order * log(f[species.index]);
+reverse = exp(log_reverse);
+flux = reaction.coefficient * (forward - reverse);
+rhs[q] += species.net_population_change * flux / volume[q];
+\end{lstlisting}
+
+Equations~(EGC37)--(EGC39) imply reaction-level number, radial-momentum, and
+kinetic-energy conservation.  A discrete drifting Maxwellian has
+\[
+ \log f_q=a+bw_q-cE_q,                                   \tag{EGC42}
+\]
+so the same constraints make its forward and reverse activities identical.
+For
+\[
+ H_h=\sum_qV_qf_q(\log f_q-1),                           \tag{EGC43}
+\]
+\(H_h\) is the discrete Boltzmann \(H\)-functional: \(V_q\) is the
+velocity-cell volume and \(f_q\) its nonnegative distribution value.  A
+discrete \(H\)-theorem is the statement that this quantity cannot increase
+under the collision update.  Physical entropy has the opposite sign.
+For the continuous-time evolution of the discrete populations, each reaction
+contributes a term proportional to
+\[
+ (x-y)\log(y/x)\le0,\qquad
+ x=f_af_b,\quad y=\prod_qf_q^{p_q}.                      \tag{EGC44}
+\]
+Thus every represented reaction conserves the three collision invariants,
+has the discrete Maxwellian null space, and dissipates \(H_h\).
+
+\paragraph{Positive finite-time reaction extent.}
+A scalar extent moves all participating cells together:
+\[
+ f_q(\xi)=f_q(0)+\frac{\nu_q}{V_q}\xi.                   \tag{EGC45}
+\]
+Positivity restricts it to
+\[
+ \max_{\nu_q>0}\left(-\frac{f_qV_q}{\nu_q}\right)
+ \le\xi\le
+ \min_{\nu_q<0}\left(-\frac{f_qV_q}{\nu_q}\right).       \tag{EGC46}
+\]
+If Euler and Heun extents remain strictly inside this interval and do not
+reverse the flux sign, VENUS accepts the second-order Heun extent.  Otherwise
+it solves
+\[
+ \xi-\Delta t\,J[f(\xi)]=0                              \tag{EGC47}
+\]
+with safeguarded Newton iterations inside a bisection bracket.  One collision
+source step applies every reaction for half a step in forward graph order and
+then for half a step in reverse order.  The final state is checked for
+nonnegativity and nonincrease of equation~(EGC43).
+
+When \code{bp_reversible_explicit_fast_path=true} and the full interval
+satisfies the initial positivity limit, the code first tries its reference
+SSPRK2 update.  A failed second-stage positivity or entropy check falls back
+to the symmetric reaction-extent sweep.  This logic is independent of
+\code{bp_collision_integrator}; the FP \code{explicit}/\code{sts_rkl2}
+selection does not control a reversible graph.
+
+\paragraph{Omission guard and cost.}
+The code checks both the volume-integrated omitted activity and every
+physically active shell.  A run fails if either exceeds
+\code{bp_boltzmann_remap_max_skipped_fraction}.  Very low-activity shells are
+classified using \code{bp_reversible_active_shell_floor_fraction}.
+
+The complete graph scales as
+\[
+ {\cal O}\!\left[(N_wN_L)^2
+ N_{\phi,\rm pair}N_\mu N_\psi\right]                   \tag{EGC48}
+\]
+per radial shell.  \code{bp_reversible_max_velocity_cells} is an explicit
+memory/runtime guard for this complete-graph oracle.  It does not constrain
+the sampled or streamed variants.  Likewise,
+\code{bp_boltzmann_conserve_moments} is irrelevant here: represented
+reversible reactions conserve the moments intrinsically.
+
+\subsubsection[Hybrid sampled reversible graph]{
+Hybrid sampled reversible graph:
+\code{boltzmann_reversible_sampled}}
+
+This backend evaluates a time-reversal-closed dense subset exactly and
+importance-samples its complement.  Every sampled channel is still converted
+to the same invariant-preserving reversible reaction described by
+equations~(EGC37)--(EGC47).
+
+\paragraph{Current full-support proposal.}
+Let \(M=N_wN_L\), \(V_q\) be equation~(EGC36), and
+\(n_q=V_qf_q\).  The implemented one-cell distributions are
+\[
+ p_q^{\rm bulk}\propto n_q,\qquad
+ p_q^{\rm phase}\propto f_q,                             \tag{EGC49}
+\]
+\[
+ p_q^{\rm tail}\propto
+ n_q\left(1+\frac{E_q}{\langle E\rangle}\right)^{p_{\rm tail}},
+                                                               \tag{EGC50}
+\]
+and
+\[
+ p_q^{\rm eq}\propto
+ V_q\exp(\beta w_q-\gamma E_q),\qquad
+ \beta=\frac{\langle w\rangle}{T},\quad
+ \gamma=\frac1T,\quad
+ T=\frac23\left(\langle E\rangle-\frac{\langle w\rangle^2}{2}\right).
+                                                               \tag{EGC51}
+\]
+The exponent \(p_{\rm tail}=\code{bp_sampled_tail_power}\) biases the tail
+proposal toward high-energy cells.  Each \(\lambda_*\) below is a
+nonnegative mixture fraction for the named proposal component; all six
+fractions, including the derived \(\lambda_{\rm bulk}\), sum to one.
+The stratified component groups cells by energy rank, sign of \(w\), and
+angular-momentum bin.  Stratum pairs and incoming azimuths are further binned
+by representative relative speed and weighted by an activity proxy.
+
+The exact current mixture is
+\begin{equation}
+\tag{EGC52}
+\begin{split}
+ q(a,b,\phi)={}&
+ \lambda_{\rm bulk}\,
+ p_a^{\rm bulk}p_b^{\rm bulk}\frac1{N_\phi}
+ +\lambda_{\rm tail}\,
+ p_a^{\rm tail}p_b^{\rm tail}\frac1{N_\phi}\\
+ &+\lambda_{\rm eq}\,
+ p_a^{\rm eq}p_b^{\rm eq}\frac1{N_\phi}
+ +\lambda_{\rm phase}\,
+ p_a^{\rm phase}p_b^{\rm phase}\frac1{N_\phi}\\
+ &+\lambda_{\rm strat}q_{\rm strat}(a,b,\phi)
+ +\lambda_{\rm unif}\frac1{M^2N_\phi}.
+\end{split}
+\end{equation}
+where
+\[
+ \lambda_{\rm bulk}
+ =
+ 1-\lambda_{\rm tail}-\lambda_{\rm eq}
+  -\lambda_{\rm phase}-\lambda_{\rm strat}
+  -\lambda_{\rm unif}.                                  \tag{EGC53}
+\]
+A strictly positive \(\lambda_{\rm unif}\) is required so every represented
+pair and azimuth has nonzero probability.
+
+The dense cells are ranked by an activity proxy and selected together with
+their radial reversals
+\[
+ (j,k)\longmapsto(N_w-1-j,k).                            \tag{EGC54}
+\]
+Consequently the exact dense block and its sampled complement are both closed
+under \(w\mapsto-w\).
+
+\paragraph{Complement importance weight.}
+Let \(Z_C\) be the total probability of lying outside the dense block and let
+\(N\) be the samples per batch.  For a complement state
+\(x=(a,b,\phi)\), a non-antithetic channel has coefficient
+\[
+ \kappa_s=
+ \frac14V_aV_bu\sigma_{\rm tot}
+ \frac{Z_C}
+ {N\,N_\phi\,q(x)\,K_\Omega},                            \tag{EGC55}
+\]
+where \(K_\Omega=\code{bp_sampled_outgoing_angle_samples}\).
+When the radial reverse \(\bar x\) also lies in the complement, both members
+are inserted with the paired weight
+\[
+ \kappa_s=
+ \frac14V_aV_bu\sigma_{\rm tot}
+ \frac{Z_C}
+ {N\,N_\phi\,[q(x)+q(\bar x)]\,K_\Omega}.                \tag{EGC56}
+\]
+This antithetic construction improves coverage of the odd radial component
+that transports heat.
+
+The actual operator samples the configured discrete angular quadrature:
+Gauss--Legendre \(\mu\) nodes weighted by the selected differential kernel and
+midpoint \(\psi\) nodes.  It does not use the continuous inverse-Yukawa
+utility retained for analytic kernel calculations.
+
+With \code{bp_sampled_ntc_pair_thinning=true}, a pilot quantile sets a
+threshold in \(u\sigma\).  A retained low-activity pair receives the inverse
+acceptance probability, preserving the expectation.  If the requested
+batch-accuracy tolerance is not met at the cap, the sampled implementation
+disables thinning, rebuilds from the starting sample count, and tries once
+more before applying \code{bp_sampled_fail_on_unconverged}.
+
+\paragraph{Independent-replicate error estimate.}
+If \(R=\code{bp_sampled_replicates_per_estimate}\), this backend constructs two
+independently shifted families for each requested replicate: the total number
+of batch estimates is \(R_{\rm tot}=2R\).  For batch collision fields
+\(Q^{(s)}\),
+\[
+ \overline Q=\frac1{R_{\rm tot}}\sum_sQ^{(s)},\qquad
+ S_Q^2=
+ \frac1{R_{\rm tot}(R_{\rm tot}-1)}
+ \sum_s\|Q^{(s)}-\overline Q\|_V^2.                      \tag{EGC57}
+\]
+The velocity-volume norm is
+\(\|X\|_V=[\sum_qV_qX_q^2]^{1/2}\); it weights each cell by the physical
+velocity volume in equation~(EGC36).
+The accepted normalized error is
+\[
+ \epsilon_Q=
+ \frac{S_Q}
+ {\max\{\|\overline Q\|_V,\,
+ \lambda_Q\|\overline G\|_V,\,10^{-300}\}},              \tag{EGC58}
+\]
+where \(G\) is the nonnegative forward-plus-reverse traffic and
+\(\lambda_Q=\code{bp_sampled_rhs_floor_fraction}\).
+
+The conductive diagnostic for batch \(s\) is
+\[
+ h^{(s)}=\sum_qV_qE_qw_qQ_q^{(s)}.                       \tag{EGC59}
+\]
+Its standard error is normalized by the larger of
+\(|\overline h|\) and
+\code{bp_sampled_heat_floor_fraction} times the gross absolute heat traffic.
+Samples per batch double until both RHS and heat criteria pass or the
+configured maximum is reached.  A low-discrepancy sequence is a deterministic
+point set designed to fill the unit sampling cube more evenly than unrelated
+random draws.  VENUS uses shifted Halton coordinates: radical-inverse
+sequences in distinct prime bases receive an independent random shift for
+each replicate.  Existing low-discrepancy ranges are retained when a batch is
+enlarged.
+
+The final graph is the arithmetic mean of all \(2R\) sampled graphs plus the
+single deterministic dense graph.  This backend does not persist or reuse an
+operator graph between collision calls; graph-reuse controls belong only to
+the streamed implementation.
+
+\paragraph{Shell planning and locality.}
+For each shell the code estimates
+\[
+ \lambda_{\rm rms}=
+ \frac{1}{n\,\sigma_{\rm tot}(u_{\rm rms})},\qquad
+ \chi_{\rm loc}=\frac{\Delta r}{\lambda_{\rm rms}}.       \tag{EGC60}
+\]
+Here \(n=\sum_qV_qf_q\) is the shell number density and
+\(u_{\rm rms}=[2(\langle v^2\rangle-\langle w\rangle^2)]^{1/2}\) is the
+root-mean-square relative-speed estimate used only for this locality check.
+If \(\chi_{\rm loc}>\code{bp_collision_locality_max_ratio}\) and
+\code{bp_collision_fail_on_nonlocal_cells=true}, the run aborts and requests
+radial refinement.
+
+The starting batch count is raised by powers of two according to
+\[
+ {\cal A}_i=n_i^2\langle v\rangle_i
+ \sigma_{\rm tot}(\langle v\rangle_i),\qquad
+ N_i\propto({\cal A}_i/{\rm median}\,{\cal A})^{1/4},     \tag{EGC61}
+\]
+capped by \code{bp_sampled_activity_boost_max}.  Rigorously bounded
+low-activity shells may be made inactive only while their accumulated upper
+bound fits within one tenth of the global omission budget.
+
+\subsubsection[Streamed reversible graph]{
+Streamed reversible graph:
+\code{boltzmann_reversible_streamed}}
+
+The streamed backend uses the same physical kernel, proposal mixture,
+time-reversal pairing, joint projection, reaction flux, positivity bounds,
+invariants, entropy functional, omission budget, and locality criterion as the
+sampled backend.  Its different implementation is designed to reduce the
+large temporary graph and projection cost.
+
+It is not graph-free.  It:
+\begin{enumerate}
+\item builds and caches the exact time-reversal-closed dense graph;
+\item samples the conditional complement with shifted Halton coordinates;
+\item optionally performs a guided pilot and mixes its ranked-pair proposal
+      with the full-support base proposal;
+\item accumulates RHS, gross traffic, omitted activity, and hashed reaction
+      coefficients without immediately constructing duplicate reaction
+      objects;
+\item combines repeated sampled channels into a compact reaction graph;
+\item applies the same positive symmetric reaction-extent integrator as the
+      complete and sampled reversible backends.
+\end{enumerate}
+
+For canonical reversal orbit \(x,\bar x\), define
+\[
+ p_{\rm base}(x)=\frac{q(x)+q(\bar x)}{Z_C},\qquad
+ p_{\rm samp}(x)=(1-g)p_{\rm base}(x)+g\,p_{\rm guide}(x),
+                                                               \tag{EGC62}
+\]
+where \(g=\code{bp_sampled_guided_fraction}\).
+Before final averaging, one sampled pair carries
+\[
+ \widetilde\kappa_s=
+ \frac14V_aV_bu\sigma_{\rm tot}
+ \frac{1}{N_\phi p_{\rm samp}(x)}
+ \frac{1}{P_{\rm NTC}}\,
+ P_\Omega.                                               \tag{EGC63}
+\]
+Here \(P_{\rm NTC}=u\sigma/(u\sigma)_{\max}\) for retained thinned events and
+one otherwise; \(P_\Omega\) is the selected discrete angular probability.
+The materialized coefficient is divided by the number of production batches
+and samples per batch.
+
+If
+\[
+ K_\Omega=N_\mu N_\psi,                                  \tag{EGC64}
+\]
+the streamed branch visits the complete configured angular tensor product.
+Otherwise it makes \(K_\Omega\) stratified draws from the same discrete
+Gauss--Legendre/midpoint angular rule.
+
+A separate two-batch controller demands one quarter of the requested RHS and
+heat tolerances before choosing the production count.  The production stage
+uses
+\[
+ N_{\rm prod}=\max(2,\code{bp_sampled_replicates_per_estimate})
+                                                               \tag{EGC65}
+\]
+independent batches, evaluates equation~(EGC57), and doubles the count if
+necessary.  This differs from the sampled backend's \(2R\) semantics.
+
+\paragraph{Persistent workspace and graph refresh.}
+The streamed workspace contains a projection cache, dense-graph cache, and
+per-shell operator-graph cache.  With
+\path{bp_sampled_fixed_geometric_sequence=true}, the low-discrepancy geometry
+is determined only by the user seed and shell identifier; false additionally
+hashes the current shell distribution.
+
+With \code{bp_sampled_reuse_operator_graph=true}, an existing graph may be
+reused while
+\[
+ \delta_1=
+ \frac{\sum_qV_q|f_q-f_q^{\rm ref}|}
+ {\max\{\sum_qV_qf_q,\sum_qV_qf_q^{\rm ref}\}}
+ \le
+ \code{bp_sampled_operator_refresh_l1_fraction}.         \tag{EGC66}
+\]
+A changed grid, projection stencil, angular rule, cross section, kernel,
+softened-gravity data (\(G\), subhalo mass/radius, or Coulomb logarithm),
+reversible entropy floor, unconverged-estimate policy, or sampling
+configuration invalidates the workspace.  Projection records are retained up
+to the implementation cap and then discarded shell by shell.  Reusing a
+cached graph also reuses its recorded convergence state; it is never relabeled
+as converged merely because the graph was already resident.
+
+This workspace is memory-resident rather than restart-serialized.  A restarted
+run rebuilds it.  When graph reuse is enabled, an uninterrupted run may
+therefore follow a different sampled numerical trajectory from a restarted
+run because the uninterrupted run can reuse an older admissible graph while
+the restarted run constructs a new graph from the checkpoint DF.
+
+The three controls
+\codesource{Streamed reversible operator-graph workspace}{\path{cpu/include/ev/config.hpp} and \path{cpu/include/ev/streamed_reversible_boltzmann.hpp}}{Controls geometry seeding, persistent graph reuse, and the distribution-change threshold that forces graph reconstruction}
+\begin{lstlisting}
+bp_sampled_fixed_geometric_sequence
+bp_sampled_reuse_operator_graph
+bp_sampled_operator_refresh_l1_fraction
+\end{lstlisting}
+apply only to \code{boltzmann_reversible_streamed}.  They are wired through
+the INI and CLI parsers, consistency checks, and metadata together with the
+persistent standard-solver workspace.
+
+\subsubsection{Small-angle approximation: Fokker--Planck/Landau}
+
+The finite-angle law above is the governing collision physics.  The
+Fokker--Planck branch replaces many individually small deflections by a
+continuous drift and diffusion in velocity space.  It is useful only
+when that accumulated-small-angle picture is resolved and physically
+appropriate.  The next reference block states exactly which continuum
+coefficients and discrete fluxes VENUS uses.
+
+\paragraph{FP transfer cross section.}
+Writing \(A=\code{bp_collision_strength}\), the FP coefficient integrals use
+the effective momentum-transfer cross section
+\[
+ \sigma_T(u)=
+ \begin{cases}
+ A\sigma_0,&\code{constant},\\[1mm]
+ A\sigma_0(u^2+u_0^2)^{-n/2},&\code{powerlaw},\\[1mm]
+ A(\sigma_{\rm sat}^{-1}+\sigma_{\rm high}^{-1})^{-1},
+   &\code{softened_gravity},\\[1mm]
+ \displaystyle A\frac{8\pi\alpha_\chi^2}{m_\chi^2u^4}
+ \left[\ln(1+x)-\frac{x}{1+x}\right],\quad
+ x=\frac{m_\chi^2u^2}{m_\phi^2},&\code{yukawa_born}.
+ \end{cases}                                             \tag{EGC3}
+\]
+Here
+\[
+ \sigma_{\rm sat}=\begin{cases}\sigma_0,&\sigma_0>0,\\
+ 2\pi\epsilon^2,&\sigma_0=0,\end{cases}\qquad
+ \sigma_{\rm high}=\frac{4\pi G^2m_{\rm sub}^2\ln\Lambda}{u^4}. \tag{EGC4}
+\]
+The symbols \(\epsilon\), \(G\), \(m_{\rm sub}\), and \(\ln\Lambda\)
+are the softening length, Newtonian gravitational constant, represented
+subhalo mass, and Coulomb logarithm.  The transfer cross section weights each
+deflection by its momentum transfer; it is an angular moment of the
+differential law, not the finite-angle total encounter area.  The
+softened-gravity plateau is a physical geometrical area, not a generic
+material cross section per mass.
+
+
+\paragraph{Continuum approximation.}
+The labels \code{fokker_planck} and \code{landau_fp} advance
+\[
+ C_{\rm FP}[f]
+ =-\frac{\partial}{\partial v_i}(D_i f)
+  +\frac12\frac{\partial^2}{\partial v_i\partial v_j}
+                  (D_{ij}f).                             \tag{EGC8}
+\]
+Cartesian velocity components are indexed by \(i,j\in\{1,2,3\}\), with
+repeated indices summed.  The vector \(D_i\) is the velocity-space drift and
+the symmetric tensor \(D_{ij}\) is the velocity-space diffusion.
+For relative velocity
+\(\boldsymbol u=\boldsymbol v-\boldsymbol v_\star\), the implemented
+small-angle coefficients are
+\[
+ D_i=-\frac12\int\dd^3v_\star\,
+ f_\star\,u\,\sigma_T(u)\,u_i,                            \tag{EGC9}
+\]
+\[
+ D_{ij}=\frac14\int\dd^3v_\star\,
+ f_\star\,u^3\sigma_T(u)
+ \left(\delta_{ij}-\frac{u_i u_j}{u^2}\right).            \tag{EGC10}
+\]
+Here \(\boldsymbol v\) is the velocity at which a coefficient is evaluated,
+\(\boldsymbol v_\star\) is a bath-particle velocity,
+\(f_\star=f(\boldsymbol v_\star)\), and \(\delta_{ij}\) is one for \(i=j\)
+and zero otherwise.  The projector in parentheses removes diffusion along
+the relative-velocity direction.
+These expressions explain why this branch requires a transfer cross section,
+whereas finite-angle scattering requires a differential kernel.
+
+\paragraph{Bath choices.}
+The coefficient source is controlled by \code{bp_bath}.
+\begin{description}
+\item[\code{instantaneous_df}] Equation~(EGC9)--(EGC10) is quadrature-summed
+      directly over the current local Eulerian DF.  Low-population partner
+      cells may be removed with \code{bp_partner_mass_tol}; zero retains the
+      complete represented support.  The expensive coefficients are evaluated
+      on a reduced \((w,L)\) table and interpolated onto the full grid.
+\item[\code{local_maxwellian}] Each radial shell is replaced, for coefficient
+      construction only, by
+      \[
+       f_\star(s)=\frac{\rho}
+       {(2\pi\Theta)^{3/2}}\exp[-s^2/(2\Theta)].           \tag{EGC11}
+      \]
+      VENUS obtains
+      \[
+       \rho=\frac{2\pi}{r^2}\int fL\,\dd w\,\dd L,\qquad
+       U=\langle w\rangle,\qquad
+       \Theta=\frac{\langle(w-U)^2\rangle+\langle v_t^2\rangle}{3},
+                                                               \tag{EGC12}
+      \]
+      subject to the configured density and temperature floors.
+\item[\code{global_maxwellian}] Shell density is volume-averaged, bulk velocity
+      is mass-weighted, and the global temperature uses the full second moment,
+      including shell-to-shell radial streaming.
+\end{description}
+
+The Maxwellian integral uses midpoint quadrature in bath speed and polar
+cosine up to
+\(\code{bp_bath_speed_cutoff}\sqrt{\Theta}\).  It is tabulated versus evaluation
+speed with \code{bp_coeff_table_points} entries and cubic interpolation.
+\code{bp_coeff_speed_points} and \code{bp_coeff_mu_points} control its
+quadrature.
+
+\paragraph{Projection onto \((w,L)\) and \((w,\eta)\).}
+Let
+\[
+ c_r=w-U,\qquad c_t=L/r,\qquad
+ V=(c_r^2+c_t^2)^{1/2},\qquad e_r=c_r/V,\quad e_t=c_t/V.
+\]
+If \(A_\parallel\) is the drift amplitude along the local relative-velocity
+direction, and \(D_\parallel\) and \(D_\perp\) are the parallel and transverse
+diffusion coefficients obtained from equations~(EGC9)--(EGC10), VENUS
+constructs
+\[
+ D_r=A_\parallel e_r,\qquad
+ D_L=rA_\parallel e_t,                                   \tag{EGC13}
+\]
+\[
+ D_{rr}=D_\perp+(D_\parallel-D_\perp)e_r^2,
+\]
+\[
+ D_{rL}=r(D_\parallel-D_\perp)e_re_t,
+\]
+\[
+ D_{LL}=r^2[D_\perp+(D_\parallel-D_\perp)e_t^2],
+ \qquad D_{aa}=r^2D_\perp.                               \tag{EGC14}
+\]
+Changing variables to \(\eta=L^2/2\) gives
+\[
+ D_w=D_r,\qquad
+ D_\eta=LD_L+\frac12(D_{LL}+D_{aa}),                     \tag{EGC15}
+\]
+\[
+ D_{ww}=D_{rr},\qquad
+ D_{w\eta}=LD_{rL},\qquad
+ D_{\eta\eta}=L^2D_{LL}.                                 \tag{EGC16}
+\]
+The \(D_{aa}\) term is the It\^o/geometrical contribution from rotations out
+of the selected tangential plane: the index \(a\) denotes the unresolved
+tangential-azimuth direction orthogonal to the stored radial--\(L\) plane,
+not a grid-cell label.  The source implementation is:
+\codesource{Fokker--Planck coefficient map to \(w,\eta\)}{\path{cpu/include/ev/boltzmann_poisson.hpp}}{Transforms radial and tangential drift--diffusion coefficients into the solver's radial-velocity and squared-angular-momentum variables}
+\begin{lstlisting}[language=C++]
+out.D_w      = c.D_r;
+out.D_eta    = L * c.D_L + 0.5 * (c.D_LL + c.D_aa);
+out.D_ww     = c.D_rr;
+out.D_weta   = L * c.D_rL;
+out.D_etaeta = L * L * c.D_LL;
+\end{lstlisting}
+
+\paragraph{Finite-volume flux.}
+The conservative update is
+\[
+ \partial_t f=-\partial_wF_w-\partial_\eta F_\eta,        \tag{EGC17}
+\]
+with
+\[
+ F_w=D_wf-\frac12\partial_w(D_{ww}f)
+             -\frac12\partial_\eta(D_{w\eta}f),           \tag{EGC18}
+\]
+\[
+ F_\eta=D_\eta f-\frac12\partial_\eta(D_{\eta\eta}f)
+             -\frac12\partial_w(D_{w\eta}f).              \tag{EGC19}
+\]
+For a diagonal face, put \(K=D_{xx}/2\),
+\(\mathrm{Pe}=A_x\Delta x/K_{\rm face}\), and
+\(\mathcal B(z)=z/(\exp z-1)\).  The Chang--Cooper/exponential-fit flux is
+\[
+ F_{i+1/2}
+ =
+ \frac{
+  \mathcal B(-\mathrm{Pe})K_i f_i
+  -\mathcal B(\mathrm{Pe})K_{i+1}f_{i+1}}
+ {\Delta x}.                                             \tag{EGC20}
+\]
+The dimensionless P\'eclet number \(\mathrm{Pe}\) compares drift transport
+\(A_x\Delta x\) with face diffusion \(K_{\rm face}\); its sign follows the
+drift direction.
+Despite the input name \code{centered}, that alternative uses upwind drift
+and centered diffusion; it is not centered advection.
+
+The outer \(w\) faces, upper \(\eta\) face, and lower active-\(L\) face have
+zero collision flux.  The optional
+\code{bp_collision_l_min_rel} moves the lower active-\(L\) face upward and
+therefore deliberately removes collision coupling below that cutoff.
+
+\paragraph{Explicit and RKL2 integration.}
+The explicit stability estimate includes
+\[
+ \frac{D_{ww}}{\Delta w^2},\qquad
+ \frac{D_{\eta\eta}}{\Delta\eta^2},\qquad
+ \frac{|D_{w\eta}|}{\Delta w\,\Delta\eta},                \tag{EGC21}
+\]
+and, for the \code{centered} branch, the drift rates
+\(|D_w|/\Delta w\) and \(|D_\eta|/\Delta\eta\).
+The explicit branch uses
+\[
+ N_{\rm sub}=\left\lceil
+ \frac{\Delta t}{\Delta t_{\rm stable}}\right\rceil       \tag{EGC22}
+\]
+and aborts if this exceeds \code{bp_collision_max_substeps}.
+
+With \code{bp_collision_integrator=sts_rkl2}, a cycle with \(s\) stages has
+the nominal acceleration
+\[
+ a_s=\frac{s^2+s-2}{4}.                                  \tag{EGC23}
+\]
+The implementation chooses the smallest sufficient stage count, capped by
+\code{bp_sts_max_stages}, and uses multiple cycles if one capped cycle cannot
+cover the source interval.
+
+The stages approximate the frozen-coefficient flux equation
+\(\partial_t f={\cal L}_h f\), where \({\cal L}_h\) is the discrete
+operator in (EGC17)--(EGC20).  Its coefficients stay fixed during one
+cycle of duration \(\Delta t\).  The second-order Runge--Kutta--Legendre
+construction of
+\href{https://doi.org/10.1016/j.jcp.2013.08.021}{Meyer, Balsara, and Aslam (2014)}
+uses
+\[
+ w_1=\frac{4}{s^2+s-2},\qquad b_0=b_1=\frac13,\qquad
+ b_j=\frac{j^2+j-2}{2j(j+1)}\quad(2\le j\le s).
+                                                        \tag{EGC23a}
+\]
+Here \(j\) counts internal stages within one physical timestep, and
+\(s\ge2\) is the total number of stages.  Set
+\[
+ \mu_j=\frac{2j-1}{j}\frac{b_j}{b_{j-1}},\quad
+ \nu_j=-\frac{j-1}{j}\frac{b_j}{b_{j-2}},\quad
+ \widetilde\mu_j=\mu_jw_1,\quad
+ \widetilde\gamma_j=-(1-b_{j-1})\widetilde\mu_j.
+                                                        \tag{EGC23b}
+\]
+Starting from \(Y_0=f^n\), the recurrence for \(2\le j\le s\) is
+\begin{align}
+ Y_1&=Y_0+b_1w_1\Delta t\,{\cal L}_hY_0,\notag\\
+ Y_j&=\mu_jY_{j-1}+\nu_jY_{j-2}+(1-\mu_j-\nu_j)Y_0\notag\\
+ &\quad+\widetilde\mu_j\Delta t\,{\cal L}_hY_{j-1}
+ +\widetilde\gamma_j\Delta t\,{\cal L}_hY_0,
+ \qquad f^{n+1}=Y_s.                                   \tag{EGC23c}
+\end{align}
+The first-stage factor is \(b_1w_1=w_1/3\); subsequent source terms use
+\(\mu_jw_1\).  Expanding this recurrence gives
+\(Y_s=f^n+\Delta t{\cal L}_hf^n+
+\Delta t^2{\cal L}_h^2f^n/2+O(\Delta t^3)\), which states its
+second-order consistency for the frozen linear operator.
+\codesource{RKL2 frozen-coefficient stage update}
+{\path{cpu/include/ev/boltzmann_poisson.hpp}}
+{Combines the two preceding stages and the initial and current flux right-hand sides}
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\scriptsize]
+yj[s] = mu * ym1[s] + nu * ym2[s]
+    + (1.0 - mu - nu) * y0[s]
+    + mu_tilde * dt * rhsm1[s]
+    + gamma_tilde * dt * rhs0[s];
+\end{lstlisting}
+The C++ index \code{s} in this excerpt is a flattened phase-space array
+offset; the enclosing loop variable \code{j} selects the stage.
+A finite decay-mode validation evolves an exact decay
+mode of the same discrete flux and checks temporal consistency and
+second-order refinement at two, three, and eight stages.
+
+After every explicit substep or RKL2 cycle, negative cells are clipped.  If
+the shell has positive mass \(P\) and clipped negative mass \(N\), every
+positive cell is multiplied by
+\[
+ \max(0,(P-N)/P).                                        \tag{EGC24}
+\]
+This preserves shell mass when \(P\ge N\), but it does not repair radial
+momentum or kinetic energy.  The FP discretization therefore has conservative
+number fluxes but no discrete momentum, energy, or \(H\)-theorem guarantee
+comparable to the reversible operator.
+
+\paragraph{Coefficient refresh and tracers.}
+Coefficient tables can be refreshed every
+\path{bp_coeff_refresh_every} source applications or after
+\[
+ \Delta t_{\rm refresh}
+ =\code{bp_coeff_refresh_chi}\,t_{\rm coll},              \tag{EGC25}
+\]
+where \(t_{\rm coll}\) is the configured mass-weighted collision-time
+quantile.  A tracer is advanced by the same frozen linear operator; it does
+not contribute to the bath.  Here a \emph{passive tracer} is a second
+distribution used to follow a tagged population without allowing that
+population to alter the FP coefficient bath.
+
+The cadence and coefficient caches live in process memory and are not written
+to a restart.  For restart-equivalent numerical scheduling, use
+\code{bp_collision_apply_every=1}, or the paired multirate Strang macro-step
+described below.  A fresh process otherwise rebuilds the coefficients and
+resets a partially accumulated non-Strang cadence.
+
+\paragraph{Diagnostic term masks.}
+\code{bp_fp_terms} accepts
+\code{full}, \code{vr_only}, \code{L_only}, \code{no_mixed},
+\code{no_azimuth}, \code{no_drift}, \code{drift_only}, \code{Drr_only},
+\code{DLL_only}, and \code{Daa_only}.  Values other than \code{full} are
+diagnostic operator mutilations and need not retain the conservation or
+equilibrium properties of the complete tensor.
+
+\subsubsection{Selecting a backend and process layout}
+
+Only after choosing the physical operator above should one select its
+implementation label.  The accepted values are
+\codesource{Eulerian collision-operator selection}{\path{cpu/include/ev/config.hpp} and \path{cpu/include/ev/initial_data.hpp}}{Parses the operator label and rejects every value outside the implemented Fokker--Planck, exact, and reversible backend set}
+\begin{lstlisting}
+bp_collision_operator = fokker_planck
+bp_collision_operator = landau_fp
+bp_collision_operator = boltzmann_exact
+bp_collision_operator = boltzmann_reversible
+bp_collision_operator = boltzmann_reversible_sampled
+bp_collision_operator = boltzmann_reversible_streamed
+\end{lstlisting}
+The two FP names select the same coefficient formula.  The names
+\code{boltzmann_exact_sampled} and \code{boltzmann_exact_streamed} are not
+valid values.
+
+Each operator also has a task-specific frontend:
+\codesource{Fail-closed Eulerian collision task fronts}{\path{cpu/Makefile} and \path{cpu/include/ev/solver_task_profile.hpp}}{Registers each executable name and locks it to the matching Boltzmann--Poisson operator before state or output construction}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+venus_cpu_boltzmann_poisson_fokker_planck
+venus_cpu_boltzmann_poisson_landau
+venus_cpu_boltzmann_poisson_exact
+venus_cpu_boltzmann_poisson_reversible
+venus_cpu_boltzmann_poisson_reversible_sampled
+venus_cpu_boltzmann_poisson_reversible_streamed
+venus_cpu_boltzmann_poisson_expanding_prompt_cusp
+\end{lstlisting}
+These backends use one Message Passing Interface (MPI) rank and parallelize
+within it with OpenMP or the standard-thread fallback; collision fluxes and
+reaction data are not exchanged between MPI angular-momentum slabs.  The FP
+branch can advance the passive tracer defined above, whereas all four
+finite-angle branches reject a nonempty tracer.  The implementations live in
+\path{cpu/include/ev/boltzmann_poisson.hpp},
+\path{cpu/include/ev/finite_angle_boltzmann.hpp},
+\path{cpu/include/ev/reversible_finite_angle_boltzmann.hpp},
+\path{cpu/include/ev/sampled_reversible_boltzmann.hpp}, and
+\path{cpu/include/ev/streamed_reversible_boltzmann.hpp}.
+
+\subsubsection{Operator splitting and collision cadence}
+
+Strang splitting is the symmetric second-order composition ``half collision,
+full Vlasov transport, half collision'' shown below; it avoids privileging
+one operator at both ends of the step.
+With \code{bp_collision_splitting=after_vlasov}, the update is
+\[
+ f^{n+1}={\cal C}_{\Delta t}{\cal V}_{\Delta t}f^n.       \tag{EGC67}
+\]
+With \code{strang},
+\[
+ f^{n+1}=
+ {\cal C}_{\Delta t/2}{\cal V}_{\Delta t}
+ {\cal C}_{\Delta t/2}f^n.                               \tag{EGC68}
+\]
+The three reversible backends require equation~(EGC68).  FP and
+\code{boltzmann_exact} allow either choice.
+
+For Strang splitting with \code{bp_collision_apply_every}>1, the main solver
+constructs one macro-interval from the initial VP CFL step, applies one
+collision half-step at each endpoint, and recomputes the gravitational field
+while subcycling the Vlasov flow inside the macro-interval.  A checkpoint is
+written only after both collision half-steps.  Thus
+\code{bp_collision_apply_every} means a nominal number of Vlasov CFL steps in
+this mode, not a number of skipped calls to the collision function.
+
+\subsubsection{Parameter applicability}
+
+The following grouping prevents silently ignored settings.
+
+\paragraph{FP only.}
+\codesource{Fokker--Planck parameter applicability}{\path{cpu/include/ev/config.hpp}, \path{cpu/include/ev/initial_data.hpp}, and \path{cpu/include/ev/boltzmann_poisson.hpp}}{Parses, validates, and consumes the bath, coefficient-table, conservative-flux, refresh, floor, and stability controls used only by the FP branch}
+\begin{lstlisting}
+bp_bath, bp_fp_terms
+bp_collision_flux, bp_collision_integrator
+bp_temperature_floor
+bp_density_floor_abs, bp_density_floor_rel
+bp_partner_mass_tol, bp_bath_speed_cutoff
+bp_coeff_table_points, bp_coeff_speed_points, bp_coeff_mu_points
+bp_coeff_refresh_mode, bp_coeff_refresh_every
+bp_coeff_refresh_chi, bp_coeff_refresh_time_quantile
+bp_sts_max_stages, bp_collision_l_min_rel
+\end{lstlisting}
+
+\paragraph{\code{boltzmann_exact} only.}
+\codesource{Deterministic exact finite-angle parameters}{\path{cpu/include/ev/config.hpp}, \path{cpu/include/ev/initial_data.hpp}, and \path{cpu/include/ev/finite_angle_boltzmann.hpp}}{Controls incoming-pair mass pruning and optional post-update moment repair in the direct dense quadrature backend}
+\begin{lstlisting}
+bp_boltzmann_mass_tol
+bp_boltzmann_conserve_moments
+\end{lstlisting}
+
+\paragraph{All finite-angle branches.}
+\codesource{Shared finite-angle quadrature and remap parameters}{\path{cpu/include/ev/config.hpp}, \path{cpu/include/ev/finite_angle_boltzmann.hpp}, and \path{cpu/include/ev/reversible_finite_angle_boltzmann.hpp}}{Selects the differential kernel and angular rule and bounds outgoing-remap omissions for exact and reversible finite-angle operators}
+\begin{lstlisting}
+bp_boltzmann_kernel
+bp_boltzmann_pair_phi_points
+bp_boltzmann_scatter_mu_points
+bp_boltzmann_scatter_phi_points
+bp_boltzmann_remap_max_skipped_fraction
+\end{lstlisting}
+
+\paragraph{All reversible branches.}
+\codesource{Shared reversible-reaction parameters}{\path{cpu/include/ev/config.hpp} and \path{cpu/include/ev/reversible_finite_angle_boltzmann.hpp}}{Controls the nonnegative projection search, entropy-safe reaction extent, active-shell floor, and optional explicit fast path}
+\begin{lstlisting}
+bp_reversible_candidate_radius
+bp_reversible_projection_tolerance
+bp_reversible_entropy_floor
+bp_reversible_entropy_tolerance
+bp_reversible_active_shell_floor_fraction
+bp_reversible_explicit_fast_path
+\end{lstlisting}
+\code{bp_reversible_max_velocity_cells} applies only to the complete dense
+graph.
+
+\paragraph{Sampled and streamed reversible branches.}
+\codesource{Sampled reversible accuracy and locality parameters}{\path{cpu/include/ev/config.hpp}, \path{cpu/include/ev/sampled_reversible_boltzmann.hpp}, and \path{cpu/include/ev/streamed_reversible_boltzmann.hpp}}{Controls dense-core coverage, importance sampling, replication, convergence tolerances, random seeding, and fail-closed collision-locality checks}
+\begin{lstlisting}
+bp_sampled_dense_cells
+bp_sampled_min_samples_per_batch
+bp_sampled_max_samples_per_batch
+bp_sampled_replicates_per_estimate
+bp_sampled_outgoing_angle_samples
+bp_sampled_ntc_pair_thinning
+bp_sampled_ntc_pilot_samples, bp_sampled_ntc_quantile
+bp_sampled_energy_strata, bp_sampled_L_strata
+bp_sampled_tail_fraction, bp_sampled_stratified_fraction
+bp_sampled_equilibrium_fraction
+bp_sampled_phase_density_fraction
+bp_sampled_stratum_uniform_fraction
+bp_sampled_uniform_fraction, bp_sampled_tail_power
+bp_sampled_rhs_tolerance, bp_sampled_rhs_floor_fraction
+bp_sampled_heat_tolerance, bp_sampled_heat_floor_fraction
+bp_sampled_activity_boost_max
+bp_sampled_fail_on_unconverged
+bp_sampled_seed
+bp_collision_locality_max_ratio
+bp_collision_fail_on_nonlocal_cells
+\end{lstlisting}
+Guided-pilot controls and the three persistent workspace controls affect only
+the streamed implementation.
+
+\paragraph{Shared physical and scheduling controls.}
+\codesource{Shared Boltzmann--Poisson collision physics and cadence}{\path{cpu/include/ev/config.hpp}, \path{cpu/include/ev/solver_evolution.hpp}, \path{cpu/include/ev/boltzmann_poisson.hpp}, and \path{cpu/include/ev/finite_angle_boltzmann.hpp}}{Selects the operator and cross section and schedules collision applications, stability substeps, and Strang macro-intervals}
+\begin{lstlisting}
+bp_collision_operator
+bp_cross_section, bp_collision_strength
+bp_sigma0, bp_sigma_u0, bp_sigma_n
+bp_subhalo_mass, bp_subhalo_radius, bp_coulomb_log
+bp_yukawa_alpha, bp_yukawa_mchi, bp_yukawa_mphi
+bp_collision_splitting, bp_collision_apply_every
+bp_collision_cfl, bp_collision_max_substeps
+\end{lstlisting}
+The last two controls enter different algorithms: FP stability subcycling,
+the explicit exact loss limit, and the reversible explicit fast path.  They
+do not make RKL2 active in a finite-angle backend.
+
+The common parameter parser also requires the finite-angle quadrature counts
+to satisfy equation~(EGC28) for an FP run, although FP does not use them.
+Leave those values at their valid defaults.
+
+\subsubsection{Diagnostics and scientific interpretation}
+
+\path{operator_mass_budget.csv} records before/after mass, radial momentum,
+and kinetic energy for every collision application.  Depending on the
+backend, it also records:
+\begin{itemize}
+\item exact-remap attempted and skipped activity, with separate \(w\) and
+      \(L\) overflow;
+\item reversible domain, projection, and inactive-shell omissions;
+\item projection error and reversible explicit/implicit reaction counts;
+\item sampled dense/complement reactions, attempted and retained draws,
+      sample-count range, adaptive rounds, unconverged shells, RHS error, heat
+      error, energy-invariant defect, mean free path, and locality ratio.
+\end{itemize}
+Fields not populated by the selected backend retain zero or their neutral
+default and must not be interpreted as an active measurement.  In particular,
+\code{boltzmann_exact} does not currently compute a mean-free-path locality
+diagnostic, and FP coefficient/substep details are primarily printed to the
+progress log.  Streamed projection-cache hits and misses, reused-shell counts,
+and the maximum graph-reference \(L^1\) change are carried by the in-memory
+step diagnostics but are not currently serialized into
+\path{operator_mass_budget.csv}.
+
+\path{metadata.json} reports the literal selected operator, all resolved
+streamed workspace controls, and an operator-update description consistent
+with the active implementation.  The streamed backend uses the same
+reversible reaction-extent integrator as the dense and sampled branches.  The
+deterministic exact branch is finite-angle quadrature rather than DSMC.
+
+The expanding prompt-cusp task uses
+\path{cpu/src/apps/boltzmann_poisson/expanding_prompt_cusp.cpp}.
+Its INI input specifies the initial distribution, density-contrast Poisson
+source, softened-gravity cross section and finite-angle rule. Build and
+inspect its interface with:
+\codesource{Expanding exact Boltzmann task}{\path{cpu/Makefile} and \path{cpu/src/apps/boltzmann_poisson/expanding_prompt_cusp.cpp}}{Builds the task frontend and displays its accepted controls}
+\begin{lstlisting}
+cd VENUS/cpu
+make venus_cpu_boltzmann_poisson_expanding_prompt_cusp
+./venus_cpu_boltzmann_poisson_expanding_prompt_cusp --help
+\end{lstlisting}
+
+For every backend, refine the \((r,w,L)\) mesh, collision cadence, and angular
+rule together.  The FP branch additionally requires coefficient-table and
+subcycling refinement.  The sampled and streamed branches require independent
+replicates and increasing sample caps until the reported RHS and heat-flux
+uncertainties are smaller than the desired physical differences.  Check mass,
+momentum, energy, entropy sign where applicable, omission budgets, velocity-
+boundary overflow, and collision locality before interpreting a profile.

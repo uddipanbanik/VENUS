@@ -1,0 +1,612 @@
+\subsection{Canonical-Orbit Boltzmann--Poisson Solver}
+\label{sec:fully-kinetic-bp}
+
+\begin{figure}[htbp]
+\centering
+\textbf{Physics flow: canonical-orbit Boltzmann--Poisson module}
+\par\smallskip
+\begin{tikzpicture}[node distance=0.22cm]
+\node[physicsflow] (cb1) {Compute the spherical gravitational potential from the current matter distribution};
+\node[physicsflow,below=of cb1] (cb2) {Build an orbit atlas that records turning points, travel times, and radial occupancy for each orbit family};
+\node[physicsflow,below=of cb2] (cb3) {Store the matter by orbit family and position along the orbit};
+\node[physicsflow,below=of cb3] (cb4) {Move that matter forward along the frozen orbits until the next field or collision event};
+\node[physicsflow,below=of cb4] (cb5) {At a collision event, sample the local incoming velocities and choose physical collision pairs};
+\node[physicsflow,below=of cb5] (cb6) {Scatter accepted pairs and place their outgoing matter onto the corresponding new trajectories};
+\node[physicsflow,below=of cb6] (cb7) {Return delayed central trajectories, compact the continuous packet list, and close the mass and energy ledgers};
+\node[physicsflow,below=of cb7] (cb8) {Rebuild density, gravity, and the orbit atlas when the field changes; then schedule the next event};
+\draw[physicsarrow] (cb1) -- (cb2);
+\draw[physicsarrow] (cb2) -- (cb3);
+\draw[physicsarrow] (cb3) -- (cb4);
+\draw[physicsarrow] (cb4) -- (cb5);
+\draw[physicsarrow] (cb5) -- (cb6);
+\draw[physicsarrow] (cb6) -- (cb7);
+\draw[physicsarrow] (cb7) -- (cb8);
+\end{tikzpicture}
+\end{figure}
+
+\subsubsection{Purpose and state variables}
+
+This module evolves a spherical SIDM distribution under self-gravity and
+finite-angle elastic scattering.  Its state contains two connected
+representations of the same physical system:
+\begin{enumerate}
+\item a finite-volume distribution on an orbit grid, used for long intervals
+      of collisionless motion; and
+\item continuous phase-space packets created by recent collisions, used until
+      they can be placed on the orbit grid with a conservative map.
+\end{enumerate}
+
+The implementation is organized in
+\path{cpu/include/ev/canonical_orbit_phase_transport.hpp},
+\path{cpu/include/ev/canonical_boltzmann_poisson_event.hpp}, and
+\path{cpu/include/ev/weighted_vlasov_pic_collisions.hpp}.  Restarts are handled by
+\path{cpu/include/ev/canonical_boltzmann_poisson_restart.hpp}.
+
+In spherical symmetry we use
+\[
+  \eta=\frac{L^2}{2},\qquad
+  H=\Phi(r)+\frac{w^2}{2}+\frac{\eta}{r^2}.             \tag{CBP1}
+\]
+Here \(w=v_r\), \(L=r v_t\), and \(H\) is the specific Hamiltonian in the
+current gravitational potential.  The phase-space measure is
+\[
+  \dd\Gamma=8\pi^2\,\dd r\,\dd w\,\dd\eta.             \tag{CBP2}
+\]
+The factor \(8\pi^2\) is included in every physical mass budget.
+
+For a frozen spherical potential, \(\eta\) and \(H\) remain constant along an
+orbit.  A third coordinate, the dimensionless radial phase
+\(\zeta_{\rm orb}\in[0,1)\), tells us where the particle is between
+pericentre and apocentre.  One radial period advances \(\zeta_{\rm orb}\) by
+one.  The subscript distinguishes this orbit phase from the Schwarzschild time
+\(\tau\) used in the relativistic chapters.  The orbit-grid coordinates are
+therefore
+\[
+  (\eta,H,\zeta_{\rm orb}).                             \tag{CBP3}
+\]
+
+\noindent\textbf{Module interface.}
+A dedicated caller initializes the canonical-orbit library.  The generic
+\path{params.ini} interface selects the Eulerian methods described elsewhere.
+The canonical initializer takes a cell-integrated distribution, an equilibrium
+table \(f(H)\), the resolution of the orbit atlas, collision-shell controls,
+field and collision clocks, and an output directory.  A continuation additionally reads the canonical restart,
+which stores the atlas, continuous packets, random counters, and both event
+clocks.  The task-specific Eulerian finite-angle frontends described in
+Section~\ref{sec:eulerian-grid-collisions} are separate algorithms and must
+not be used as substitutes for this orbit-atlas representation.
+
+\subsubsection{Building the canonical orbit atlas}
+
+The orbit atlas tabulates the bound trajectories represented by the
+finite-volume cells in equation~(CBP3).  Its construction first fixes angular
+momentum and energy, then resolves orbital phase and the overlap with the
+collision grid.  These four steps are described below.
+
+\paragraph{Step 1: angular-momentum planes.}
+
+Each Eulerian \(\eta\) cell is integrated with a small Gaussian rule.  The
+first cell uses a left Gauss--Radau rule, so one plane lies exactly at
+\(\eta=0\).  The last cell uses a right Gauss--Radau rule.  Interior cells use
+Gauss--Legendre points.  These endpoint planes give direct support to radial
+orbits and to the largest represented angular momentum.
+
+The rule selection appears in the atlas builder:
+\codesource{Canonical orbit-atlas angular-momentum quadrature}
+{\path{cpu/include/ev/canonical_orbit_phase_transport.hpp};
+ \path{cpu/include/ev/phase_space_cells.hpp}}
+{Chooses endpoint-inclusive Gauss--Radau planes at the two angular-momentum
+ boundaries and Gauss--Legendre planes in interior cells}
+\begin{lstlisting}[language=C++]
+if (eta_cell == 0)
+  return phase_space_gauss_radau_left_rule(points);
+if (eta_cell == p.NL - 1)
+  return phase_space_gauss_radau_right_rule(points);
+return phase_space_gauss_legendre_rule(points);
+\end{lstlisting}
+
+\paragraph{Step 2: energy rows.}
+
+At fixed \(\eta\), define the effective potential
+\[
+  \Phi_{\rm eff}(r;\eta)=\Phi(r)+\frac{\eta}{r^2}.       \tag{CBP4}
+\]
+For a bound orbit with energy \(H\), the turning points solve
+\(\Phi_{\rm eff}=H\).  The inner turning radius
+\(r_p\) is the pericentre, and the outer turning radius \(r_a\) is the
+apocentre; radial motion is allowed for \(r_p\le r\le r_a\).  The radial
+action is
+\[
+  J_r(H,\eta)=\frac{1}{\pi}
+  \int_{r_p}^{r_a}\sqrt{2[H-\Phi_{\rm eff}(r;\eta)]}\,\dd r.  \tag{CBP5}
+\]
+Energy-row faces are placed through monotone edges in \(J_r\).  An optional
+positive weight based on the initial \(f(H,\eta)\) concentrates rows where
+the phase-space mass is large.  The row stores both its action interval and
+its energy interval.  During a later Poisson rebuild, the action edges define
+the corresponding energy edges in the new potential.
+
+\paragraph{Step 3: phase cells.}
+
+For one representative orbit, let \(T_r\) be the radial period.  The orbit
+phase is elapsed orbital time normalized by this period,
+\[
+  \zeta_{\rm orb}=\frac{t_{\rm orbit}}{T_r}\pmod 1,
+  \qquad \dot\zeta_{\rm orb}=\frac{1}{T_r}.             \tag{CBP6}
+\]
+Each energy row is divided into equal intervals in \(\zeta_{\rm orb}\).
+Equal phase width means equal residence-time width.  Dense sampling near a
+turning point then arises from the orbit map itself, where a fixed time
+interval covers a small radial interval.
+
+\paragraph{Step 4: overlap with the collision grid.}
+
+Density, pressure, collisions, and the Poisson solve use the Eulerian cells
+\((r,w,\eta)\).  The atlas builder traces the boundary of each canonical cell
+into the \((r,w)\) plane and intersects it with the Eulerian rectangles.  For
+each intersection it stores
+\[
+  \int\dd\Gamma,\qquad
+  \int H\,\dd\Gamma,\qquad
+  \int H^2\,\dd\Gamma,                                  \tag{CBP7}
+\]
+together with the geometric moments needed by the quadratic reconstruction.
+These overlaps are computed once for one frozen potential and reused by all
+projections in that interval.
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}[x=1.0cm,y=1.0cm,>=Latex]
+  \draw[step=1cm,gray!55,thin] (0,0) grid (6,4);
+  \node[below] at (3,0) {$r$};
+  \node[rotate=90] at (-0.45,2) {$w$};
+  \fill[blue!18]
+    (0.65,0.65) .. controls (1.45,1.10) and (2.25,1.55) ..
+    (3.20,2.05) .. controls (4.10,2.55) and (5.05,3.05) ..
+    (5.55,3.45) --
+    (5.15,3.85) .. controls (4.35,3.28) and (3.55,2.90) ..
+    (2.75,2.50) .. controls (1.80,2.02) and (1.00,1.52) ..
+    (0.35,1.05) -- cycle;
+  \draw[blue!70!black,very thick]
+    (0.65,0.65) .. controls (1.45,1.10) and (2.25,1.55) ..
+    (3.20,2.05) .. controls (4.10,2.55) and (5.05,3.05) ..
+    (5.55,3.45);
+  \draw[blue!70!black,very thick]
+    (0.35,1.05) .. controls (1.00,1.52) and (1.80,2.02) ..
+    (2.75,2.50) .. controls (3.55,2.90) and (4.35,3.28) ..
+    (5.15,3.85);
+  \node[fill=white,draw,rounded corners=2pt,align=center,inner sep=2pt]
+    at (1.45,3.45)
+    {one finite cell in\\$ (H,\zeta_{\rm orb}) $};
+  \draw[->,thick] (1.90,3.10) -- (2.85,2.20);
+  \node[align=center,fill=white,inner sep=2pt] at (4.55,0.38)
+    {stored overlap moments};
+  \draw[->,thick] (4.55,0.68) -- (4.25,2.67);
+\end{tikzpicture}
+\caption{One canonical cell mapped into the Eulerian \((r,w)\) plane at fixed
+\(\eta\).  Its curved image crosses several rectangles.  VENUS stores the
+integral over each shaded intersection, so later projections use integrated
+mass instead of a single sample point.}
+\label{fig:canonical-atlas-overlap}
+\end{figure}
+
+Each canonical phase cell stores three integrated quantities,
+\[
+  M_c=\int_c f\,\dd\Gamma,\qquad
+  E_c=\int_c Hf\,\dd\Gamma,\qquad
+  E_{2,c}=\int_c H^2f\,\dd\Gamma.                        \tag{CBP8}
+\]
+They retain the mean and variance of \(H\) inside an energy row.  A quadratic
+reconstruction in \(H\) can therefore be projected without replacing the row
+by its center energy.  Positivity is checked from the reconstructed value;
+the stored cell moments are also checked against the exact moment bounds for
+the interval \([H_L,H_R]\):
+\[
+ H_L\le \langle H\rangle\le H_R,\qquad
+ \langle H\rangle^2\le\langle H^2\rangle
+ \le(H_L+H_R)\langle H\rangle-H_LH_R.                  \tag{CBP9}
+\]
+
+\subsubsection{Frozen-potential Vlasov transport}
+
+During a frozen-field interval, each row advances by a phase shift,
+\[
+  \zeta_{\rm orb}\longmapsto
+  \zeta_{\rm orb}+\frac{\Delta t}{T_r}\pmod 1.         \tag{CBP10}
+\]
+The finite-volume masses and Hamiltonian moments stay in their canonical
+cells.  The row stores the accumulated shift in \code{phase_offset}:
+\codesource{Canonical frozen-orbit phase transport}
+{\path{cpu/include/ev/canonical_orbit_phase_transport.hpp}}
+{Advances each orbit row by its period-normalized phase translation and wraps
+ the result onto the unit radial-phase interval}
+\begin{lstlisting}[language=C++]
+row.phase_offset = hamiltonian_orbit_wrap_phase(
+    row.phase_offset + dt / row.period);
+\end{lstlisting}
+
+This update is an exact translation for the representative orbit in the
+frozen potential.  Projection to \((r,w,\eta)\) is performed when moments or
+collisions are required.  Consequently many orbital intervals can be
+accumulated before a new reconstruction is needed.
+
+Nearly radial trajectories use the regularized orbit geometry in
+\path{cpu/include/ev/hamiltonian_orbit_phase.hpp}.  The ordinary integrator is
+used when its energy check passes.  A failed check triggers the
+Levi--Civita-style regularized evaluation near pericentre.  The orbit table
+records retry and unresolved-orbit diagnostics.
+
+\subsubsection{The finite inner radius}
+\label{sec:delayed-inner-carrier}
+
+The logarithmic radial mesh begins at \(R=r_{\min}>0\).  An orbit that enters
+\(0<r<R\) keeps evolving in the central potential.  Its canonical phase map
+contains a hidden phase interval whose duration is the physical inward and
+outward flight time.  Mass in this phase interval is included in the enclosed
+mass used by Poisson.  When the phase reaches the outgoing crossing, the same
+orbit returns through \(R\) with outward radial velocity.
+
+The resolved and hidden pieces obey
+\[
+ M_{\rm atlas}=M_{\rm visible}+M_{\rm hidden}+M_{\rm escaped}. \tag{CBP11}
+\]
+The code checks this partition for every canonical column.  SIDM calculations
+also report the optical depth across \(0<r<R\) and are repeated with smaller
+\(R\).
+
+\subsubsection{Choosing the next event time}
+
+The potential and collision clocks are independent.  From consecutive
+Poisson fields, VENUS estimates a mass-weighted field-change time using both
+\(\Phi\) and \(g=\partial_r\Phi\).  The requested field interval is a fraction
+\(\epsilon_\Phi\) of that time.  The collision module supplies a physical
+collision time and an NTC-majorant time.  The scheduler uses
+\[
+ \Delta t=\min\left(
+  \Delta t_{\max},
+  \epsilon_\Phi t_\Phi-t_{\Phi,{\rm age}},
+  \epsilon_C t_C-t_{C,{\rm age}},
+  \epsilon_{\rm maj}t_{\rm maj}
+ \right).                                               \tag{CBP12}
+\]
+Here \(\Delta t_{\max}\) is the configured hard cap;
+\(t_\Phi\) is the mass-weighted field-change timescale, and
+\(t_{\Phi,{\rm age}}\) is the elapsed time since the last potential rebuild.
+The derivative estimate is the smaller of
+\(\sqrt{\sum_i\omega_i\Phi_i^2/\sum_i\omega_i\dot\Phi_i^2}\) and
+\(\sqrt{\sum_i\omega_i g_i^2/\sum_i\omega_i\dot g_i^2}\), where
+\(g=\Phi_r\), \(M_i=4\pi\max(\rho_i,0)
+(r_{i+1/2}^3-r_{i-1/2}^3)/3\) is nonnegative resolved shell mass, and
+\(\omega_i=M_i/(M_{\rm hidden}+\sum_jM_j)\).
+Here \(M_{\rm hidden}\) is the unresolved inner mass in (CBP11), and the
+rates follow from \code{vp_potential_time_derivative}.  Each channel requires
+both mean squares to exceed \((4096\epsilon_{\rm mach})^2\), with
+\(\epsilon_{\rm mach}\) double-precision machine roundoff. A channel at or
+below this threshold gives infinite time, as do zero total mass and the
+helper's expanding-background branch.
+After an event the solver also restricts \(t_\Phi\) by the elapsed field time
+divided by the larger mass-weighted relative potential or force change
+returned by \code{canonical_field_mismatch}.  These are the distinct
+canonical helpers in \path{cpu/include/ev/canonical_boltzmann_poisson_event.hpp},
+lines 242--418 and 1801--1835.
+Likewise \(t_C\) is the minimum local physical
+collision timescale and \(t_{C,{\rm age}}\) is the elapsed time since the
+last collision event.  The dimensionless fractions \(\epsilon_\Phi\) and
+\(\epsilon_C\) set the corresponding deadlines.  Finally,
+\(t_{\rm maj}\) is the no-time-counter (NTC) proposal-majorant timescale and
+\(\epsilon_{\rm maj}\) is its safety fraction.  Subtracting each age prevents
+one kind of event from indefinitely postponing the other.
+
+The source call is:
+\codesource{Canonical Boltzmann--Poisson event scheduler}
+{\path{cpu/include/ev/canonical_boltzmann_poisson_event.hpp};
+ \path{cpu/include/ev/weighted_vlasov_pic_event_scheduler.hpp}}
+{Combines the independent field and collision clock ages with their physical
+ deadlines to choose the next event interval and ordering}
+\begin{lstlisting}[language=C++]
+diagnostics.plan = plan_weighted_pic_event(
+    {state.potential_age, state.collision_age},
+    state.potential_timescale,
+    scheduled_collision_timescale,
+    options.potential_fraction,
+    options.collision_fraction,
+    maximum_interval);
+\end{lstlisting}
+
+If the collision clock expires first, the sequence is orbit advance,
+collision, and later field rebuild.  If the field clock expires first, the
+sequence is orbit advance, field rebuild, and later collision.  When both
+expire together, the scheduler records their chronological order and executes
+both operations at the same event time.
+
+\subsubsection{Sampling the instantaneous distribution}
+
+At a collision event, the atlas and all active continuous packets are sampled
+at their current phase.  A sampled marker contains
+\[
+  (r,w,v_{t,1},v_{t,2},m_p).                             \tag{CBP13}
+\]
+The tangential direction is uniform in its local plane.  Marker weights are
+fractional, so a canonical cell can contribute to several independent virtual
+batches.  Increasing the number of markers improves the estimate of the local
+collision integral without changing the orbit-grid resolution.
+
+Markers are sorted by radius and divided into disjoint shells.  A shell is
+accepted for local scattering when
+\[
+  \Delta r_s\le\lambda_{\rm rms,s}.                     \tag{CBP14}
+\]
+The shell builder can increase its population to reduce statistical noise.
+The ledger records the shell width, mean free path, marker count, and the
+largest ratio \(\Delta r_s/\lambda_{\rm rms,s}\).
+
+\subsubsection{No-time-counter pair selection}
+
+Consider one shell of volume \(V_s\), density \(\rho_s\), and \(N_s\) sampled
+markers.  Define
+\[
+  A_s\ge \max_{i,j}\left[u_{ij}\sigma_{\rm tot}(u_{ij})\right],
+  \qquad u_{ij}=|\boldsymbol v_i-\boldsymbol v_j|.       \tag{CBP15}
+\]
+The no-time-counter clock proposes unordered pairs at rate
+\[
+  \nu_{{\rm trial},s}=\frac{N_s-1}{2}\rho_s A_s.        \tag{CBP16}
+\]
+For every proposal, two distinct marker indices are drawn uniformly.  With a
+fresh uniform random number \(U_a\in(0,1)\), the pair is accepted when
+\[
+  U_a A_s<u_{ij}\sigma_{\rm tot}(u_{ij}).               \tag{CBP17}
+\]
+Equations~(CBP16)--(CBP17) give the required rate
+\(f_i f_j u_{ij}\sigma_{\rm tot}\) in expectation.  The algorithm visits the
+realized proposals and accepted events.  Its cost scales with the physical
+trial count.
+
+The implementation follows these equations directly:
+\codesource{Canonical-orbit no-time-counter sampler}
+{\path{cpu/include/ev/canonical_orbit_phase_transport.hpp}}
+{Draws distinct local phase-space samples and accepts each trial against the
+ shell's verified relative-speed--cross-section majorant}
+\begin{lstlisting}[language=C++]
+clock += -std::log(rng.uniform_open()) / trial_rate;
+ia = rng.uniform_index(count);
+ib = draw_distinct_index(count, ia);
+u_sigma = relative_speed * total_cross_section_per_mass(...);
+if (rng.uniform_open() * shell.majorant_u_sigma >= u_sigma)
+  continue;
+\end{lstlisting}
+
+\subsubsection{Drawing the outgoing direction}
+
+Let
+\[
+ \boldsymbol V=\frac{\boldsymbol v_1+\boldsymbol v_2}{2},
+ \qquad \boldsymbol u=\boldsymbol v_1-\boldsymbol v_2. \tag{CBP18}
+\]
+Elastic scattering changes the direction of \(\boldsymbol u\) and keeps its
+magnitude.  Write \(\mu=\cos\theta\).  The normalized cumulative distribution
+for \(\mu\) is
+\[
+ P(\mu\le x)=
+ \frac{2\pi}{\sigma_{\rm tot}(u)}
+ \int_{-1}^{x}\frac{\dd\sigma}{\dd\Omega}(u,\mu')\,\dd\mu'. \tag{CBP19}
+\]
+VENUS draws \(U_\mu\in(0,1)\) and inverts equation~(CBP19).  Isotropic
+scattering gives \(\mu=2U_\mu-1\).  For the Born Yukawa kernel, the analytic
+inverse used by the code is
+\[
+ a=m_\phi^2,\qquad b=\frac{m_\chi^2u^2}{2},
+\]
+\[
+ y=\frac{2b}{a},\qquad
+ \mu=1-\frac{2U_\mu}{1+y(1-U_\mu)}.                     \tag{CBP20}
+\]
+Here \(U_\mu\) samples the probability of a cosine at or above \(\mu\),
+complementary to the increasing cumulative probability in (CBP19).
+This factored expression has the continuous uniform-cosine limit
+\(\mu=1-2U_\mu\) at \(y=0\); the numerical inverse uses \(1/y\) when
+\(y>1\) to keep the arithmetic bounded.
+A second independent random number gives the azimuth
+\(\psi=2\pi U_\psi\).  The code constructs the unit vector
+\(\widehat{\boldsymbol u}'(\mu,\psi)\) around the incoming relative direction
+and sets
+\[
+ \boldsymbol v'_1=\boldsymbol V+\frac{u}{2}
+       \widehat{\boldsymbol u}',\qquad
+ \boldsymbol v'_2=\boldsymbol V-\frac{u}{2}
+       \widehat{\boldsymbol u}'.                        \tag{CBP21}
+\]
+Thus each accepted pair satisfies
+\[
+ \boldsymbol v'_1+\boldsymbol v'_2=\boldsymbol v_1+\boldsymbol v_2,
+ \qquad
+ |\boldsymbol v'_1|^2+|\boldsymbol v'_2|^2
+ =|\boldsymbol v_1|^2+|\boldsymbol v_2|^2.              \tag{CBP22}
+\]
+
+The corresponding source excerpt is:
+\codesource{Finite-angle elastic-scattering map}
+{\path{cpu/include/ev/weighted_vlasov_pic_collisions.hpp};
+ \path{cpu/include/ev/finite_angle_boltzmann.hpp}}
+{Samples the scattering cosine and azimuth and constructs the two outgoing
+ centre-of-mass-frame velocities while preserving pair invariants}
+\begin{lstlisting}[language=C++]
+const double mu = sample_scatter_mu(u, p, options, rng);
+const double psi = 2.0 * PI * rng.uniform_open();
+const BPFAVec3 direction =
+    bp_fa_scattered_relative_direction(relative, mu, psi);
+const BPFAVec3 relative_after = bp_fa_scale(direction, u);
+const BPFAVec3 out1 = bp_fa_add(centre,
+    bp_fa_scale(relative_after, 0.5));
+const BPFAVec3 out2 = bp_fa_sub(centre,
+    bp_fa_scale(relative_after, 0.5));
+\end{lstlisting}
+
+Both tangential components enter equation~(CBP21).  After scattering, the
+new angular momentum of each packet is
+\[
+ L'=r\sqrt{(v'_{t,1})^2+(v'_{t,2})^2},\qquad
+ \eta'=\frac{(L')^2}{2}.                                \tag{CBP23}
+\]
+Collisions therefore redistribute angular momentum while preserving the full
+three-dimensional pair momentum and kinetic energy.
+
+\subsubsection{Gain, loss, and reverse events}
+
+An accepted event contains its incoming and outgoing velocities in one
+record.  The incoming mass is withdrawn from the canonical cells that owned
+the sampled marker.  The two outgoing packets are then created with the same
+event mass.  This is the sampled gain-minus-loss update of the Boltzmann
+operator.
+
+The collision map in equation~(CBP21) is one-to-one and preserves velocity
+volume.  Drawing \(\psi\) over the full interval and drawing \(\mu\) from the
+complete differential cross section includes the reverse map with its
+physical probability.  For a Maxwellian \(f_M\propto\exp(-v^2/2T)\), equation
+(CBP22) gives
+\[
+ f_M(\boldsymbol v_1)f_M(\boldsymbol v_2)
+ =f_M(\boldsymbol v'_1)f_M(\boldsymbol v'_2).            \tag{CBP24}
+\]
+The expected collision update therefore vanishes.  A numerical realization
+should approach this null state as the collision-marker population and orbit
+atlas are refined.
+
+\subsubsection{Source-owned withdrawal and outgoing carriers}
+
+Each sampled canonical marker keeps the finite-volume cells and weights that
+created it.  Once a pair is accepted, the incoming event mass is removed from
+those owned cells immediately.  The source cells move with the frozen-field
+phase flow, so this withdrawal includes their resolved and hidden orbital
+phases consistently.
+
+The outgoing velocities define continuous packets at the collision radius.
+They are advanced along their new orbits until the next collision event.  The
+main source sequence is:
+\codesource{Canonical source withdrawal and outgoing carriers}
+{\path{cpu/include/ev/canonical_orbit_phase_transport.hpp}}
+{Removes accepted incoming mass from its owned atlas cells and retains the
+ two outgoing continuous packets for conservative remapping onto new orbits}
+\begin{lstlisting}[language=C++]
+represented_first_before = withdraw_source(
+    pair.first_ref, pair.first_source,
+    event.first_before, packet_mass);
+represented_second_before = withdraw_source(
+    pair.second_ref, pair.second_source,
+    event.second_before, packet_mass);
+
+retain_signed_marker(new_signed_positive,
+    collision_source[pair.first_source],
+    event.first_after, packet_mass);
+retain_signed_marker(new_signed_positive,
+    collision_source[pair.second_source],
+    event.second_after, packet_mass);
+\end{lstlisting}
+
+At creation, the atlas loss and outgoing packet gain satisfy
+\[
+ \Delta M_{\rm atlas}+M_{\rm outgoing}=0.              \tag{CBP25}
+\]
+The pair ledger also checks equation~(CBP22) for every accepted event.
+
+\subsubsection{Mapping outgoing packets onto the orbit grid}
+
+Before the next collision distribution is sampled, active outgoing packets
+are placed on the current atlas:
+\begin{enumerate}
+\item Compute \(\eta'\) and \(H'\) from equations~(CBP1) and (CBP23).
+\item Find the two neighboring \(\eta\) quadrature planes with positive linear
+      weights.
+\item Find the energy row containing \(H'\) on each plane.
+\item Integrate the orbit to obtain the physical phase
+      \(\zeta_{\rm orb}'\).
+\item Convert \(\zeta_{\rm orb}'\) to the co-moving phase coordinate using the row's
+      current \code{phase_offset}.
+\item Deposit mass, \(H\)-mass, and \(H^2\)-mass with positive weights into at
+      most four neighboring canonical cells.
+\end{enumerate}
+
+The deposition weights sum to one.  The materialization transaction checks
+mass before committing it.  It also checks the moment bounds in
+equation~(CBP9).
+
+An outgoing packet with \(H'>0\) lies above the bound-orbit atlas.  It remains
+an explicit open-orbit packet.  The characteristic integrator advances it,
+the collision sampler includes it while it is inside the radial domain, and
+the escape ledger records it after it crosses the outer boundary.  Separate
+counters classify open packets caused by high energy, angular-momentum
+support, a missing row, an energy gap, or an orbit-geometry failure.
+
+\subsubsection{Keeping the continuous packet list compact}
+
+Many small collision packets may occupy nearly the same local phase-space
+region.  VENUS replaces each such group by a positive quadrature supported on
+a subset of the existing packet locations.  Positions and velocities remain
+physical packet states.  The new nonnegative weights preserve fourteen group
+moments:
+\begin{align*}
+&1, q, w, qw, w^2, qw^2, v_t^2, qv_t^2,\\
+&\frac{v^2}{2}w, q\frac{v^2}{2}w,
+ \eta, q\eta, H, H^2,\qquad q=\frac{r^3}{3}.          \tag{CBP26}
+\end{align*}
+These constraints preserve mass, radial momentum, radial and tangential
+kinetic moments, radial kinetic-energy flux, the squared-angular-momentum
+moment \(\eta=L^2/2\), and the first
+two Hamiltonian moments.  The factors with \(q\) preserve the same quantities
+under radial cloud-in-cell deposition.
+
+The reduction is local in \((r,w,\eta)\).  A group contains packets with the
+same deposition stencil.  A Carath\'eodory reduction is a positive
+convex-geometry compression: it replaces a nonnegative weighted cloud by a
+subset of its existing packet locations while preserving the requested
+moment vector.  It leaves at most fourteen packets in a well-conditioned
+group.  Here ``well-conditioned'' means that the retained moment columns are
+sufficiently independent for their nonnegative weights to be solved without
+amplifying roundoff.  Every group recomputes equation~(CBP26) after reduction.
+A group whose moment matrix is ill-conditioned or whose residual exceeds the
+requested tolerance keeps its original packets.
+
+Packet ordering is made deterministic from marker identity and phase-space
+coordinates before the reduction, so a fixed platform and random seed retain
+the same packet order across supported OpenMP thread counts.
+
+\subsubsection{Refreshing the gravitational field}
+
+When the field clock expires, VENUS projects the instantaneous atlas and
+continuous packets to radial moments and solves spherical Poisson.  A new
+orbit atlas is built in the new potential with the previous radial-action
+edges.  Mass and its \((H,H^2)\) moments are transferred between matching
+topological rows.  The field iteration stops when the mass-weighted mismatch
+between the represented field and a fresh Poisson solve is below tolerance.
+
+This rebuild lets the slowly changing stationary part of \(f(H,\eta)\) evolve
+with the potential.  The current distribution supplies the transferred row
+moments; the initial equilibrium table is used only for initialization.
+
+\subsubsection{Conservation diagnostics and output}
+
+Every event writes the following independent checks:
+\begin{itemize}
+\item atlas mass before and after frozen transport;
+\item represented mass before and after collisions;
+\item pair momentum and kinetic-energy errors;
+\item shell locality \(\Delta r_s/\lambda_{\rm rms,s}\);
+\item materialization residuals in \(M\), \(H\), and \(H^2\);
+\item packet-compression moment residuals;
+\item active, hidden, and escaped open-orbit mass;
+\item field mismatch and the measured potential-change time;
+\item marker-batch estimates of density and radial heat-flux noise.
+\end{itemize}
+
+The main files are \path{history.csv}, \path{profiles.csv}, and
+\path{operator_mass_budget.csv}.  A restart stores the atlas, phase offsets,
+all three cell moments, open packets, deferred outgoing packets, random-stream
+counters, and both event clocks.
+
+Convergence studies should vary the orbit-grid resolution, marker count,
+virtual collision batches, local shell population, compression subcells,
+\(r_{\min}\), and the allowed active open-tail fraction.  The comparison uses
+density, radial velocity dispersion, collision energy transfer, and radial
+heat flux.  A gravothermal core-collapse comparison should additionally
+resolve the early dilution, subsequent reversal, and central-density growth
+through the chosen physical interval.

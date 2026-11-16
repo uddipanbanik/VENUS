@@ -1,0 +1,154 @@
+\subsection{Visualization Route for Each Module Family}
+
+A renderer reads saved solver data and turns them into a still plot or a
+Graphics Interchange Format (GIF) animation. Its input schema gives the
+column names and their meanings, while the metadata records run settings and
+conventions. Read both to establish the coordinate, physical time,
+normalization, and numerical trajectory represented by each curve. The
+renderer then calculates the requested diagnostics from those saved data.
+
+The table gives the exact maintained program and its required input route.
+Options beginning with \code{--} are command-line choices.  A directory option
+means that the renderer finds only the filename pattern stated in that row; it
+does not silently search the whole repository.
+
+\begin{longtable}{@{}p{0.30\linewidth}p{0.34\linewidth}p{0.28\linewidth}@{}}
+\toprule
+Module family & Maintained reader or renderer & Interpretation checks \\
+\midrule
+\endfirsthead
+\toprule
+Module family & Maintained reader or renderer & Interpretation checks \\
+\midrule
+\endhead
+Eulerian Einstein--Vlasov & \path{cpu/tools/plot_einstein_vlasov_outputs.py}
+reads \path{profiles.csv}, \path{history.csv}, the endpoint phase tables, and,
+when present, \path{phase_space_snapshots.csv} from \code{--input-dir}; it
+writes plots and optional GIFs to \code{--output-dir}.
+\path{cpu/python/ev_solver/output_reader.py} is the corresponding table reader
+used from Python. & Check metric coordinate,
+compactness gap, radial grid, saved time, mass normalization, and whether the
+polar chart stopped before a horizon. \\
+
+Low/high Schwarzschild Einstein--Vlasov WPIC &
+\path{cpu/tools/render_weighted_einstein_vlasov_pic_profile_gifs.py} requires
+the two explicit tables \code{--low-profiles PATH} and
+\code{--high-profiles PATH}, plus \code{--output-dir DIR}; it writes separate
+low- and high-compactness GIFs, still preview frames, and exact frame-time
+tables. & Keep
+the low EV--VP comparison separate from the high-compactness run; a small
+polar gap is a coordinate-patch warning, not a certified black-hole event. \\
+
+Paired Schwarzschild/ingoing-EF Einstein--Vlasov WPIC &
+\path{cpu/tools/render_weighted_einstein_vlasov_coordinate_pair_gif.py}
+requires \code{--schwarzschild DIR}, \code{--ef DIR},
+\code{--manifest FILE}, \code{--output FILE}, and an explicit
+\code{--eikonal-substeps N}.  It reads each run's summary and
+\path{high_compactness_profiles.csv} and verifies the null-map files named by
+the manifest. &
+Require the authenticated map manifest and the explicit eikonal substep
+count.  Exterior overlays compare the same mapped events.  After the polar
+chart ends, frames are visibly labeled EF-only.  The tool also writes exact
+frame clocks, preview images, input hashes, and panel metadata. \\
+
+Eulerian Vlasov--Poisson and Boltzmann--Poisson &
+\path{cpu/tools/spherical_profile_rendering.py} and
+\path{cpu/tools/render_density_slope_sigma2_gif.py} accept one or more
+\code{--input-dir DIR} options and read \path{profiles.csv} by default.  The
+first needs columns \code{time}, \code{step}, \code{r}, and \code{rho}; the
+second also uses the pressure columns to plot velocity dispersion.
+\path{metadata.json} is needed by the second tool only when nearby radial bins
+are grouped until they contain a requested minimum number of particles.  Both
+require \code{--output FILE} and write a neighboring text file containing the
+exact displayed frame times. &
+Check static versus expanding coordinates, total-density versus density-
+contrast source, collision operator, velocity support, and ledger before
+comparing density slopes or dispersions. \\
+
+Expanding/collisionless Newtonian WPIC &
+\path{cpu/tools/render_weighted_pic_pure_gamma_gifs.py} takes
+\code{--input-root DIR} and \code{--output-directory DIR}; every selected case
+directory must contain complete \path{profile_*.csv} files.
+\path{cpu/tools/render_weighted_vlasov_pic_equilibrium_gif.py} instead takes a
+snapshot directory first and an output GIF second, without option names, and
+specifically
+expects \path{weighted_pic_plummer_*.csv}; it is the Plummer-equilibrium
+renderer, not a general expanding-profile reader. & Check the
+scale factor, physical frame time, marker-mesh contract, represented mass, and
+collisionless control. \\
+
+Subhalo WPIC &
+\path{cpu/tools/render_weighted_pic_subhalo_comparison_gif.py},
+\path{cpu/tools/render_weighted_pic_subhalo_physical_time_gif.py},
+\path{cpu/tools/render_weighted_pic_subhalo_collision_age_gif.py}, and
+\path{cpu/tools/render_weighted_pic_subhalo_strength_scan_gif.py} read
+\path{profile_*.csv} from explicitly named \code{--collisionless} and
+\code{--collisional-*} run directories.  Exact-time modes require matching
+physical output times.  The collision-age tool additionally requires every
+collisional run's \path{collision_history.csv}, including its
+\code{min_collision_time} column. & Distinguish
+physical time, accumulated collision age, and scan strength.  Include locality,
+capture, internal-energy, and pair-majorant diagnostics with the profiles. \\
+
+Material-SIDM WPIC &
+\path{cpu/tools/render_frank_wpic_gif.py},
+\path{cpu/tools/render_frank_wpic_density_slope_gif.py}, and
+\path{cpu/tools/render_frank_wpic_uniform_time_gif.py} each require one or
+more \code{--profile-dir DIR} options containing \path{profile_*.csv}, plus
+\code{--output FILE}.  The uniform-time variant samples frames at equal
+elapsed simulation times even if the solver saved them at irregular steps. &
+State the constant, power-law,
+or Yukawa--Born law and the exact marker/restart source.  Equal-looking
+central densities do not replace locality or collision-clock checks. \\
+
+Persistent-marker SphDSMC &
+\path{cpu/tools/render_frank_venus_sphdsmc_gif.py} compares VENUS with the
+external Frank reference.  It requires every selected VENUS profile as a
+repeated \code{--venus-profile FILE}, one \code{--venus-metadata FILE}, the
+reference directory \code{--frank-profile-dir DIR} containing
+\path{prof.*}, a layout-check directory \code{--qa-dir DIR}, and
+\code{--output FILE}.  It does not infer any of these inputs. & Keep the
+SphDSMC force,
+shell, and timestep conventions distinct from WPIC.  Show energy, collision
+locality, and marker-count convergence beside the profile movie. \\
+
+Canonical-orbit Boltzmann--Poisson &
+\path{cpu/tools/render_density_slope_sigma2_gif.py} can read the task's
+named-column \path{profiles.csv};
+\path{cpu/python/ev_solver/output_reader.py} can inspect that table together
+with \path{history.csv} and \path{operator_mass_budget.csv}. & Plot the
+orbit-atlas and packet diagnostics with the field;
+do not present a reconstructed profile without carrier, omission, and
+invariant budgets. \\
+
+Python Einstein--Vlasov reference package &
+\path{cpu/python/ev_solver/plotting.py} and
+\path{cpu/python/ev_solver/output_reader.py} consume the reference package's
+named CSV output and saved-time arrays; pass paths explicitly from the Python
+calling code. & Keep the Python reference scope
+separate from the C++ task frontends, and verify the coordinate, grid, restart
+schema, and saved-time arrays before comparing implementations. \\
+
+GPU WPIC tasks & \path{gpu/scripts/render_venus_gpu_density_slope_gif.py}
+delegates to the maintained strength-scan renderer.  It reads named-column
+\path{profile_*.csv} snapshots from explicit \code{--collisionless DIR} and
+\code{--collisional-* DIR} choices and requires
+\code{--output-directory DIR} and \code{--gamma VALUE}; \code{--output FILE}
+may override the generated name.  A CPU WPIC renderer may be used only when
+its documented schema matches. & Confirm the GPU task, restart version, device
+and rank layout, collision law, terminal status, and CPU/GPU comparison
+tolerance. \\
+\bottomrule
+\end{longtable}
+
+\subsection{A reproducible plotting and animation record}
+
+For every final figure or animation, retain the input run directories,
+profile/history filenames, metadata files, renderer path and SHA-256
+fingerprint, complete command, selected frame times, axis limits, masks,
+smoothing or differentiation rule, and output fingerprint.  Select displayed states by physical time when output cadence changes, and
+record both the source times and playback times. State any mask in the legend
+or caption. A coordinate horizon, a missing interval, or an unverified restart
+boundary separates the available data into distinct intervals. Show those
+intervals with their actual coverage so the animation preserves the physical
+meaning of its frames.

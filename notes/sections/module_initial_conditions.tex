@@ -1,0 +1,283 @@
+\subsection{Initial-Condition Route for Every Solver Task}
+
+An initial condition (IC) specifies the matter distribution in position and
+velocity, its total mass and units, and the starting field or metric. A grid
+solver represents this distribution by values or averages on a phase-space
+grid. A marker solver represents it by weighted numerical particles, called
+markers. A restart also retains the evolved time, event clocks,
+random-number counters, and method-specific internal state. Those additional
+quantities let the solver continue the same numerical trajectory.
+
+The rows are ordered from the maintained production marker methods to the
+grid and research methods.  Each row names both the public solver executable
+and the source file that actually reads or constructs its starting state.
+An executable ending in \path{_openmp} uses the same IC route as the named CPU
+task; \path{_openmp} means that loop work may be shared among CPU threads.
+The two grid executables ending in \path{_mpi} likewise use the same route;
+\path{_mpi} means that the grid is split among communicating processes.
+
+\begin{longtable}{@{}p{0.28\linewidth}p{0.28\linewidth}p{0.36\linewidth}@{}}
+\toprule
+Consuming task & Fresh-data or restart route & Authoritative implementation
+and required checks \\
+\midrule
+\endfirsthead
+\toprule
+Consuming task & Fresh-data or restart route & Authoritative implementation
+and required checks \\
+\midrule
+\endhead
+\path{venus_cpu_vlasov_poisson_wpic_expanding} & Analytic expanding power-law
+markers generated inside the driver, or a versioned weighted particle-in-cell
+(WPIC) restart selected by \code{--restart} & The task main is
+\path{cpu/src/apps/vlasov_poisson/expanding_wpic.cpp};
+\path{cpu/src/drivers/expanding_wpic.cpp} generates, reads, and validates the
+markers.  Check marker--mesh coverage, expansion and velocity conventions,
+represented mass, and restart clocks. \\
+
+\path{venus_cpu_subhalo_wpic} & Analytic expanding power-law markers or a
+complete WPIC restart carrying masses, internal state, IDs, and event clocks &
+The task main is \path{cpu/src/apps/subhalo/expanding_wpic.cpp}; IC generation
+and restart loading are in \path{cpu/src/drivers/expanding_wpic.cpp}, and the
+collision state is defined in
+\path{cpu/include/ev/weighted_vlasov_pic_subhalo_collisions.hpp}.  Check the
+physical subhalo masses, Plummer calibration, locality, pair majorant,
+capture ledger, and collisionless control. \\
+
+\path{venus_cpu_sidm_wpic_constant} & Exactly one of
+\code{--frank-restart PATH}, which imports a persistent Frank SphDSMC particle
+population, or \code{--pic-restart PATH}, which resumes a WPIC state; there is
+no separate analytic-fresh option & The task main is
+\path{cpu/src/apps/sidm/wpic_constant.cpp}.  The command-line check and import
+are in \path{cpu/src/drivers/sidm_wpic.cpp}; the conversion itself is in
+\path{cpu/include/ev/weighted_pic_frank_restart_import.hpp}.  Check positive
+marker masses, the static-halo convention, shell locality, collision clocks,
+and any equal-mass assumption. \\
+
+\path{venus_cpu_sidm_wpic_velocity_dependent} & The same exactly-one-of
+\code{--frank-restart} or \code{--pic-restart} route as the constant WPIC task
+& The task main is \path{cpu/src/apps/sidm/wpic_velocity_dependent.cpp}; the
+reader and checks are again in \path{cpu/src/drivers/sidm_wpic.cpp}.
+Check the selected power-law or Yukawa--Born formula over the realized
+relative-speed range; the task is a research extension rather than a
+paper-exact constant-law claim. \\
+
+\path{venus_cpu_sidm_sphdsmc_constant} and
+\path{venus_cpu_sidm_sphdsmc_constant_openmp} & Sample an analytic or
+\code{EVICRWL1} phase-grid distribution into persistent markers, or resume a
+versioned spherical direct-simulation Monte Carlo (SphDSMC) restart & The task
+main is \path{cpu/src/apps/sidm/sphdsmc_constant.cpp}; loading, sampling, and
+restart checks are in \path{cpu/include/ev/spherical_dsmc_solver.hpp}.
+\path{cpu/tools/generate_frank_core_spherical_dsmc_restart.py} and
+\path{cpu/tools/generate_frank_nfwc40_fig2_restart.py} construct the two named
+benchmark populations.  Check marker masses and identifiers, radial support,
+equilibrium, shell occupancy, and mean-free-path locality. \\
+
+\path{venus_cpu_sidm_sphdsmc_velocity_dependent} and
+\path{venus_cpu_sidm_sphdsmc_velocity_dependent_openmp} & The same
+persistent-marker routes as the constant task & The task main is
+\path{cpu/src/apps/sidm/sphdsmc_velocity_dependent.cpp}; the common reader is
+\path{cpu/include/ev/spherical_dsmc_solver.hpp}.  Recheck the cross-section
+formula, sampled velocity range, collision-rate upper bound, locality, and
+long-time behavior; validation of the constant law does not validate this
+extension. \\
+
+\path{venus_cpu_einstein_vlasov_wpic_low_compactness} & An internally
+generated paired Einstein--Vlasov/Vlasov--Poisson marker realization, or
+\code{--resume} from the two-slot restart named by
+\path{low_restart_manifest.txt} in the same output directory & The task main is
+\path{cpu/src/apps/einstein_vlasov/wpic_low_compactness.cpp}; construction and
+restart selection are in \path{cpu/src/drivers/einstein_vlasov_wpic.cpp}.
+Check fixed-point marker weights, identical marker IDs in the pair, low
+compactness, and the normalization used in the comparison. \\
+
+\path{venus_cpu_einstein_vlasov_wpic_black_hole} with
+\code{--coordinates schwarzschild} & Internally generated Plummer, shell, or
+bound energy-cutoff markers; a coordinate-neutral physical-IC artifact; or
+\code{--resume} from \path{high_einstein_vlasov.restart} in the output
+directory & The task main is
+\path{cpu/src/apps/einstein_vlasov/wpic_black_hole.cpp}; the driver is
+\path{cpu/src/drivers/einstein_vlasov_wpic.cpp}, and the energy-cutoff sampler
+is \path{cpu/include/ev/weighted_einstein_vlasov_static_shell.hpp}.  Check the
+continuum parameters, total mass rescaling, kick, angular scale, quiet
+sampling, marker IDs, binding diagnostics, and exterior metric. \\
+
+\path{venus_cpu_einstein_vlasov_wpic_black_hole} with
+\code{--coordinates eddington_finkelstein} & A fresh run must specify
+\code{--ef-null-initial-data PATH}; a raw constant-Schwarzschild-time marker
+file is not enough.  Continuation uses \code{--resume}, the EF checkpoint in
+the output directory, and its matching post-horizon audit sidecar & The shared
+driver, \path{cpu/include/ev/weighted_einstein_vlasov_coordinate_map.hpp}, and
+\path{cpu/tools/validate_wpic_null_map.py} own the import and checks.  Require
+donor format version 2, exactly one crossing per marker ID, face-aware field
+reconstruction, clearance between matter and the map boundary, convergence of
+the coordinate map, all nested file hashes, and fixed null-slice mass
+\(M_{\rm null}\). \\
+
+\path{venus_cpu_einstein_vlasov_eulerian}, its \path{_openmp} executable, and
+\path{venus_cpu_einstein_vlasov_eulerian_mpi} & Analytic distribution or
+\code{EVICRWL1} phase-grid file; versioned grid restart for continuation & The
+task main is \path{cpu/src/apps/einstein_vlasov/eulerian.cpp};
+\path{cpu/include/ev/initial_data.hpp} reads grid data, while
+\path{cpu/python/ev_solver/ic_generator.py} and
+\path{cpu/tools/ic_generator_legacy.py} generate general files.  Check that
+the distribution is nonnegative, the file grid matches the run grid, mass is
+normalized, matter stays clear of unsupported boundaries, and the initial
+metric constraints close. \\
+
+\path{venus_cpu_vlasov_poisson_eulerian}, its \path{_openmp} executable, and
+\path{venus_cpu_vlasov_poisson_eulerian_mpi} & Analytic or \code{EVICRWL1}
+phase-grid data; versioned grid restart & The task main is
+\path{cpu/src/apps/vlasov_poisson/eulerian.cpp}; the reader and generators are
+the same as for grid Einstein--Vlasov.  An expanding run must also record the
+scale factor, time origin, Poisson source, and whether stored velocities are
+physical or measured relative to the expansion. \\
+
+\path{venus_cpu_boltzmann_poisson_finite_angle},
+\path{venus_cpu_boltzmann_poisson_exact},
+\path{venus_cpu_boltzmann_poisson_reversible},
+\path{venus_cpu_boltzmann_poisson_reversible_sampled}, and
+\path{venus_cpu_boltzmann_poisson_reversible_streamed}, including each
+\path{_openmp} executable & Eulerian phase-grid data or versioned grid restart
+& Their task mains are the correspondingly named files under
+\path{cpu/src/apps/boltzmann_poisson};
+\path{cpu/include/ev/initial_data.hpp} supplies \(f(r,w,\eta)\), the stored
+distribution in radius, radial velocity, and half the squared specific
+angular momentum, \(\eta=L^2/2=r^2v_t^2/2\), where \(v_t\) is tangential
+speed.  Reversible tasks also require a compatible cell-average grid,
+closure under reversal of radial velocity, full collision support, and valid
+projection and omission limits. \\
+
+\path{venus_cpu_boltzmann_poisson_expanding_prompt_cusp} and its
+\path{_openmp} executable & The supplied configuration reads the bundled
+\code{EVICRWL1} zero-flux file
+\path{cpu/examples/initial_data/bp_zero_flux_gamma2p5_eds_R20_rmin0p1_W3_L8_Nr48_Nw32_NL24_quadL_wstretch3p5_discrete.bin};
+a compatible grid file or restart may replace it & The task main is
+\path{cpu/src/apps/boltzmann_poisson/expanding_prompt_cusp.cpp}; the INI interface selects the grid distribution and collision controls.
+There is no dedicated prompt-cusp IC generator in this repository.  Check the
+finite radial box, expansion convention, and density-contrast source. \\
+
+\path{venus_cpu_boltzmann_poisson_fokker_planck} and
+\path{venus_cpu_boltzmann_poisson_landau}, including their \path{_openmp}
+executables & Eulerian Vlasov--Poisson/Boltzmann--Poisson phase-grid data or a
+grid restart & Their task mains are the correspondingly named files under
+\path{cpu/src/apps/boltzmann_poisson}; \path{cpu/include/ev/initial_data.hpp}
+reads the state, and
+\path{cpu/tools/generate_frank_core_cell_average_restart.py} builds the Frank
+grid benchmark.  Check the background distribution used by the approximation,
+velocity support, collision-law units, and numerical coefficient floors. \\
+
+\path{venus_cpu_boltzmann_poisson_canonical_orbit} and its \path{_openmp}
+executable & \code{--restart PATH} is always required and supplies a versioned
+Eulerian grid restart.  The task also always loads a stationary Eddington table:
+\code{--eddington-table PATH}, or by default
+\path{frank_core_eddington_8192.csv} beside that source restart.
+\code{--canonical-restart PATH} optionally restores the evolved orbit atlas
+and event state; it does not replace either required source input & The task
+main and parser are
+\path{cpu/src/apps/boltzmann_poisson/canonical_orbit.cpp};
+\path{cpu/include/ev/canonical_boltzmann_poisson_restart.hpp} owns the
+canonical state, and \path{cpu/tools/export_frank_eddington_table.py} writes
+the table.  Validate atlas coverage, packet mass, random counters, event
+clocks, and restart equivalence. \\
+
+Python Einstein--Vlasov reference package & Built-in analytic shell,
+\code{EVICRWL1} grid data, or a compatible \code{EVLOGRST1} restart &
+\path{cpu/python/ev_solver/solver_setup.py} selects the route,
+\path{cpu/python/ev_solver/initial_data.py} builds or reads fresh data, and
+\path{cpu/python/ev_solver/io.py} validates the restart.  This package is an
+EV reference only: it rejects VP, adaptive-\(w\), non-KDK characteristic
+integrators, and the C++-only analytic options named by its validator. \\
+
+\path{venus_gpu_vlasov_poisson} and
+\path{venus_gpu_vlasov_poisson_mpi} & Mandatory versioned CPU/GPU
+WPIC restart; no GPU-native fresh-data generator &
+The task main is \path{gpu/tools/venus_gpu_vlasov_poisson.cu};
+\path{gpu/src/wpic_production_driver.cu} runs the task, and
+\path{gpu/src/wpic_restart.cpp} reads and uploads the state.  Validate restart
+schema, marker identity, mesh contract, CPU/GPU short-run parity, and the
+requested rank layout. \\
+
+\path{venus_gpu_subhalo_boltzmann_poisson} and
+\path{venus_gpu_subhalo_boltzmann_poisson_mpi} & Mandatory WPIC
+restart carrying the subhalo state &
+The task main is \path{gpu/tools/venus_gpu_subhalo_boltzmann_poisson.cu}; the
+common driver, \path{gpu/src/wpic_subhalo_collisions.cu}, and
+\path{gpu/src/wpic_restart.cpp} load it.  Check CPU calibration provenance,
+internal state, cell ownership and migration, pair invariants, and restart
+equivalence. \\
+
+\path{venus_gpu_sidm_boltzmann_poisson},
+\path{venus_gpu_sidm_constant}, \path{venus_gpu_sidm_power_law}, and
+\path{venus_gpu_sidm_yukawa_born}, together with the four full names ending in
+\path{_mpi} & Mandatory static-halo WPIC restart; there is no GPU-native fresh
+generator & Their four task mains are the correspondingly named files under
+\path{gpu/tools}; \path{gpu/src/wpic_production_driver.cu},
+\path{gpu/src/wpic_collisions.cu}, and \path{gpu/src/wpic_restart.cpp} load the
+state.  Check the selected law, units, relative-speed support, local shell
+clock, locality, and CPU/GPU convergence.  The current material-collision MPI
+path is not invariant under a change in rank count. \\
+\bottomrule
+\end{longtable}
+
+Check a generated state against the consuming solver's physical and file
+conventions. Preserve the generator command, input distribution or continuum
+parameters, random or low-discrepancy realization, normalization report,
+output hash, and import checks with the run. These records establish which
+distribution the solver actually received.
+
+
+\paragraph{A bound Gaussian shell for GPU Vlasov--Poisson.}
+The CPU utility \path{cpu/tools/generate_bound_gaussian_shell_restart.py}
+constructs the two background representations of the same physical shell.
+Its density is proportional to \(\exp[-(r-10)^2/2]\) on \(7<r<13\).
+A radial interval contains its density multiplied by the spherical shell
+volume. The cumulative mass distribution used to draw radii therefore contains
+the squared-radius factor:
+\[
+ F_r(r)=\frac{\int_7^r s^2\exp[-(s-10)^2/2]\,\dd s}
+                  {\int_7^{13} s^2\exp[-(s-10)^2/2]\,\dd s},
+ \qquad 7<r<13,
+\]
+where \(F_r\) is the fraction of the shell mass inside radius \(r\).
+The generator inverts this cumulative distribution at sample points chosen
+to cover the unit interval evenly. Each sampled radius receives two markers
+with opposite physical radial velocities, so the pair has zero mean radial
+motion. Their Gaussian scale is \(\sigma_v=0.08481562072248405\),
+with \(|u|<3\sigma_v\). Two Gaussian transverse velocity components give a
+Rayleigh distribution of transverse speed \(v_t\), truncated at
+\(v_t<3\sigma_v\). The stored angular variable is \(\eta=r^2v_t^2/2\).
+The default \(1048576\) equal-mass markers represent total mass
+\(3.5968447592701334\). The generator reconstructs their spherical potential
+and verifies that every initial specific energy
+\((u^2+v_t^2)/2+\Phi\) is negative.
+
+The static file stores \(w=u\). The expanding file stores \(w=u-Hr\), with
+initial \(H=1/18\). Both files thus describe identical physical positions,
+velocities, masses, angular momenta and particle identifiers. Their fresh
+version-6 particle states carry zero event ages and infinite initial timescale
+estimates. The solver constructs the initial gravitational field on import.
+\codesource{Bound Gaussian-shell initial data}{\path{cpu/tools/generate_bound_gaussian_shell_restart.py}}{Samples the radial mass distribution and Gaussian velocities, checks binding, and writes static and expanding particle states with their mesh sidecars}
+\begin{lstlisting}[language=bash]
+python3 cpu/tools/generate_bound_gaussian_shell_restart.py \
+  --output-directory output/gaussian_ic --particles 1048576
+\end{lstlisting}
+Run this command from the repository root with a new output directory.
+The two solver commands in
+\path{cpu/examples/modular/vp_bound_gaussian_shell_gpu.md} select the
+corresponding restart, background and 512-cell logarithmic mesh.
+They use single-GPU Vlasov--Poisson with a fixed KDK cap of \(0.0075\)
+and an outer reflecting radius of \(10000\).
+
+\paragraph{A user-defined grid distribution.}
+The supplied \path{cpu/examples/user_distribution.py} defines the vectorized
+function \code{distribution(r,w,L)} for a compact inward-moving shell.
+The companion \path{cpu/examples/modular/vp_custom_shell.ini} selects a
+static Vlasov--Poisson calculation. The repository README gives the exact
+commands to evaluate the function into an \code{EVICRWL1} file, run the
+solver, and plot the resulting tables. The binary supplies its coordinate
+arrays; the INI file supplies the equation, boundaries, integration controls,
+and output cadence. Paths in that INI file are relative to its own directory.
+The example writes all generated input and output under
+\path{output/cpu/custom_shell}. Its distribution function can be edited
+without changing a solver source file.

@@ -1,0 +1,82 @@
+{
+  "wall": 10000,
+  "minimum_radius": 0.01953114649610894,
+  "maximum_radius": 7520.750982482945,
+  "mass": 3.5968447592701334,
+  "total": {
+    "markers": 1048576,
+    "mass": 3.5968447592701334,
+    "mass_fraction": 1.0,
+    "K_physical": 1.1144285157864398,
+    "self_potential_energy_half_counted": -2.1515010294599746,
+    "I": 15688043.634094903,
+    "outward_mass": 2.1799038357888887,
+    "inward_mass": 1.4169409234812447,
+    "nonnegative_instantaneous_self_energy_mass": 0.7491185505747661,
+    "negative_instantaneous_self_energy_mass": 2.8477262086953674,
+    "mass_weighted_mean_physical_radial_velocity": 0.0626697066060658
+  },
+  "outer_regions": {
+    "0.5": {
+      "markers": 78676,
+      "mass": 0.26987586811097813,
+      "mass_fraction": 0.07503128051757812,
+      "K_physical": 0.025093615354530422,
+      "self_potential_energy_half_counted": -8.204921895007775e-05,
+      "I": 9651351.470014064,
+      "outward_mass": 0.26987586811097813,
+      "inward_mass": 0.0,
+      "nonnegative_instantaneous_self_energy_mass": 0.26987586811097813,
+      "negative_instantaneous_self_energy_mass": 0.0,
+      "mass_weighted_mean_physical_radial_velocity": 0.4289377475907577
+    },
+    "0.8": {
+      "markers": 0,
+      "mass": 0.0,
+      "mass_fraction": 0.0,
+      "K_physical": 0.0,
+      "self_potential_energy_half_counted": 0.0,
+      "I": 0.0,
+      "outward_mass": 0.0,
+      "inward_mass": 0.0,
+      "nonnegative_instantaneous_self_energy_mass": 0.0,
+      "negative_instantaneous_self_energy_mass": 0.0,
+      "mass_weighted_mean_physical_radial_velocity": null
+    },
+    "0.9": {
+      "markers": 0,
+      "mass": 0.0,
+      "mass_fraction": 0.0,
+      "K_physical": 0.0,
+      "self_potential_energy_half_counted": 0.0,
+      "I": 0.0,
+      "outward_mass": 0.0,
+      "inward_mass": 0.0,
+      "nonnegative_instantaneous_self_energy_mass": 0.0,
+      "negative_instantaneous_self_energy_mass": 0.0,
+      "mass_weighted_mean_physical_radial_velocity": null
+    },
+    "0.99": {
+      "markers": 0,
+      "mass": 0.0,
+      "mass_fraction": 0.0,
+      "K_physical": 0.0,
+      "self_potential_energy_half_counted": 0.0,
+      "I": 0.0,
+      "outward_mass": 0.0,
+      "inward_mass": 0.0,
+      "nonnegative_instantaneous_self_energy_mass": 0.0,
+      "negative_instantaneous_self_energy_mass": 0.0,
+      "mass_weighted_mean_physical_radial_velocity": null
+    }
+  },
+  "particle_mass_quantiles": {
+    "0.1": 0.5478367086941366,
+    "0.5": 2.048356837404432,
+    "0.9": 4441.85402597838,
+    "0.99": 6717.520244895531
+  },
+  "velocity": "Physical radial u=w+Hr. Transverse speed squared is 2eta/r^2.",
+  "energy": "Instantaneous self-gravity energy .5(u^2+2eta/r^2)+Phi, Phi(infinity)=0. The prescribed time-dependent background is separate. Energy sign alone does not classify a trajectory as escaping.",
+  "boundary_scope": "Instantaneous radii, masses and radial directions. GPU cumulative wall-impact history is unavailable."
+}

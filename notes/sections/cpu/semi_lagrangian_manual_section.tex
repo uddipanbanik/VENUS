@@ -1,0 +1,711 @@
+\subsection{Cell-Integrated Conservative Semi-Lagrangian Transport}
+\label{sec:cell-integrated-sldg}
+
+\begin{figure}[htbp]
+\centering
+\textbf{Physics flow: cell-integrated conservative semi-Lagrangian module}
+\par\smallskip
+\begin{tikzpicture}[node distance=0.22cm]
+\node[physicsflow] (sl1) {Start from the matter stored in every spherical phase-space cell};
+\node[physicsflow,below=of sl1] (sl2) {Reconstruct a smooth nonnegative distribution inside each occupied source cell};
+\node[physicsflow,below=of sl2] (sl3) {Compute the current spherical gravitational field and the corresponding particle trajectories};
+\node[physicsflow,below=of sl3] (sl4) {Move the source-cell boundary points forward to determine where that cell's matter arrives};
+\node[physicsflow,below=of sl4] (sl5) {Refine distorted maps and separate pieces that follow different reflection or central-return paths};
+\node[physicsflow,below=of sl5] (sl6) {Measure the overlap of every arrival region with the destination cells and deposit the integrated matter};
+\node[physicsflow,below=of sl6] (sl7) {Store unresolved central passages in the delayed-return carrier and record matter that escapes};
+\node[physicsflow,below=of sl7] (sl8) {Update midpoint gravity and transport limits, check conservation and positivity, then continue};
+\draw[physicsarrow] (sl1) -- (sl2);
+\draw[physicsarrow] (sl2) -- (sl3);
+\draw[physicsarrow] (sl3) -- (sl4);
+\draw[physicsarrow] (sl4) -- (sl5);
+\draw[physicsarrow] (sl5) -- (sl6);
+\draw[physicsarrow] (sl6) -- (sl7);
+\draw[physicsarrow] (sl7) -- (sl8);
+\end{tikzpicture}
+\end{figure}
+
+\subsubsection{Purpose and distinction from nodal pullback}
+
+The cell-integrated semi-Lagrangian discontinuous-Galerkin module is the
+conservative spherical Vlasov--Poisson transport path.  In this manual,
+\emph{semi-Lagrangian} means that the numerical
+method follows phase-space characteristics over a finite time interval.
+\emph{Discontinuous Galerkin} means that the distribution is represented by a
+separate polynomial inside every phase-space cell; the polynomial is allowed
+to jump across cell faces.  The abbreviation SLDG will be used for this
+cell-integrated semi-Lagrangian discontinuous-Galerkin method.
+
+The implemented state is a cell average
+\[
+ \bar f_{ijk}
+ =\frac{1}{\Delta r_i\Delta w_j\Delta\eta_k}
+   \int_{I_i}\!\dd r\int_{J_j}\!\dd w\int_{K_k}\!\dd\eta\,
+   f(r,w,\eta),
+ \qquad \eta\equiv\frac{L^2}{2}.
+\]
+Here \(I_i=[r_{i-1/2},r_{i+1/2}]\), \(J_j=[w_{j-1/2},w_{j+1/2}]\),
+and \(K_k=[\eta_{k-1/2},\eta_{k+1/2}]\) are one radial, radial-velocity,
+and angular-momentum cell.  The symbols
+\(\Delta r_i\), \(\Delta w_j\), and \(\Delta\eta_k\) denote their widths.
+Since \(L\,\dd L=\dd\eta\), the physical phase-space measure is
+\[
+ \dd\Gamma=8\pi^2\,\dd r\,\dd w\,\dd\eta,
+ \qquad
+ M_{ijk}=8\pi^2\bar f_{ijk}
+          \Delta r_i\Delta w_j\Delta\eta_k .
+\]
+The factor \(8\pi^2\) results from integrating the two configuration-space
+angles and the unused velocity azimuth under spherical symmetry.
+
+The nodal semi-Lagrangian method traces each target grid point back to its
+departure point and interpolates \(f\) there.  The SLDG method transports
+integrated mass: it reconstructs every \emph{source cell}, maps that cell
+forward, and integrates its overlap with the destination cells.  This
+source-to-destination accounting gives the conservative update
+\[
+ M^{n+1}_{abc}
+ =\sum_{ijk}
+   \int_{\mathcal A_{ijk}\cap D_{abc}}
+   f^n_{h,ijk}\circ\mathcal X^{-1}\,
+   8\pi^2\,\dd r\,\dd w\,\dd\eta ,
+\]
+where \(\mathcal X\) is the characteristic map from time \(t^n\) to
+\(t^{n+1}\), \(\mathcal A_{ijk}=\mathcal X(I_i\times J_j\times K_k)\)
+is an arrival region, \(D_{abc}\) is a destination cell, and
+\(f^n_{h,ijk}\) is the reconstructed source polynomial.  There is no
+post-step global mass rescaling.  Source mass outside the visible grid is
+recorded either in the delayed-inner carrier, which stores unresolved central
+passages, or in the escape budget.  Together these destinations account for
+the complete transported mass.
+
+The relevant sources are:
+\begin{itemize}
+\item \path{cpu/include/ev/conservative_sldg_transport.hpp}: polynomial
+reconstruction, mapped-polygon geometry, recursive refinement, exact overlap
+integration, delayed-return coupling, and midpoint-field driver;
+\item \path{cpu/include/ev/hamiltonian_sldg_transport.hpp}: Hamiltonian-aligned
+reconstruction, cached modal state, and static-potential timestep control;
+\item \path{cpu/include/ev/hamiltonian_orbit_reference.hpp}: optional positive
+orbit-average reference \(f_0(H,\eta)\);
+\item \path{cpu/include/ev/delayed_inner_orbit_carrier.hpp}: persistent
+finite-volume mass inside \(0<r<r_{\min}\);
+\item \path{cpu/include/ev/radial_orbit_regularization.hpp}: selective
+Levi--Civita characteristic retry near stiff pericentres.
+\end{itemize}
+
+\subsubsection{Frozen spherical Hamiltonian map}
+
+For static spherical Vlasov--Poisson evolution at fixed
+\(\eta=L^2/2\), the one-particle Hamiltonian is
+\[
+ H(r,w;\eta)
+ =\frac{w^2}{2}+\frac{\eta}{r^2}+\Phi(r).
+\]
+Here \(w=\dot r\) is radial velocity, \(L\) is the magnitude of specific
+angular momentum, \(\Phi\) is the gravitational potential, and
+\(\eta/r^2=L^2/(2r^2)\) is tangential kinetic energy.  The characteristic
+equations are
+\[
+ \dot r = \frac{\partial H}{\partial w}=w,
+ \qquad
+ \dot w =-\frac{\partial H}{\partial r}
+ =\frac{2\eta}{r^3}-\Phi_r,
+ \qquad
+ \dot\eta=0,
+\]
+where \(\Phi_r=\partial\Phi/\partial r\).  Hamiltonian flow preserves
+phase-space area:
+\[
+ \det\!\left(\frac{\partial(r',w')}{\partial(r,w)}\right)=1,
+ \qquad
+ \dd r'\,\dd w'=\dd r\,\dd w .
+\]
+This area preservation is both a physical property and a numerical geometry
+check.  For a small source patch with area \(A_0\), the mapped corner polygon
+should have area \(A\simeq A_0\).  VENUS records the relative area defect
+\[
+ \epsilon_A=\frac{|A-A_0|}{A_0}.
+\]
+
+The default characteristic update inside the SLDG map is
+kick--drift--kick (KDK).  If
+\[
+ a_r(r;\eta) = \frac{2\eta}{r^3}-\Phi_r(r)
+\]
+denotes radial acceleration in the frozen field, one KDK step is
+\[
+ w^{n+1/2}=w^n+\frac{\Delta t}{2}a_r(r^n;\eta),
+\quad
+ r^{n+1}=r^n+\Delta t\,w^{n+1/2},
+\quad
+ w^{n+1}=w^{n+1/2}
+ +\frac{\Delta t}{2}a_r(r^{n+1};\eta).
+\]
+The exact implementation also resolves the selected radial boundary and may
+retry a stiff pericentre segment with the Levi--Civita transformation described
+in the orbit-regularization module reference below.  The frozen-field map is used
+only within one transport evaluation; self-gravity is time-centred as
+described below.
+
+\subsubsection{P2 source polynomial and its cell average}
+
+Inside one \((r,w)\) source cell at a fixed \(\eta\) quadrature node, define
+normalized coordinates
+\[
+ x=\frac{r-r_i}{\Delta r_i},
+ \qquad
+ y=\frac{w-w_j}{\Delta w_j},
+ \qquad -\frac12\le x,y\le\frac12 .
+\]
+The notation \(P_2\) means the six-dimensional space of polynomials in
+\((x,y)\) whose total degree is at most two: one constant, two linear, and
+three quadratic modes.  The implemented \(P_2\) polynomial is
+\begin{equation*}
+ \begin{split}
+ f_h(x,y)={}&\bar f
+ +a_r x+a_w y
+ +a_{rr}\left(x^2-\frac1{12}\right)\\
+ &+a_{rw}xy
+ +a_{ww}\left(y^2-\frac1{12}\right).
+ \end{split}
+ \tag{SLDG-P2}\label{eq:sldg-p2}
+\end{equation*}
+All symbols in this expression are local to one source cell:
+\(\bar f\) is the stored cell average; \(a_r,a_w\) are linear modes;
+\(a_{rr},a_{rw},a_{ww}\) are quadratic modes.  Since
+\[
+ \int_{-1/2}^{1/2}x\,\dd x=0,
+ \qquad
+ \int_{-1/2}^{1/2}\left(x^2-\frac1{12}\right)\dd x=0,
+\]
+and similarly for \(y\), every nonconstant mode has zero mean.  Therefore the
+polynomial integrates to \(\bar f\Delta r_i\Delta w_j\) independently of
+the slope and curvature values.
+
+The plain conservative SLDG mode currently constructs limited linear slopes.
+For a cell-centred sequence \(q_i\), the minmod limiter is
+\[
+ \operatorname{minmod}(a,b,c)=
+ \begin{cases}
+  \min(a,b,c),&a,b,c>0,\\
+  \max(a,b,c),&a,b,c<0,\\
+  0,&\text{otherwise},
+ \end{cases}
+\]
+and the radial slope is obtained from the backward, centred, and forward
+differences with the usual factor-of-two bounds.  The same construction is
+used in \(w\). At a wall of fixed physical radius \(R\), the reflecting
+radial ghost state is evaluated at \(w'=-w-2HR\), where \(H\) is the
+Hubble rate. The static limit \(H=0\) gives \(w'=-w\).
+
+The source representation in
+\path{cpu/include/ev/conservative_sldg_transport.hpp} is:
+\codesource{Conservative SLDG source polynomial}
+{\path{cpu/include/ev/conservative_sldg_transport.hpp}}
+{Stores the cell average and five local quadratic modes and applies the
+ source-cell positivity limiter before forward transport}
+\begin{lstlisting}[language=C++]
+struct SLDGSourcePolynomial {
+  double cell_average = 0.0;
+  std::array<double, 5> mode{};
+  double center_r = 0.0, center_w = 0.0;
+  double scale_r = 1.0, scale_w = 1.0;
+  double enforce_positivity();
+};
+\end{lstlisting}
+The five entries of \code{mode} store the slopes and curvatures
+\((a_r,a_w,a_{rr},a_{rw},a_{ww})\) in
+Equation~\eqref{eq:sldg-p2}.  Each associated basis function has zero cell
+average, so changing these entries preserves the stored mass.
+
+\subsubsection{Positivity limiter}
+
+A phase-space density must satisfy \(f\ge0\).  Let
+\[
+ f_h=\bar f+\delta f,
+\qquad \langle\delta f\rangle_{\rm cell}=0,
+\]
+and let \(f_{\min}\) be the minimum of the reconstructed polynomial over the
+cell.  If \(f_{\min}<0\), VENUS scales every nonconstant mode by one factor:
+\[
+ f_h^{\rm lim}=\bar f+\theta\delta f,
+\qquad
+ \theta=\min\!\left(1,
+ \frac{\bar f}{\bar f-f_{\min}}\right).
+\]
+Thus \(0\le\theta\le1\), the cell average is unchanged, and the limited
+minimum is nonnegative.  Because a quadratic can attain its minimum inside an
+edge or the cell interior, the implementation checks the relevant stationary
+points and uses a robust bisection correction if roundoff prevents the direct
+factor from satisfying the positivity criterion.  The limiter is local: it does not
+move mass to a neighbouring cell.
+
+\subsubsection{Subcells, trace lattice, and map-quality checks}
+
+Each \((r,w)\) source cell is divided into
+\(\code{vp_sldg_subcells}\) pieces in each direction.  The default is two,
+so there are four initial patches.  Each \(\eta\) cell is integrated with
+\(\code{vp_sldg_eta_quadrature_points}\) Gaussian nodes, also two by default.
+At one angular node \(\eta_q\), the orbit uses
+\[
+ L_q=\sqrt{2\eta_q}.
+\]
+
+For one source patch VENUS traces a \(3\times3\) lattice: four corners, four
+edge midpoints, and the centre.  The corner image defines an arrival
+quadrilateral.  The edge-midpoint and centre images measure how far the true
+characteristic map departs from a bilinear map.  If
+\(\bm X=(r',w')\) denotes an exactly traced lattice point and
+\(\bm X_{\rm bil}\) is the value predicted from the four mapped corners, the
+normalized map defect is schematically
+\[
+ \epsilon_{\rm map}
+ =\max_{\rm midpoints,centre}
+ \left[
+ \left(\frac{r'-r'_{\rm bil}}{\Delta r_{\rm map}}\right)^2+
+ \left(\frac{w'-w'_{\rm bil}}{\Delta w_{\rm map}}\right)^2
+ \right]^{1/2}.
+\]
+The mapped widths \(\Delta r_{\rm map}\) and \(\Delta w_{\rm map}\) prevent a
+large-coordinate but tiny-patch map from being judged by an absolute error.
+
+A patch is accepted only when all of the following hold:
+\begin{itemize}
+\item mapped coordinates are finite;
+\item the corner polygon is counter-clockwise and convex;
+\item all eight centre/edge/corner triangles have positive orientation;
+\item the mapped area is larger than the geometry floor;
+\item \(\epsilon_A\le\code{vp_sldg_max_area_defect}\);
+\item \(\epsilon_{\rm map}\le\code{vp_sldg_max_map_defect}\).
+\end{itemize}
+The default area and map bounds are \(10^{-4}\) and \(10^{-2}\),
+respectively.  The geometry floor is controlled by
+\code{vp_sldg_geometry_tolerance}.
+
+Adjacent child patches reuse parent and neighbour trace points.  This trace
+cache is important because orbit integration is much more expensive than
+polygon clipping.  Different \(\eta\) planes are independent and form the
+outer parallel work units; a plane is owned by only one worker at a time, so
+destination accumulation is race free.
+
+\subsubsection{Recursive refinement and reflecting-wall separatrix}
+
+An invalid mapped patch is not immediately deposited by points.  VENUS splits
+it in \(r\) or \(w\), choosing the direction with the larger normalized map
+curvature, and repeats the trace/quality check.  The maximum depth and work are
+\code{vp_sldg_max_refinement} and
+\code{vp_sldg_max_work_per_subcell}.  Their defaults are 30 and 131072.
+
+A reflecting inner wall introduces a discontinuous branch in the map: one
+part of a source patch reaches \(r_{\min}\) and changes \(w\to-w\), while a
+nearby part follows the free orbit. After the gravitational half kick, let
+\(w_h=w-\Delta t\,\Phi_r/2\) and \(v_t=L/r\) be the radial and
+tangential velocities. The closest approach of the free angular drift occurs at
+\[
+ t_* = \operatorname{clip}\!\left(
+ -\frac{rw_h}{w_h^2+v_t^2},
+ \min(0,\Delta t),\max(0,\Delta t)\right).
+\]
+Here clipping restricts the time to the traced interval; a stationary orbit
+uses \(t_*=0\). The boundary between wall-crossing and free trajectories is
+\[
+ S(r,w)=\left[(r+t_*w_h)^2+(t_*v_t)^2\right]^{1/2}-r_{\min}=0.
+\]
+Using the closest approach detects a wall encounter even when the
+unreflected endpoint has already returned to larger radius.
+When a patch straddles \(S=0\), the splitter chooses the coordinate along
+which \(S\) varies most.  The wall branch receives additional permitted
+refinement depth because its map is physically continuous only after the
+reflection topology is resolved.
+\codesource{Inner-wall refinement criterion}
+{\path{cpu/include/ev/conservative_sldg_transport.hpp}}
+{Evaluate the closest approach during the free angular drift before choosing a refinement direction}
+\begin{lstlisting}[language=C++]
+const double closest_time = speed2 > 0.0
+    ? std::max(std::min(0.0, dt),
+        std::min(std::max(0.0, dt), -source_r * w_half / speed2))
+    : 0.0;
+return std::hypot(source_r + closest_time * w_half,
+    closest_time * tangential) - p.r_min;
+\end{lstlisting}
+
+Only after the depth or work budget is exhausted may VENUS use a bounded
+\(2\times2\) Gauss-point deposit.  If \(M_{\rm fb}\) is the physical mass
+carried by this fallback and \(M_{\rm src}\) is total source mass, the run
+requires
+\[
+ \frac{M_{\rm fb}}{M_{\rm src}}
+ \le\code{vp_sldg_fallback_mass_tolerance}.
+\]
+The default tolerance is \(10^{-9}\).  The diagnostic records the largest
+fallback cell, its \((r,w,L)\), refinement depth, and work, so fallback cannot
+silently become the production algorithm.
+
+\subsubsection{Exact polygon overlap and moment integration}
+
+An accepted quadrilateral is divided into eight affine triangles using its
+mapped corners, edge midpoints, and centre.  Each triangle is clipped against
+candidate destination rectangles by successive half-plane clipping.  Polygon
+area and normalized moments are then evaluated analytically.  On each
+triangle, the affine numerical map \(\mathcal X_h\) has constant inverse
+Jacobian
+\[
+ J_{\rm inv}=\left|\det D\mathcal X_h^{-1}\right|
+ =\frac{A_{\rm source}}{A_{\rm mapped}}.
+\]
+Here \(A_{\rm source}\) and \(A_{\rm mapped}\) are the positive areas of
+that triangle before and after mapping.  The exact Hamiltonian map has
+unit Jacobian; the approximate triangle map retains its measured area
+change.  Conservation therefore deposits
+\(J_{\rm inv} f_h\circ\mathcal X_h^{-1}\) on the arrival triangle.
+For a clipped polygon \(P\), VENUS needs
+\[
+ A_P=\int_P\dd r\,\dd w,\quad
+ R_P=\int_P x\,\dd r\,\dd w,\quad
+ W_P=\int_P y\,\dd r\,\dd w,
+\]
+\[
+ R^{(2)}_P=\int_P\left(x^2-\frac1{12}\right)\dd r\,\dd w,
+\quad
+ RW_P=\int_Pxy\,\dd r\,\dd w,
+\quad
+ W^{(2)}_P=\int_P\left(y^2-\frac1{12}\right)\dd r\,\dd w .
+\]
+In these moments, \(x,y\) are the normalized source-cell coordinates
+evaluated through the inverse affine map.  The deposited reduced mass is
+\[
+ m_P=J_{\rm inv}\left[\bar f A_P+a_rR_P+a_wW_P
+ +a_{rr}R^{(2)}_P+a_{rw}RW_P+a_{ww}W^{(2)}_P\right].
+\]
+Multiplication by \(8\pi^2\Delta\eta_k\) and the angular quadrature weight
+gives physical mass.
+
+The triangle-area ratio is applied locally before accumulation:
+\codesource{SLDG conservative affine-triangle deposition}
+{\path{cpu/include/ev/conservative_sldg_transport.hpp}}
+{Converts arrival-polygon integrals to source mass with the inverse map Jacobian}
+\begin{lstlisting}[language=C++]
+const long double inverse_jacobian =
+    source_triangle_area / mapped_triangle_area;
+\end{lstlisting}
+The destination contribution then multiplies the polynomial integral by
+\code{inverse_jacobian}.  The sum over all destination intersections
+recovers that source triangle's mass even when its allowed map-area defect
+is nonzero.
+
+Deep refinement can make a polygon tiny relative to its absolute coordinates.
+The clipping context therefore translates and rescales each mapped polygon to
+an order-unity box and performs moment arithmetic in extended precision.  This
+reduces cancellation without altering the physical overlap.
+
+\subsubsection{Delayed inner return as a finite-volume carrier}
+\label{sec:sldg-delayed-carrier}
+
+A positive logarithmic grid does not resolve \(0<r<r_{\min}\).  Treating
+\(r_{\min}\) as a reflecting wall changes the orbital period of a low-angular-
+momentum orbit.  The option
+\code{inner_boundary = delayed_return} instead stores the mass that crosses
+the inner face in a persistent carrier.
+
+One carrier packet stores reduced mass
+\[
+ m_{\rm red}=\int f\,\dd r\,\dd w
+\]
+for one \(\eta\) cell, its actual quadrature value \(\eta_q\), boundary speed,
+and remaining hidden time.  Its physical mass is
+\[
+ m_{\rm phys}=8\pi^2\Delta\eta_k\,\omega_q\,m_{\rm red},
+\]
+where \(\omega_q\) is the Gaussian weight normalized to the \(\eta\)-cell
+integral.
+
+When a mapped patch contains both visible and hidden trajectories, recursive
+refinement first tries to resolve their separatrix.  If the configured carrier
+refinement depth is reached, Gaussian quadrature partitions the reconstructed
+mass between visible deposition and hidden packets without renormalizing
+either part.  A hidden packet advances its clock; when the clock expires it is
+released at \(r_{\min}\) with the outgoing radial velocity.
+
+The transport ledger is
+\[
+ M_{\rm grid}^{n}+M_{\rm hidden}^{n}
+ =M_{\rm grid}^{n+1}+M_{\rm hidden}^{n+1}+M_{\rm escaped}.
+\]
+The residual of this equation is checked against
+\code{vp_inner_carrier_mass_tolerance}.  Optional return-time-bin compression
+reduces a large packet list while preserving positive mass and the monitored
+mass, momentum, energy, and return-time moments.
+
+\subsubsection{Midpoint self-gravity from the continuity equation}
+
+The final transport should feel a field representative of the middle of the
+step.  VENUS predicts shell mass at \(t^{n+1/2}\) from the spherical
+continuity equation
+\[
+ \frac{\partial\rho}{\partial t}
+ +\frac{1}{r^2}\frac{\partial}{\partial r}(r^2j_r)=0,
+\]
+where \(j_r\) is radial mass current.  If
+\[
+ M_i=4\pi r_i^2\rho_i\Delta r_i,
+ \qquad
+ F_{i+1/2}=4\pi r_{i+1/2}^2j_{r,i+1/2},
+\]
+then the finite-volume predictor is
+\[
+ \frac{\dd M_i}{\dd t}
+ =-\left(F_{i+1/2}-F_{i-1/2}\right).
+\]
+The face current is interpolated from cell values.  A donor limiter scales
+outgoing fluxes if a half step would remove more mass than the donor shell
+contains.  Inner-carrier exchange and outer escape are included in the
+predictor ledger.  Poisson's equation is solved from the predicted midpoint
+mass, and the full SLDG characteristic map is then evaluated through that
+midpoint field.
+
+This procedure time-centres gravity without depositing a provisional full
+SLDG solution.  Diagnostics report predictor mass before and after, predicted
+escape, hidden-mass change, and the number of limited faces.
+
+\subsubsection{Hamiltonian-aligned reconstruction}
+
+For an exact stationary spherical equilibrium,
+\[
+ f=f(H,\eta),
+\]
+so the distribution is constant along a frozen orbit.  A polynomial aligned
+only with \(r\) and \(w\) can interpret this curved orbit as a large local
+gradient and create unnecessary diffusion.  The Hamiltonian SLDG option uses
+two local directions:
+\begin{itemize}
+\item an across-orbit direction measured by the change in \(H\);
+\item an along-orbit coordinate \(s_{\rm orb}\), tangent to the Hamiltonian
+      flow.
+\end{itemize}
+The coordinate \(s_{\rm orb}\) is a local, time-like parameter along the
+orbit, not the Schwarzschild time \(\tau\) and not necessarily a global angle.
+Its purpose is to distinguish a physical variation along an orbit from a
+variation between neighbouring energy surfaces.
+
+The cell moments
+\(\langle H\rangle\) and \(\langle H^2\rangle\) are evaluated before the fit.
+The velocity moments used analytically are
+\[
+ \langle w^2\rangle=w_j^2+\frac{\Delta w_j^2}{12},
+\qquad
+ \langle w^4\rangle=w_j^4+
+ \frac{w_j^2\Delta w_j^2}{2}+\frac{\Delta w_j^4}{80}.
+\]
+The \(r\)-dependent potential and centrifugal terms use four-point Gaussian
+quadrature.  Neighbouring cell averages then determine a quadratic local fit
+in Hamiltonian and phase features.  If the local design matrix loses rank, or
+the phase direction is degenerate near a turning point, the implementation
+falls back to a lower-information reconstruction and increments an explicit
+diagnostic counter.  ``Loses rank'' means that the sampled neighbouring
+features no longer provide independent constraints, so more than one set of
+polynomial coefficients fits the same data and the full quadratic inversion
+is not trustworthy.  The fitted result is converted to the same five P2 modes
+in Equation~\eqref{eq:sldg-p2}, limited for positivity, and transported by the
+common geometric SLDG engine.
+
+\subsubsection{Positive orbit-average reference}
+
+With
+\[
+ \dd r\,\dd w=\dd H\,\dd s_{\rm orb}
+\]
+at fixed \(\eta\), the orbit average
+\[
+ f_0(H,\eta)
+ =\frac{\int_{\rm orbit}f(H,s_{\rm orb},\eta)\,\dd s_{\rm orb}}
+        {\int_{\rm orbit}\dd s_{\rm orb}}
+\]
+is stationary in a frozen potential.  If
+\code{vp_hamiltonian_reference = orbit_average}, VENUS builds a nonnegative
+binned approximation to \(f_0\), splits
+\[
+ f=f_0+\delta f,
+\]
+transports only the signed residual \(\delta f\), and adds \(f_0\) back at the
+endpoint.  The reference uses closed-orbit energy ranges and is normalized to the
+represented mass. Its amplitude is reduced when needed to keep the total
+reconstructed distribution nonnegative.  Empty energy bins are filled only from
+physically admissible neighbouring closed-orbit bins.
+
+This is a numerical reference state, not extra matter.  Its value must not be
+added to Poisson separately.  Diagnostics report the reference mass fraction,
+the residual \(L^1\) fraction, active \(\eta\) planes, the minimum positivity
+scale, and how many planes required scaling.  Collisions change the modal
+distribution and therefore invalidate the cached Hamiltonian reconstruction.
+Versioned grid restarts preserve the five modal coefficients so a clean
+restart does not rebuild them from cell averages.
+
+\subsubsection{Adaptive transport cap}
+
+If a positive initial SLDG transport cap is configured, the next cap responds
+to the measured fallback fraction.  Let
+\[
+ \epsilon_{\rm fb}=\frac{M_{\rm fb}}{M_{\rm src}},
+ \qquad
+ \epsilon_{\rm target}
+ =\code{vp_sldg_target_fallback_fraction}\,
+  \code{vp_sldg_fallback_mass_tolerance}.
+\]
+The raw scale factor is
+\[
+ g=\sqrt{\frac{\epsilon_{\rm target}}{\epsilon_{\rm fb}}},
+\]
+with appropriate growth behavior when \(\epsilon_{\rm fb}=0\).  It is clipped
+between \code{vp_sldg_timestep_shrink} and
+\code{vp_sldg_timestep_growth}.  This cap is combined with the physical CFL,
+dynamical, potential-variation, output, and final-time limits; it does not
+replace them.
+
+For Hamiltonian SLDG, the static-field timescale also estimates
+\[
+ t_\Phi=\min_i\left(
+ \left|\frac{\Phi_i}{\dot\Phi_i}\right|,
+ \left|\frac{g_i}{\dot g_i}\right|
+ \right),
+\]
+over reliable cells, where \(g_i=-\Phi_{r,i}\).  The macrostep is bounded by
+\(\code{vp_potential_variation_eta}\,t_\Phi\).
+
+\subsubsection{How to run the present SLDG implementation}
+
+Save the following small conservative setup as \path{params.ini}.  The
+\code{kinetic_grid} and \code{vp_interpolation} lines are the essential SLDG
+selectors.
+\codesource{\code{venus_cpu_vlasov_poisson_eulerian}}
+{\path{cpu/src/apps/vlasov_poisson/eulerian.cpp};
+ \path{cpu/include/ev/config.hpp}; \path{cpu/include/ev/solver.hpp}}
+{Parses the conservative cell-integrated transport controls under the locked
+ collisionless Vlasov--Poisson task profile}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+# params.ini: conservative cell-integrated SLDG run
+physics_model = vlasov_poisson
+vp_universe = static
+kinetic_grid = cell_average_eta
+vp_interpolation = conservative_sldg
+initial_data = analytic
+shell_initial_df = true
+gaussian_density_shell = true
+Nr = 24
+Nw = 24
+NL = 12
+r_min = 0.1
+r_max = 2
+w_max = 2
+L_max = 0.2
+integrator = semi_lagrangian_kick_drift_kick
+vp_timestep_mode = frank_dynamical
+vp_dynamical_eta = 0.02
+vp_sldg_subcells = 2
+vp_sldg_fallback_mass_tolerance = 1e-8
+inner_boundary = delayed_return
+t_end = 0.04
+dt_max = 0.01
+output_dir = output/vp_sldg_example
+\end{lstlisting}
+Build and run the task-specific Vlasov--Poisson frontend:
+\codesource{\code{venus_cpu_vlasov_poisson_eulerian}}
+{\path{cpu/src/apps/vlasov_poisson/eulerian.cpp}; \path{cpu/Makefile}}
+{Builds and launches the locked collisionless frontend with the supplied
+ semi-Lagrangian configuration}
+\begin{lstlisting}
+cd VENUS/cpu
+make venus_cpu_vlasov_poisson_eulerian
+
+./venus_cpu_vlasov_poisson_eulerian --config params.ini
+\end{lstlisting}
+For a new configuration, the essential conservative SLDG block is:
+\codesource{Conservative SLDG configuration}
+{\path{cpu/include/ev/config.hpp};
+ \path{cpu/include/ev/conservative_sldg_transport.hpp}}
+{Selects the cell-average geometry, conservative forward map, refinement
+ checks, and fail-closed fallback-mass bound}
+\begin{lstlisting}
+physics_model = vlasov_poisson
+kinetic_grid = cell_average_eta
+vp_interpolation = conservative_sldg
+integrator = semi_lagrangian_kick_drift_kick
+vp_sldg_subcells = 2
+vp_sldg_eta_quadrature_points = 2
+vp_sldg_max_area_defect = 1e-4
+vp_sldg_max_map_defect = 1e-2
+vp_sldg_fallback_mass_tolerance = 1e-9
+\end{lstlisting}
+To select the Hamiltonian-aligned reconstruction:
+\codesource{Hamiltonian-aligned SLDG configuration}
+{\path{cpu/include/ev/hamiltonian_sldg_transport.hpp};
+ \path{cpu/include/ev/hamiltonian_orbit_reference.hpp}}
+{Reconstructs along frozen Hamiltonian geometry and optionally supplies a
+ positive orbit-average reference distribution}
+\begin{lstlisting}
+vp_universe = static
+vp_interpolation = hamiltonian_sldg
+vp_hamiltonian_reference = orbit_average
+vp_hamiltonian_reference_energy_bins = 512
+vp_hamiltonian_reference_quadrature_points = 4
+\end{lstlisting}
+To retain the physical delay through the unresolved central region:
+\codesource{SLDG delayed-inner-return carrier}
+{\path{cpu/include/ev/conservative_sldg_transport.hpp};
+ \path{cpu/include/ev/delayed_inner_orbit_carrier.hpp}}
+{Carries unresolved central trajectories for their computed return time while
+ enforcing quadrature, refinement, segment, and mass tolerances}
+\begin{lstlisting}
+inner_boundary = delayed_return
+vp_inner_carrier_quadrature_points = 4
+vp_inner_carrier_max_refinement = 6
+vp_inner_carrier_max_orbit_segments = 16
+vp_inner_carrier_mass_tolerance = 1e-12
+\end{lstlisting}
+
+The parameter consistency checks require cell-average \(\eta\) geometry for SLDG.
+Hamiltonian SLDG and its orbit reference require a static universe.  Prescribed
+outer inflow is not part of the present cell-integrated Hamiltonian path.
+\code{delayed_return} is accepted only with
+\code{conservative_sldg} or \code{hamiltonian_sldg}.
+
+\subsubsection{Implemented algorithms and applicability limits}
+
+The implementation provides:
+\begin{itemize}
+\item source-cell conservative forward transport with no global mass fix;
+\item positivity-limited local polynomial reconstruction;
+\item cached trace lattices, geometric validity checks, recursive refinement,
+and exact polygon/rectangle overlap moments;
+\item explicit, tolerance-gated fallback ledger and adaptive transport cap;
+\item midpoint self-gravity from a conservative continuity predictor;
+\item reflecting, outflow, and delayed-inner-return branches;
+\item persistent hidden-mass carrier with optional conservative compression;
+\item Hamiltonian-aligned P2 reconstruction and an optional positive
+orbit-average reference;
+\item OpenMP/std::thread work over independent \(\eta\) planes and MPI
+\(\eta\)-slab reductions;
+\item restart support for the grid, carrier, adaptive state, and Hamiltonian
+modal coefficients;
+\item diagnostics for every mass destination and every map-quality fallback.
+\end{itemize}
+
+The following limitations govern scientific use:
+\begin{itemize}
+\item the Hamiltonian fit and orbit-reference parameters must be refined for
+equilibrium and strongly time-dependent problems;
+\item fallback, rank-deficiency, phase-degeneracy, and positivity diagnostics
+must remain acceptance gates rather than merely logged numbers;
+\item delayed-return separatrices and carrier compression require special
+care for very low \(L\), long hidden periods, and field changes during the
+delay;
+\item expanding-universe cell-integrated Hamiltonian transport and prescribed
+outer inflow are not yet the supported Hamiltonian-SLDG production path;
+\item collisions invalidate cached transport modes, so a coupled calculation
+must close its transport and collision mass ledgers and preserve restart
+equivalence.
+\end{itemize}
+
+The conservative ledgers, midpoint coupling, and Hamiltonian reconstruction
+make every fallback and unresolved destination explicit.  Scientific use
+requires problem-specific refinement until fallback mass, carrier mass, and
+changes in the reported observables are below the chosen error budget.

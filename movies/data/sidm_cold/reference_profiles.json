@@ -1,0 +1,51 @@
+{
+  "schema": "VENUS_REFERENCE_PROFILE_HASHES_1",
+  "physical_scope": "Native profiles displayed in the example figures.",
+  "profiles": [
+    {
+      "case": "sidm_nfw",
+      "time": 0.0,
+      "sha256": "95d60b4c90c4057219e94671bbc7863eacf853ccb7be826fe7534beb6e7ec271"
+    },
+    {
+      "case": "sidm_nfw",
+      "time": 20.070260888011436,
+      "sha256": "229adde1e492c31c46b41df1b34e1793e887fd9d1b48548ea656ea216ecd9a62"
+    },
+    {
+      "case": "sidm_nfw",
+      "time": 159.9971642972194,
+      "sha256": "a650ca690af5c5b8b6e57f457f2bb2262ebb126f19b69e292b3c2610305645a6"
+    },
+    {
+      "case": "sidm_nfw",
+      "time": 191.46972584126996,
+      "sha256": "b1e826f879850264839302708be65c4cc9ee114f7a1359e36adf6a76135a0dbe"
+    },
+    {
+      "case": "sidm_nfw",
+      "time": 193.98405058811878,
+      "sha256": "f96f3a8d8ce2d857e4d7d6522248891fa43a9e39d1dcc989d98b499ba839b6f7"
+    },
+    {
+      "case": "sidm_cored",
+      "time": 0.0,
+      "sha256": "e516cf6f5e7340878d59c4e9d7c9c0159f4489daa14fa3059db0802d98f7bd6f"
+    },
+    {
+      "case": "sidm_cored",
+      "time": 38.12952484245129,
+      "sha256": "11ddbe85172f84639d6bea683220788f19d815152039ec2eb12106044d8431f4"
+    },
+    {
+      "case": "sidm_cored",
+      "time": 59.42873822304635,
+      "sha256": "820fc8ddb0cccf66a085aea82642a81d02467f47299b8b241cf1b747f9973193"
+    },
+    {
+      "case": "sidm_cored",
+      "time": 68.41751326571196,
+      "sha256": "a8bc6631c34530b935c2bd0018a199502986c48dd2b76c4235a7ca418c912ef4"
+    }
+  ]
+}

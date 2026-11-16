@@ -1,0 +1,71 @@
+\subsection{Exact Finite-Angle Collision Foundations}
+
+The marker modules begin with a two-body collision. Relative motion sets
+the encounter rate, and conservation of momentum and energy determines the
+outgoing velocities. This construction provides the basis for the collision
+samplers and for the diffusion approximation introduced later.  Two incoming objects have
+velocities \(\bm v_1,\bm v_2\), masses \(m_1,m_2>0\), relative velocity
+\(\bm u=\bm v_1-\bm v_2\), and relative speed \(u=|\bm u|\).  A differential
+cross section \(\dd\sigma/\dd\Omega\) gives the effective encounter area per
+unit outgoing solid angle \(\dd\Omega\).  The local event rate is proportional
+to
+\[
+  n_1 n_2\,u\,\frac{\dd\sigma}{\dd\Omega},
+\]
+where \(n_1,n_2\) are local number densities.  This factor explains the three
+ingredients seen later in every exact sampler: find local partners, weight the
+trial by relative speed and cross section, and draw an outgoing direction.
+
+For an elastic event, the centre-of-mass velocity
+\[
+ \bm V=\frac{m_1\bm v_1+m_2\bm v_2}{m_1+m_2}
+\]
+is unchanged.  The outgoing relative velocity has the same length \(u\) but a
+new direction \(\widehat{\bm n}\).  The unique outgoing velocities are
+\[
+ \bm v'_1=\bm V+\frac{m_2}{m_1+m_2}u\widehat{\bm n},
+ \qquad
+ \bm v'_2=\bm V-\frac{m_1}{m_1+m_2}u\widehat{\bm n}.
+\]
+These formulas conserve total momentum and kinetic energy for unequal as well
+as equal masses.  Spherical variables are reconstructed only after this
+three-dimensional collision has been completed.
+
+\paragraph{Material SIDM.}
+In a material self-interacting dark matter event, each marker represents
+a sample of the continuous material distribution. The material law specifies
+the cross section, often quoted per unit mass. Elastic scattering changes physical particle velocities while preserving
+their rest masses. Each module specifies how numerical marker weights and
+any unequal-weight remainder represent this event. Constant, power-law, and
+Yukawa--Born laws have different dependences on \(u\) and scattering angle.
+Their parameters therefore need the normalization and units of the selected
+law.
+
+\paragraph{Subhalo CDM encounters.}
+In the subhalo operator, each marker represents one resolved extended
+object.  The encounter area is derived from a softened Plummer gravitational
+scattering model rather than a material cross section per mass.  An encounter
+may scatter two complete subhaloes or, when the calibrated capture criterion
+is met, replace them by one complete remnant.  The remnant has mass
+\(m_1+m_2\), and the lost relative orbital energy is recorded as unresolved
+internal energy.  This inelastic capture channel is not part of material
+SIDM or the present SphDSMC module.
+
+\paragraph{What the word exact means here.}
+The pair kinematics above conserve the stated two-body invariants exactly.
+The Monte Carlo sampler draws trial events from an upper rate, called a
+majorant, and accepts each trial with the ratio of the physical rate to that
+upper rate. A valid majorant makes this an unbiased sampling of the
+represented discrete event process.  Numerical error still enters
+through marker sampling, finite collision shells or cells, force resolution,
+event cadence, rate bounds, finite run time, and random realization.  The
+dense Eulerian operator described later uses the same word differently: it
+enumerates every retained velocity-cell pair and configured angular node.
+That label does not remove its angular quadrature, velocity boundary, remap,
+or timestep error.
+
+The Fokker--Planck operator appears only after these finite-angle constructions.
+It represents the accumulated effect of many small deflections through
+drift and diffusion coefficients. Its validity depends on the small-angle
+regime, and its numerical accuracy requires convergence of those coefficients
+and of the velocity-space update.

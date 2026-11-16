@@ -1,0 +1,711 @@
+\subsection{Weighted Einstein--Vlasov Particle--Mesh Module}
+\label{sec:weighted-einstein-vlasov-pic}
+
+This collisionless module evolves a spherical relativistic marker ensemble
+and its self-consistent spacetime in Schwarzschild coordinates.  Separate task
+executables select a low-compactness halo or high-compactness collapse, so a
+parameter file cannot silently switch between those physical problems.  The
+module contains no SIDM collision operator and does not evolve an expanding
+cosmological background.  Schwarzschild coordinates approach a coordinate
+singularity as \(2m/r\rightarrow1\); the module therefore diagnoses horizon
+approach but is not a horizon-penetrating black-hole evolution scheme.
+
+\noindent\textbf{Maturity and validation.}
+The task-specific runners implement the Schwarzschild weighted
+particle-in-cell (WPIC) method.  The low-compactness task compares
+Einstein--Vlasov and Vlasov--Poisson evolution from the same sampled initial
+positions and momenta.  Each module assigns the weights required by its own
+phase-space measure.  Quantitative collapse results require joint refinement
+of marker number, radial mesh, timestep, omitted-weight control, and sampling
+realization, together with constraint, mass, binding, and outcome checks.
+Horizon-penetrating evolution belongs to the EF module.
+
+\begin{figure}[htbp]
+\centering
+\textbf{Physics flow: Einstein--Vlasov WPIC}
+\par\smallskip
+\begin{tikzpicture}[node distance=0.22cm]
+\node[physicsflow] (ew1) {Create weighted spherical markers carrying position, radial momentum, and angular momentum};
+\node[physicsflow,below=of ew1] (ew2) {Deposit their rest mass, relativistic energy, pressures, and radial current onto radial shells};
+\node[physicsflow,below=of ew2] (ew3) {Solve the spherical Einstein constraints to obtain enclosed mass, radial metric, and lapse};
+\node[physicsflow,below=of ew3] (ew4) {Predict every marker to the middle of the timestep using the old spacetime};
+\node[physicsflow,below=of ew4] (ew5) {Deposit the predicted markers and solve the midpoint spacetime};
+\node[physicsflow,below=of ew5] (ew6) {Move the original markers through the full timestep using that midpoint spacetime};
+\node[physicsflow,below=of ew6] (ew7) {Recompute the endpoint matter and spacetime, reducing the timestep if the coordinate patch would fail};
+\node[physicsflow,below=of ew7] (ew8) {Write profiles, conservation diagnostics, and an atomic restart; then continue};
+\draw[physicsarrow] (ew1) -- (ew2);
+\draw[physicsarrow] (ew2) -- (ew3);
+\draw[physicsarrow] (ew3) -- (ew4);
+\draw[physicsarrow] (ew4) -- (ew5);
+\draw[physicsarrow] (ew5) -- (ew6);
+\draw[physicsarrow] (ew6) -- (ew7);
+\draw[physicsarrow] (ew7) -- (ew8);
+\end{tikzpicture}
+\end{figure}
+
+\subsubsection{Physical variables and invariant marker weight}
+
+The Schwarzschild line element is
+\[
+ \dd s^2=-e^{2\mu(\tau,r)}\dd\tau^2
+          +e^{2\lambda(\tau,r)}\dd r^2+r^2\dd\Omega^2,    \tag{EWP1}
+\]
+where \(r\) is areal radius, \(\tau\) is Schwarzschild coordinate time,
+\(\mu\) is the lapse
+potential, \(\lambda\) is the radial metric potential, and
+\(\dd\Omega^2\) is the unit-sphere metric.  In the source,
+\code{WeightedPICMarker} is the record for one persistent numerical sample of
+the distribution.  A marker stores
+\[
+ (m_p,r_p,w_p,\eta_p,I_p),\qquad
+ \eta_p=\frac{L_p^2}{2},\qquad
+ \epsilon_p=\sqrt{1+w_p^2+\frac{2\eta_p}{r_p^2}}.        \tag{EWP2}
+\]
+Here \(m_p\) is invariant rest-number weight, \(w_p\) is orthonormal radial
+momentum measured by a local static observer, \(L_p\) is the conserved
+angular-momentum magnitude, \(I_p\) is a persistent identifier, and
+\(\epsilon_p\) is energy per unit rest mass in that local orthonormal frame.
+
+Because \(w\) is orthonormal rather than canonical, the invariant reduced
+phase measure is
+\[
+ \dd\Gamma_{\rm inv}
+ =8\pi^2 e^\lambda\,\dd r\,\dd w\,\dd\eta.               \tag{EWP3}
+\]
+An initial sampler first constructs coordinate weights using
+\(\dd r\,\dd w\,\dd\eta\), then iterates
+\[
+ m_p^{(n+1)}
+ =m_{p,\rm coord}\exp[\lambda^{(n)}(r_p)]                \tag{EWP4}
+\]
+until the relative change is below \(2\times10^{-12}\).  This fixed-point
+iteration makes \(m_p\) the invariant weight required by equation (EWP3).
+This metric factor converts coordinate-volume sampling into invariant
+particle number.  Omitting it changes the matter source and produces a false
+growth of Arnowitt--Deser--Misner (ADM) mass, the total gravitating mass read
+from the asymptotic exterior metric.
+
+There is one explicit interface exception.  Markers returned by
+\path{cpu/include/ev/weighted_einstein_vlasov_static_shell.hpp} already carry the
+fully invariant quadrature weight.  For its continuum distribution
+\(f=C(1-E/E_0)_+^k\delta(L-L_0)\), \(C\) is the distribution amplitude,
+\(L_0>0\) is the single angular-momentum magnitude carried by the shell,
+\((x)_+=\max(x,0)\) keeps only the positive part, and \(\delta\) is the Dirac
+delta distribution that enforces \(L=L_0\).
+The cutoff power satisfies \(1\le k\le8\), with default \(k=1\).
+\(E_p=e^{\mu(r_p)}\epsilon_p\) is marker \(p\)'s conserved energy in the
+static metric, and \(E_0\) is the upper energy cutoff.  The factors
+\(\Delta r_p\) and \(\Delta w_p\) are the radial and positive-radial-momentum
+quadrature measures assigned to that sample; each includes its numerical
+quadrature weight rather than denoting a universal mesh spacing.  The returned
+marker weight is
+\[
+ m_p=8\pi^2 CL_0 e^{\lambda(r_p)}
+      \left(1-\frac{E_p}{E_0}\right)^k
+      \Delta r_p\,\Delta w_p .
+\]
+The \code{energy_cutoff_shell} driver therefore passes those weights directly
+to the Schwarzschild WPIC solver and must \emph{not} call
+\code{canonicalize_weighted_einstein_vlasov_pic_initial_weights};
+doing so would insert \(e^\lambda\) twice.  Its exact continuum equations,
+delta-function normalization, sampling rules, fixed inward perturbation, and
+threshold interface are documented in
+Section~\ref{sec:ef-static-energy-cutoff-shell}.
+
+\subsubsection{Relativistic deposition}
+
+Markers deposit into shell centers placed uniformly in the volume coordinate
+\[
+ q=\frac{r^3}{3},\qquad \Delta V_i=4\pi\Delta q_i.       \tag{EWP5}
+\]
+CIC means cloud in cell, a two-center linear particle shape; TSC means
+triangular shaped cloud, a smoother three-center quadratic shape.  TSC is the
+default.  Let \(a_{pi}\) be the nonnegative shape weight of marker \(p\) in
+shell \(i\), with \(\sum_i a_{pi}=1\).  The deposited shell-extensive
+quantities are
+\[
+\begin{aligned}
+ {\cal M}_{0,i}&=\sum_p a_{pi}m_p,\\
+ {\cal E}_i&=\sum_p a_{pi}m_p\epsilon_p,\\
+ {\cal P}_{r,i}&=\sum_p a_{pi}m_p\frac{w_p^2}{\epsilon_p},\\
+ {\cal P}_{t,i}&=\sum_p a_{pi}m_p
+                 \frac{2\eta_p/r_p^2}{\epsilon_p},\\
+ {\cal J}_i&=\sum_p a_{pi}m_pw_p.
+\end{aligned}                                           \tag{EWP6}
+\]
+\({\cal M}_0\) is rest mass, \({\cal E}\) is the invariant-weighted local
+particle energy, the two
+\({\cal P}\)'s generate radial and tangential pressure, and \({\cal J}\) is
+radial current.  Unequal-weight sampling quality is reported by
+\[
+ N_{{\rm eff},i}
+ =\frac{(\sum_p a_{pi}m_p)^2}{\sum_p(a_{pi}m_p)^2}.      \tag{EWP7}
+\]
+
+\subsubsection{Einstein constraint solve}
+
+Define the metric gap
+\[
+ g(r)=1-\frac{2m(r)}{r}=e^{-2\lambda(r)},                \tag{EWP8}
+\]
+where \(m(r)\) is the Misner--Sharp enclosed mass.  Inside one shell, the
+source \({\cal E}_i/\Delta q_i\) is held constant and the radial mass
+constraint is integrated directly:
+\[
+ \frac{\dd m}{\dd q}
+ =\frac{{\cal E}_i}{\Delta q_i}
+  \sqrt{1-\frac{2m}{r(q)}}.                              \tag{EWP9}
+\]
+The square root is the \(e^{-\lambda}\) conversion from invariant canonical
+marker measure to physical stress energy.  VENUS uses an implicit-midpoint
+step with step doubling.  A radial segment is never accepted if its outer
+face has \(2m/r\ge1\); this is a coordinate-patch condition, not an artificial
+density cap.
+
+For a radial segment \([q_L,q_R]\), write \(m_L=m(q_L)\),
+\(r_m=[3(q_L+q_R)/2]^{1/3}\), and
+\(Q=({\cal E}_i/\Delta q_i)(q_R-q_L)\).  The implicit-midpoint equation
+for the mass increment \(\delta m=m_R-m_L\) is
+\[
+ \delta m=Q\sqrt{g_L-\delta m/r_m},\qquad
+ g_L=1-2m_L/r_m.
+\]
+Squaring gives \((\delta m)^2+(Q^2/r_m)\delta m-Q^2g_L=0\).
+The nonnegative root is evaluated in the cancellation-resistant form
+\[
+ \delta m=\frac{2Q^2g_L}
+ {\sqrt{(Q^2/r_m)^2+4Q^2g_L}+Q^2/r_m}.       \tag{EWP9a}
+\]
+For zero source the mass stays \(m_L\).  The source implements this root
+in \code{radial_mass_midpoint_step}:
+\codesource{Schwarzschild WPIC implicit mass increment}
+{\path{cpu/include/ev/weighted_einstein_vlasov_pic_schwarzschild.hpp}}
+{Evaluates the positive quadratic root of the radial midpoint constraint}
+\begin{lstlisting}[language=C++]
+const long double physical_energy =
+    denominator > 0.0L
+    ? 2.0L * canonical_energy_squared * gap_before_step
+        / denominator
+    : 0.0L;
+result.mass = mass_left + physical_energy;
+\end{lstlisting}
+Here \code{canonical_energy_squared} is \(Q^2\),
+\code{gap_before_step} is \(g_L\), and \code{denominator} is the
+denominator in (EWP9a).  One full segment and two half segments estimate the
+radial integration error.  Refinement continues until that error and the
+positive outer-face gap satisfy the solver's acceptance conditions.
+
+At a shell center the physical moments are
+\[
+ \rho_i=\frac{{\cal E}_i\sqrt{g_i}}{\Delta V_i},\quad
+ p_i=\frac{{\cal P}_{r,i}\sqrt{g_i}}{\Delta V_i},\quad
+ p_{t,i}=\frac{{\cal P}_{t,i}\sqrt{g_i}}{\Delta V_i},\quad
+ j_i=\frac{{\cal J}_i\sqrt{g_i}}{\Delta V_i}.            \tag{EWP10}
+\]
+The remaining radial constraints are
+\[
+\lambda=-\frac12\ln g,\qquad
+\lambda_r=\frac{4\pi r\rho-m/r^2}{g},\qquad
+\mu_r=\frac{m/r^2+4\pi rp}{g}.                           \tag{EWP11}
+\]
+The outer lapse equals the exterior Schwarzschild value,
+\[
+ \mu(R)=\frac12\ln g(R),                                 \tag{EWP12}
+\]
+and \(\mu_r\) is integrated inward.  This matching assumes vacuum beyond
+the outer field face \(R\), with Schwarzschild time normalized at infinity.
+Matter outside \(R\) contributes to that lapse normalization even when its
+mass lies outside an interior particle's enclosed-mass force.  The production
+low- and high-compactness calculations therefore require all positive-weight
+matter to remain inside the vacuum boundary.  The Schwarzschild donor uses
+the same condition when constructing null initial data.
+
+The self-consistent update checks the initial, predicted midpoint, and trial
+endpoint marker states before committing the particle array.  A trial that
+escapes with positive rest weight leaves the accepted state unchanged.
+Production enables this condition explicitly:
+\par\noindent\begin{minipage}{\linewidth}
+\codesource{Schwarzschild isolated outer-boundary guard}
+{\path{cpu/src/drivers/einstein_vlasov_wpic.cpp};
+ \path{cpu/include/ev/weighted_einstein_vlasov_pic_schwarzschild.hpp}}
+{Enforces the vacuum exterior before production evolution and rejects a trial
+ that would remove matter through the outer field face}
+\begin{lstlisting}[language=C++]
+step_options.require_vacuum_outer_boundary = true;
+ev::check_weighted_einstein_vlasov_pic_vacuum_outer_boundary(markers);
+\end{lstlisting}
+\end{minipage}\par
+The driver then saves the last accepted checkpoint and its history/profile
+endpoint.  The high-compactness outcome is
+\code{sc_outer_boundary_evolution_limit}; its summary records accepted time,
+rejected trial duration, and the reason under
+\code{schwarzschild_evolution_status}.  This limited interval remains an
+incomplete physical evolution.  A larger vacuum domain supplies the
+corresponding continuation problem.  The library default retains finite-domain
+outflow bookkeeping for callers that provide the exterior matter and lapse
+model; these escaped markers keep their invariant weights.
+
+The time derivative needed by the
+characteristics follows from the radial current:
+\[
+ \lambda_\tau=-4\pi r e^\mu\,j_{\rm canonical},\qquad
+ j_{\rm canonical}=\frac{{\cal J}}{\Delta V}.            \tag{EWP13}
+\]
+The implementation reconstructs the lapse and its derivative from cell
+centers and faces.  Monotonic slope limiting keeps the interpolation
+consistent with the attractive constraint force at those nodes, so sampling
+noise cannot create an artificial repulsive interval between them.
+
+\subsubsection{Relativistic marker characteristics}
+
+With \(L=\sqrt{2\eta}\), a collisionless marker follows
+\[
+ \frac{\dd r}{\dd\tau}
+ =e^{\mu-\lambda}\frac{w}{\epsilon},                    \tag{EWP14}
+\]
+\[
+ \frac{\dd w}{\dd\tau}
+ =-\lambda_\tau w
+  -e^{\mu-\lambda}\mu_r\epsilon
+  +e^{\mu-\lambda}\frac{L^2}{r^3\epsilon}.              \tag{EWP15}
+\]
+The three terms in equation (EWP15) are the time-dependent radial-metric
+term, gravitational/lapse force, and angular-momentum barrier.  Rest weight
+\(m_p\) and \(\eta_p\) remain invariant.
+
+An ordinary fourth-order Runge--Kutta step advances most markers.  Near a true
+origin, the code rewrites the motion using two Cartesian components, so the
+apparently singular \(L^2/r^3\) term becomes ordinary smooth central-force
+motion.  For a resolved nonzero inner boundary, rapidly turning low-pericentre
+orbits can use the Levi--Civita regularized characteristic integrator.  Here
+``regularized'' means that the independent variable and coordinates are
+changed so a close passage is numerically smooth; the physical orbit is not
+softened.
+
+\subsubsection{Self-consistent midpoint time step}
+
+One accepted interval \(\Delta\tau\) performs:
+\begin{enumerate}
+\item deposit markers at \(\tau^n\) and solve the old constraints;
+\item push a copy by \(\Delta\tau/2\) in the old metric;
+\item deposit the copy and solve the midpoint constraints;
+\item push the original markers by \(\Delta\tau\) in the midpoint metric;
+\item deposit the endpoint markers and solve the endpoint constraints.
+\end{enumerate}
+This is a second-order self-consistent midpoint coupling even though each
+frozen-metric characteristic uses RK4 internally.  If the predictor or
+endpoint leaves the Schwarzschild patch, the complete trial is discarded and
+\(\Delta\tau\) is bisected, up to the configured bisection cap.  The
+\code{gap_stop} value is a requested Schwarzschild coordinate-patch stopping
+proxy; it is not substituted into the field equations and is neither an
+apparent-horizon finder nor a certified black-hole event.
+
+The predictor starts from a copy, while the full push starts again from the
+original ensemble.  The following selected source lines show those time
+levels; the intervening patch-validity checks are omitted:
+\codesource{Schwarzschild WPIC midpoint predictor and full push}
+{\path{cpu/include/ev/weighted_einstein_vlasov_pic_schwarzschild.hpp}}
+{Uses the old metric for the half-step prediction and the redeposited midpoint metric for the full step}
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\scriptsize]
+std::vector<WeightedPICMarker> midpoint_markers = markers;
+advance_weighted_einstein_vlasov_pic_frozen_metric_parallel(
+    midpoint_markers, 0.5 * trial_dt, grid, old_field.metric,
+    options.threads, options.characteristic_substeps);
+// After depositing and solving midpoint_markers:
+endpoint_markers = markers;
+advance_weighted_einstein_vlasov_pic_frozen_metric_parallel(
+    endpoint_markers, trial_dt, grid, midpoint_field.metric,
+    options.threads, options.characteristic_substeps);
+\end{lstlisting}
+
+The timestep scans marker mesh-crossing and momentum-change times.  The
+omitted-mass control listed below allows the fastest weighted tail, up to that
+fraction of total rest mass, to be omitted from the global step estimate.
+This is a weighted quantile, not a raw marker fraction.
+It prevents a negligibly weighted importance-sampled marker from controlling
+every step, but it must be reduced in the convergence study.
+
+\subsubsection{Initial-condition provenance and acceptance checks}
+
+There are two consuming tasks:
+\begin{itemize}
+\item \code{venus_cpu_einstein_vlasov_wpic_low_compactness}, selected by
+\path{cpu/src/apps/einstein_vlasov/wpic_low_compactness.cpp};
+\item \code{venus_cpu_einstein_vlasov_wpic_black_hole}, selected by
+\path{cpu/src/apps/einstein_vlasov/wpic_black_hole.cpp}.
+\end{itemize}
+The shared generator, importer, and evolution driver is
+\path{cpu/src/drivers/einstein_vlasov_wpic.cpp}.
+
+The low task generates one deterministic Plummer marker vector and copies the
+same phase points into the relativistic and Newtonian states.  The high task
+either generates Plummer or Gaussian-shell markers, imports an immutable
+physical-initial-condition file, or invokes the bound energy-cutoff continuum
+and sampler in
+\path{cpu/include/ev/weighted_einstein_vlasov_static_shell.hpp}.
+
+The generated dynamical object is an in-memory
+\code{std::vector<WeightedPICMarker>}, a resizable list of the marker records
+defined above.  With \code{--physical-ic PATH}, the high task also writes or
+authenticates a version-1 \code{VENUSEVPHYSIC1} binary object at that path.
+This is an immutable physical initial condition, not a time-evolution
+restart.  Its payload is, in order: a 16-byte format tag, a 32-bit version
+number, a 64-bit marker count, a 64-bit fingerprint, then for every marker the
+six fields
+\[
+ (m_p,r_p,w_p,\eta_p,I_p,S_p).
+\]
+The first four entries are the invariant weight and phase-space variables
+defined in equation (EWP2), \(I_p\) is the 64-bit persistent marker identifier,
+and \(S_p\) is the 64-bit source-cell identifier that records the sample's
+origin.  On reading, the driver rejects an incorrect tag or version, an
+impossible count, invalid marker values, trailing bytes, or a recomputed
+fingerprint that differs from the stored fingerprint.  If the requested path
+already holds a different valid object, the writer refuses to replace it.
+
+Ordinary continuation instead consumes the coordinate-specific atomic restart
+in the output directory.  Before evolving, check finite positive invariant
+weights, unique identifiers, support within the radial domain and
+particle-shape stencil, convergence of the invariant-weight fixed point,
+initial constraint residuals, ADM mass, compactness, binding diagnostics, and
+quiet-pair identities where applicable.  A fixed-ADM or angular-momentum
+family must retain the same authenticated base realization and be repeated
+under marker, mesh, and timestep refinement.
+
+\subsubsection{Task-specific input interface}
+
+The two frontends are
+\codesource{Einstein--Vlasov WPIC task frontends}
+{\path{cpu/src/apps/einstein_vlasov/wpic_low_compactness.cpp};
+ \path{cpu/src/apps/einstein_vlasov/wpic_black_hole.cpp}}
+{Locks each executable to one low- or high-compactness problem contract before
+ entering the shared relativistic marker driver}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+venus_cpu_einstein_vlasov_wpic_low_compactness
+venus_cpu_einstein_vlasov_wpic_black_hole
+\end{lstlisting}
+The first accepts only the \code{low} scenario, while the second accepts only
+\code{high}.
+The shared options below retain the scenario prefixes to keep restart and
+output contracts unambiguous.
+
+\codesource{Einstein--Vlasov WPIC command-line interface}
+{\path{cpu/src/drivers/einstein_vlasov_wpic.cpp}}
+{Parses and validates the scenario-specific marker, grid, initial-condition,
+ timestep, and output controls used by both frontends}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+# Scenario and execution
+--scenario low|high                     (locked by executable)
+--coordinates schwarzschild             (polar--areal module)
+--expected-outcome black_hole|halo|any  (black_hole)
+--output-dir DIR
+--threads N                             (hardware concurrency)
+--physical-ic PATH                      (immutable version-1 base IC)
+--initialize-only                       (write/authenticate IC, then stop)
+--resume                                (atomic checkpoints and CSV append)
+--quick                                 (small diagnostic defaults)
+
+# Low-compactness EV-versus-VP comparison
+--low-markers N                         (16000)
+--low-radial-cells N                    (192)
+--low-t-end T                           (45)
+--low-dt-max DT                         (0.06)
+--low-cfl C                             (0.3)
+--low-total-mass M                      (0.002)
+--low-velocity-factor F                 (0.6)
+--low-radial-importance-exponent P      (1)
+--low-output-steps N                    (20)
+
+# High-compactness Einstein--Vlasov problem
+--high-initial-condition plummer|shell|energy_cutoff_shell (plummer)
+--high-inner-boundary reflecting|origin_parity (origin_parity)
+--high-radial-grid log|linear           (linear)
+--high-markers N                        (20000)
+--high-radial-cells N                   (320)
+--high-t-end T                          (8)
+--high-dt-max DT                        (0.008)
+--high-gap-stop G                       (0.03)
+--high-r-min R                          (0.01 input; origin parity resolves 0)
+--high-r-max R                          (8)
+--high-total-mass M                     (0.42)
+--high-scale-radius A                   (1)
+--high-velocity-factor F                (0.2)
+--high-radial-infall W                  (0)
+--high-infall-core-radius R             (0)
+--high-radial-importance-exponent P     (1)
+--high-output-steps N                   (10)
+--high-target-initial-adm-mass M        (-1: keep base weights)
+--high-specific-angular-momentum L      (-1: keep sampled values)
+--high-angular-momentum-scale S         (1)
+--high-sampling-realization UINT64      (0)
+
+# Additional infalling-shell controls
+--high-shell-center R                   (1.8)
+--high-shell-width SIGMA_R              (0.18)
+--high-shell-radial-importance-factor F (1)
+--high-shell-radial-momentum W          (-0.62)
+--high-shell-radial-momentum-dispersion SIGMA_W (0.025)
+--high-shell-tangential-velocity-dispersion SIGMA_T (0.012)
+
+# Bound energy-cutoff-shell controls
+--high-energy-cutoff-amplitude C        (0.50)
+--high-energy-cutoff-ell0 ELL0          (1.0)
+--high-energy-cutoff-central-y Y0       (0.13)
+
+# Shared weighted timestep tail
+--timestep-omitted-mass-fraction F      (1e-5)
+\end{lstlisting}
+The \code{low} scenario evolves the same deterministic marker realization
+with Einstein--Vlasov and Vlasov--Poisson, so differences measure relativistic
+physics and discretization rather than different Monte Carlo noise.  The
+shared driver also parses the horizon-penetrating coordinate-map and excision
+controls, but those controls are explained only in the EF chapter, after that
+geometry and its variables have been defined.
+
+\noindent\textbf{Runnable high-compactness Schwarzschild example.}
+The WPIC executables use command-line options rather than \path{params.ini}.
+Build the task-specific high-compactness frontend and run it as follows:
+\codesource{\code{venus_cpu_einstein_vlasov_wpic_black_hole}}
+{\path{cpu/src/apps/einstein_vlasov/wpic_black_hole.cpp};
+ \path{cpu/src/drivers/einstein_vlasov_wpic.cpp}}
+{Selects the high-compactness problem contract; the shared driver performs its
+ marker sampling, Schwarzschild metric solve, transport, stopping proxy,
+ restart, and diagnostics}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+cd VENUS/cpu
+make venus_cpu_einstein_vlasov_wpic_black_hole
+
+./venus_cpu_einstein_vlasov_wpic_black_hole \
+  --scenario high \
+  --coordinates schwarzschild \
+  --high-initial-condition plummer \
+  --high-inner-boundary origin_parity \
+  --high-radial-grid linear \
+  --high-markers 128000 \
+  --high-radial-cells 1024 \
+  --high-r-max 4 \
+  --high-t-end 20 \
+  --high-dt-max 0.008 \
+  --high-gap-stop 0.01 \
+  --high-total-mass 0.6 \
+  --high-scale-radius 1 \
+  --high-velocity-factor 0.2 \
+  --high-radial-infall 0.45 \
+  --high-infall-core-radius 0.1 \
+  --high-radial-importance-exponent 2 \
+  --timestep-omitted-mass-fraction 1e-4 \
+  --threads 32 \
+  --output-dir output/ev_wpic_high
+\end{lstlisting}
+The executable name identifies the high-compactness task profile; it does not
+certify that a black hole formed.  In particular, \code{--high-gap-stop} is a
+Schwarzschild coordinate-patch stopping proxy.
+
+\subsubsection{Output schemas and plotting}
+
+The low task writes \path{low_compactness_history.csv} with this exact schema:
+\codesource{Low-compactness EV--VP comparison output}
+{\path{cpu/src/drivers/einstein_vlasov_wpic.cpp}}
+{Writes relativistic and Newtonian mass, size, virial, density, and
+ marker-difference diagnostics from the same initial realization}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+step,time,dt,ev_rest_mass,ev_adm_mass,ev_max_compactness,
+ev_min_gap,ev_r10,ev_r50,ev_r90,ev_virial_ratio,
+vp_mass,vp_r10,vp_r50,vp_r90,vp_virial_ratio,
+density_l1_difference,particle_rms_radius_difference,
+particle_rms_momentum_difference
+\end{lstlisting}
+Here \code{step} is the number of accepted time steps, \code{time} is the
+current coordinate time, and \code{dt} is the most recently accepted time
+increment; the initial row uses \code{dt=0}.  Prefix \code{ev_} denotes the
+Einstein--Vlasov state and \code{vp_} the Vlasov--Poisson control.
+\code{rest_mass} or \code{mass} is the sum of active marker weights,
+\code{adm_mass} is the relativistic total gravitating mass,
+\code{max_compactness} is \(\max_i(2m_i/r_i)\), and \code{min_gap} is
+\(\min_i(1-2m_i/r_i)\).  The quantities \code{r10}, \code{r50}, and
+\code{r90} are the radii containing 10, 50, and 90 percent of active marker
+weight.  A \code{virial_ratio} is the Newtonian diagnostic \(2K/|W|\), where
+\(K\) and \(W\) are the marker kinetic and spherical potential-energy sums;
+it is a comparison aid, not a relativistic virial theorem.
+
+The density difference is the normalized shell-mass distance
+\[
+ D_1=\frac{\sum_i|M_i^{\rm EV}-M_i^{\rm VP}|}
+ {\tfrac12\sum_i(M_i^{\rm EV}+M_i^{\rm VP})}.
+\]
+The two particle differences are unweighted root-mean-square differences in
+\(r_p\) and \(w_p\), evaluated marker by marker from the same initial realization.
+The companion \path{low_compactness_profiles.csv} contains
+\codesource{Low-compactness EV--VP radial-profile schema}
+{\path{cpu/src/drivers/einstein_vlasov_wpic.cpp}}
+{Writes the relativistic and Newtonian radial profile columns}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+step,time,r,ev_rho,ev_compactness,vp_rho,vp_compactness
+\end{lstlisting}
+where \code{r} is a shell-center radius, each \code{rho} is deposited mass or
+energy density, and each \code{compactness} is \(2m(r)/r\) for the named
+model.
+
+The Schwarzschild high task writes \path{high_compactness_history.csv}:
+\codesource{High-compactness Schwarzschild output}
+{\path{cpu/src/drivers/einstein_vlasov_wpic.cpp}}
+{Writes the coordinate-patch, mass, compactness, lapse, size, and virial
+ diagnostics for every saved high-compactness state}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+step,time,dt,rest_mass,adm_mass,max_compactness,min_gap,
+min_lapse,max_log_redshift,r10,r50,r90,virial_ratio,
+anisotropic_jeans_relative_l1
+\end{lstlisting}
+The shared time, mass, compactness, radius, and virial columns have the
+definitions above.  \code{min_lapse} is the minimum of \(e^\mu\) over the
+saved metric faces (or centers if face values are unavailable), and
+\code{max_log_redshift} is \(-\min\mu\).  The last column is the
+volume-weighted relative \(L^1\) residual of the static anisotropic Jeans
+balance
+\[
+ p_r'+(\rho+p_r)\mu_r-\frac{p_t-2p_r}{r}=0,
+\]
+where \(p_t\) is the sum of the two tangential pressures.  It is a late-time
+stationarity check.  The calculation excludes the two derivative-boundary
+cells, nonfinite cells, and cells below \(10^{-6}\) of the peak density.  A
+value of \(-1\) means that fewer than three supported cells, or no nonzero
+normalization, made this diagnostic unavailable.
+
+The exact \path{high_compactness_profiles.csv} schema is
+\codesource{High-compactness Schwarzschild radial-profile schema}
+{\path{cpu/src/drivers/einstein_vlasov_wpic.cpp}}
+{Writes center and face-aware metric, matter, and coordinate-map profile
+ columns}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+step,time,r,rho,compactness,m,a,lambda,mu,lambda_t,
+p_radial,p_tangential_sum,j,metric_sample_kind,metric_cell,
+face_left_r,face_right_r,face_left_lambda,face_right_lambda,
+center_mu_r,face_left_mu,face_right_mu,face_left_mu_r,
+face_right_mu_r
+\end{lstlisting}
+The first fields identify the saved state and sample radius.  Here \code{rho}
+is energy density, \code{m} is enclosed Misner--Sharp mass, and
+\code{compactness}=\(2m/r\).  In this Schwarzschild file the historical column
+name \code{a} means the gap \(1-2m/r=e^{-2\lambda}\); it is not introducing an
+EF variable.  The next metric columns are \(\lambda\), \(\mu\), and
+\(\lambda_\tau\).  The source member and CSV column \code{lambda_t}
+retain their legacy names for this derivative.  The matter columns are
+radial pressure, the sum of both
+tangential pressures, and radial current.  \code{metric_sample_kind} is
+\code{cell_center} for an ordinary row or \code{outer_face} for the exact outer
+metric face saved for coordinate-map work; \code{metric_cell} is its zero-based
+cell index.  The remaining fields give the radii and metric values at the two
+faces bracketing a center, together with the center and face values of
+\(\mu_r\).  Matter fields in the extra outer-face row are zero because that row
+stores a metric boundary sample rather than a matter cell.
+
+Restarts are separate from these readable tables.  The low task alternates
+paired checkpoints
+\path{low_einstein_vlasov_A.restart}/\path{low_einstein_vlasov_B.restart} and
+\path{low_vlasov_poisson_A.restart}/\path{low_vlasov_poisson_B.restart}; the
+atomically replaced \path{low_restart_manifest.txt} names the common active
+slot, time, and step.  The high Schwarzschild task atomically replaces
+\path{high_einstein_vlasov.restart}.  A resume requires the checkpoint time and
+step to agree with the existing CSV tails before it appends any row.
+
+The high task also writes
+\path{fixed_family_initial_bound_diagnostics.csv}.  Its rest weight is the
+sum of invariant marker weights, its binding energy is rest weight minus ADM
+mass, and its binding fraction is that difference divided by rest weight.  The
+four energy-at-infinity fields give the minimum, maximum, rest-weighted mean,
+and rest-weight fraction at or above one for the instantaneous initial proxy
+\(E_{\rm proxy}=e^\mu\epsilon\); this proxy is not conserved in a dynamical
+metric.
+
+Finally, \path{summary.json} records configuration, extrema, final diagnostics,
+classification checks, and provenance fingerprints.  In this union schema,
+\(-1\) in an optional time, radius, mass, coordinate-map, or energy-cutoff
+field means ``not available or not observed,'' not a physical negative value.
+The associated availability Boolean must be checked before using such a field.
+For this Schwarzschild task, nonnegative \code{horizon_time} and
+\code{first_trapped_time} record the gap-stop threshold time only;
+\code{apparent_horizon_radius} remains \(-1\) because this solver does not
+locate an apparent horizon.  The EF-only summary fields are defined in the EF
+chapter and remain unavailable here.
+
+Render both scenarios with:
+\codesource{\path{render_weighted_einstein_vlasov_pic_profile_gifs.py}}
+{\path{cpu/tools/render_weighted_einstein_vlasov_pic_profile_gifs.py}}
+{Reads the documented low- and high-profile schemas and renders their profile
+ animations and preview products}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+python tools/render_weighted_einstein_vlasov_pic_profile_gifs.py \
+  --low-profiles LOW_RUN/low_compactness_profiles.csv \
+  --high-profiles HIGH_RUN/high_compactness_profiles.csv \
+  --output-dir plots/ev_wpic
+\end{lstlisting}
+Here \code{LOW_RUN} and \code{HIGH_RUN} stand for the two output directories
+chosen with \code{--output-dir}.  The plotting script validates the required
+named columns, uses saved times without temporal interpolation, and writes
+separate low- and high-profile GIF animations, up to three PNG previews for
+each, and exact frame-time sidecars.
+
+For a low-compactness comparison, use the low frontend and monitor the EV--VP
+density and marker differences alongside ADM-mass conservation.  For collapse,
+refine marker count, radial mesh, timestep controls, and the omitted-mass
+fraction together.  The stopping gap and maximum compactness diagnose the
+approach to \(2m/r=1\); they must not be interpreted as evolution through an
+apparent horizon.
+
+For a paired collapse, the maintained three-panel animation is
+\path{cpu/tools/render_weighted_einstein_vlasov_coordinate_pair_gif.py}.  This
+paragraph previews only the notation needed to explain that plot; the EF
+chapter derives it.  Ingoing EF coordinates use
+\[
+ \dd s^2=-a(v,r)b(v,r)^2\dd v^2+2b(v,r)\dd v\dd r
+          +r^2\dd\Omega^2,
+\]
+where \(v\) is advanced (ingoing-null) time, \(a=1-2m/r\) is the radial null
+factor, and the positive function \(b\) fixes the normalization of \(v\).
+Here and below SC abbreviates the Schwarzschild description.
+Before the SC chart ends, the renderer does not pair curves merely because
+their two coordinate clocks show the same number.  At every displayed radius
+it solves the eikonal map---the equation that follows the same ingoing light
+surface through the two coordinate systems---
+\[
+ \partial_r v=e^{\lambda-\mu}\partial_\tau v,
+ \qquad v(\tau,R_B)=\tau+v_{\rm offset},
+\]
+where \(\tau\) is Schwarzschild time, \(R_B\) is the authenticated outer vacuum
+boundary, and \(v_{\rm offset}\) aligns the two clocks there.  It checks the
+raw \(n\)-versus-\(2n\) map-integration refinements, the inverse map, and their
+composition, and compares SC at \((\tau,r)\) with EF at
+\((v(\tau,r),r)\).  The panels show
+\(\log_{10}\rho\) versus \(\log_{10}r\),
+\(\dd\log\rho/\dd\log r\) versus \(\log_{10}r\), and \(2m/r\) versus the
+linear radius \(r\).  Outside a trapped region the EF density shown in the
+overlay is
+\[
+ \rho_{\rm EF}^{(\mathrm{SC\ observer})}=\frac{T_{vv}}{a b^2}.
+\]
+Here \(T_{vv}\) is the covariant stress--energy component with both indices in
+the advanced-time direction; division by \(ab^2\) converts it to the energy
+density measured by the corresponding static SC observer.
+Where \(a\leq0\), that static observer no longer exists.  Density and its
+slope are therefore masked there instead of being silently replaced by a
+different quantity; compactness remains visible across the full saved EF
+slice.  After the Schwarzschild chart ends, clearly labelled EF-only frames
+show horizon and exterior evolution.  For example:
+\codesource{\path{render_weighted_einstein_vlasov_coordinate_pair_gif.py}}
+{\path{cpu/tools/render_weighted_einstein_vlasov_coordinate_pair_gif.py}}
+{Authenticates the paired inputs, matches the same spacetime events through
+ the solved eikonal map, and publishes the comparison animation and sidecars}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+python tools/render_weighted_einstein_vlasov_coordinate_pair_gif.py \
+  --schwarzschild RUN/sc --ef RUN/ef \
+  --manifest RUN/common_ingress_null.bin.manifest.json \
+  --eikonal-substeps "$VENUS_EIKONAL_SUBSTEPS" \
+  --output RUN/sc_ef_black_hole_profiles.gif
+\end{lstlisting}
+In this template, \code{RUN} is the parent directory containing the paired
+\path{sc} and \path{ef} run directories.  The shell variable
+\code{VENUS_EIKONAL_SUBSTEPS} is the positive map-integration refinement count
+chosen for the authenticated comparison.
+The GIF is published atomically with three PNG previews, an exact frame-clock
+CSV, and a JSON record of input hashes, map checks, panel definitions, and
+fixed axis limits.

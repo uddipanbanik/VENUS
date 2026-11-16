@@ -1,0 +1,960 @@
+\section{GPU Modules: CUDA WPIC, Collisions, Restarts, and MPI}
+\label{sec:gpu-modules}
+
+\subsection{GPU-computing foundations}
+
+A \emph{central processing unit} (CPU) is the general-purpose processor that
+runs the operating system, reads files, chooses timesteps, and launches the
+large arithmetic jobs in this chapter.  A \emph{graphics processing unit}
+(GPU) is a second processor containing many simpler arithmetic workers.  It is
+effective when the same operation must be applied independently to many
+markers or mesh cells.  VENUS programs the GPU with NVIDIA's CUDA platform.
+
+CUDA calls the CPU side the \emph{host} and the GPU side the \emph{device}.
+Host and device normally have separate memory, so a \emph{memory transfer} is
+an explicit copy between them.  A \emph{kernel} is a function launched on the
+device.  One launch creates a \emph{grid} of \emph{blocks}; each block is a
+group of \emph{threads}, and each thread is one logical worker executing the
+kernel on its assigned marker, cell, or pair.  The CUDA launch grid organizes
+workers; the radial mesh organizes the physical field cells. Threads in one
+block can share a small fast memory area and coordinate with one another.
+
+\emph{Synchronization} is a point at which selected workers must finish
+before dependent work may continue.  A \emph{reduction} combines many values,
+such as marker masses, into one sum or maximum.  An \emph{atomic update} is an
+indivisible read--modify--write operation that prevents two threads from
+losing each other's contributions when they update the same mesh cell.  These
+mechanisms preserve contributions and the required operation dependencies.
+The order of floating-point additions can still vary, giving CPU and GPU sums
+different final rounding bits. \emph{Numerical parity} therefore requires
+agreement within stated tolerances supported by the reduction accuracy,
+together with conservation and convergence of the physical quantities.
+
+The distinction between physics and acceleration is essential.  The Vlasov
+equation, particle cloud, force solve, time integrator, and collision law
+define the physical numerical algorithm.  Assigning their independent work
+to CUDA threads, arranging device memory, and reducing partial results are
+acceleration choices. Their implementation must retain the modeled equations,
+boundary conditions, conservation laws and accuracy criteria while changing
+how independent calculations are scheduled.
+
+\noindent\textbf{Scope.}
+The GPU code implements spherical weighted particle-in-cell
+Vlasov--Poisson evolution, material SIDM collisions, calibrated subhalo
+scattering and capture, versioned weighted-PIC restarts and an optional
+one-MPI-rank-per-GPU layer. Einstein--Vlasov, the grid finite-volume and
+semi-Lagrangian solvers, canonical-orbit Boltzmann--Poisson and SphDSMC remain
+CPU modules. The following table locates the GPU calculations in the source.
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.38\linewidth}p{0.18\linewidth}p{0.34\linewidth}@{}}
+\toprule
+GPU component & Status & Primary source \\
+\midrule
+Persistent marker state and compaction & implemented &
+\path{gpu/src/wpic_state.cu} \\
+Spherical CIC/TSC Vlasov--Poisson KDK & implemented &
+\path{gpu/src/wpic_vlasov_poisson.cu} \\
+Material constant/power-law/Yukawa SIDM & implemented &
+\path{gpu/src/wpic_collisions.cu} \\
+Subhalo scatter/capture & implemented &
+\path{gpu/src/wpic_subhalo_collisions.cu} \\
+Restart versions 1--6 & implemented &
+\path{gpu/src/wpic_restart.cpp} \\
+One rank per GPU & implemented for VP and subhalo path &
+\path{gpu/src/wpic_mpi.cpp} \\
+Material-collision MPI invariance & not provided & rank partition changes the
+fixed-occupancy shell schedule \\
+GPU IC generation & not implemented & use a CPU weighted-PIC restart \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{State ownership and structure-of-arrays layout}
+
+The public \code{venus_gpu::WpicState} owns persistent device arrays.  The
+marker record is split into arrays so adjacent CUDA threads read adjacent
+values:
+\begin{itemize}
+\item eight \code{double} arrays for represented mass, radius, radial
+velocity, \(\eta=L^2/2\), inner-boundary speed and time, internal energy, and
+internal velocity dispersion;
+\item two \code{uint64_t} arrays for unique marker ID and source-cell ID;
+\item one byte array for active/delayed/removed marker state.
+\end{itemize}
+Here \code{uint64_t} is an unsigned integer type with exactly 64 bits, used so
+identifiers have a fixed nonnegative range across supported host and device
+code. An ID labels a persistent marker and its random-number stream.
+The arrays require 81 raw bytes per marker, supplemented by mesh workspaces,
+sorting keys, scan storage, collision proposals and rollback buffers.
+Initialization, requested output and checkpoints transfer the population.
+Successive timesteps reuse its device arrays, reducing transfer cost and
+preserving the ordered state used by the collision sampler.
+
+CUDA 11.4 Thrust supports only ten fields in a zipped tuple.  Capture
+compaction therefore uses two stable \code{copy_if} passes.  Stability is a
+physics requirement here: retained marker IDs must remain in deterministic
+order so a restart and the CPU pair scheduler see the same population.
+
+\subsection{GPU Vlasov--Poisson equations}
+
+For a spherical collisionless distribution in Newtonian gravity,
+\begin{equation}
+ \frac{\partial f}{\partial t}
+ +w\frac{\partial f}{\partial r}
+ +\left(\frac{L^2}{r^3}-\frac{\partial\Phi}{\partial r}\right)
+  \frac{\partial f}{\partial w}=0,
+ \qquad \eta=\frac{L^2}{2}.
+\end{equation}
+The field is
+\begin{equation}
+ \frac{1}{r^2}\frac{\partial}{\partial r}
+ \left(r^2\frac{\partial\Phi}{\partial r}\right)=4\pi G\rho,
+ \qquad
+ \Phi_r(r)=\frac{GM(<r)}{r^2}.
+\end{equation}
+Here the distribution function determines the mass density, and the Poisson
+potential determines radial acceleration. A collisionless marker keeps its
+represented mass and \(\eta\) fixed while advancing \((r,w)\). Boundary
+crossings update its boundary state; the collision operator below can also
+remove a consumed capture partner.
+
+\subsubsection{Spherical deposition}
+
+The radial cloud calculation uses volume coordinate
+\begin{equation}
+ q=\frac{r^3}{3},\qquad
+ \Delta V_i=4\pi(q_{i+1/2}-q_{i-1/2}).
+\end{equation}
+For q-CIC between centers \(i\) and \(i+1\),
+\begin{equation}
+ a_{pi}=\frac{q_{i+1}-q_p}{q_{i+1}-q_i},\qquad
+ a_{p,i+1}=1-a_{pi}.
+\end{equation}
+Quantitative runs normally use the same volume-corrected q-TSC cloud as the
+CPU implementation. The cloud spreads a marker's mass over nearby field
+cells. The same weights deposit every extensive moment,
+\begin{align}
+ M_i &= \sum_p a_{pi}m_p,&
+ P_i &= \sum_p a_{pi}m_pw_p,\\
+ R_{2,i} &= \sum_p a_{pi}m_pw_p^2,&
+ T_{2,i} &= \sum_p a_{pi}m_p\frac{2\eta_p}{r_p^2}.
+\end{align}
+The CUDA pattern is one thread per marker with atomic accumulation:
+\par\noindent\begin{minipage}{\linewidth}
+\codesource{GPU WPIC Vlasov--Poisson deposition}{\path{gpu/src/wpic_vlasov_poisson.cu}}{Assigns one marker to each CUDA thread and atomically deposits its spherical cloud moments into the radial mesh}
+\begin{lstlisting}[language=C++]
+const size_t p = blockIdx.x * blockDim.x + threadIdx.x;
+if (p < marker_count && state[p] == active) {
+  const double q = r[p] * r[p] * r[p] / 3.0;
+  // Compute CPU-matched q-CIC or volume-corrected q-TSC weights.
+  atomicAdd(&shell_mass[cell], cloud * mass[p]);
+  atomicAdd(&radial_momentum[cell], cloud * mass[p] * w[p]);
+}
+\end{lstlisting}
+\end{minipage}
+Atomic arrival order can vary. Comparison with the CPU long-double sum
+therefore checks discrete state, conservation residuals and stated rounding
+tolerances for continuous moments.
+
+An origin-parity carrier partitions a cloud that overlaps the first face.
+For clipped smoothstep coordinate \(s\in[0,1]\),
+\begin{equation}
+ f_{\rm resolved}=s^2(3-2s),\qquad
+ M_{\rm mesh}+M_{\rm hidden}=m_p.
+\end{equation}
+Each marker contributes its resolved fraction and complementary hidden
+fraction. Their sum closes the marker's mass before the mesh totals are formed.
+
+\subsubsection{Poisson scan and analytic potential}
+
+For constant line mass in radial cell \(i\),
+\begin{equation}
+ \lambda_i=\frac{M_i}{\Delta r_i},\qquad
+ M(r)=M_{i-1/2}+\lambda_i(r-r_{i-1/2}).
+\end{equation}
+Thrust is NVIDIA's C++ library of parallel algorithms.  Its
+\emph{inclusive scan} is a prefix sum: output entry \(i\) contains the sum of
+all input entries from zero through \(i\), including entry \(i\) itself.
+Applied to shell masses, it constructs the enclosed mass at successive radial
+edges.  Independent cell threads then evaluate the center force.  With
+\(A_i=M_{i-1/2}-\lambda_i r_{i-1/2}\), the exact cell contribution to the
+potential is
+\begin{equation}
+ \int_{r_a}^{r_b}\frac{GM(r)}{r^2}\,\dd r
+ =G\left[A_i\left(\frac1{r_a}-\frac1{r_b}\right)
+ +\lambda_i\ln\!\left(\frac{r_b}{r_a}\right)\right].
+\end{equation}
+A reverse scan begins from
+\(\Phi(r_{\max})=-GM(r_{\max})/r_{\max}\). For total-density input in an
+expanding background, the source subtracts the homogeneous density
+\(\bar\rho\) in both the resolved shells and the unresolved central sphere.
+For density-contrast input, the marker masses already represent the source.
+
+The scan begins at the inner mesh face, \(r_{\min}\), with the sum of
+unresolved marker mass and any prescribed central point mass. The
+total-density background correction there is
+\(-4\pi\bar\rho r_{\min}^3/3\). Below that face the unresolved distributed
+source is uniform, as in (PIC11a)--(PIC11b). The face mass fixes its force;
+matter in the first resolved shell contributes through the exterior field.
+\codesource{GPU force inside the first radial face}
+{\path{gpu/src/wpic_vlasov_poisson.cu}}
+{Use the enclosed face mass to continue the distributed central source}
+\begin{lstlisting}[language=C++]
+const double inner = edge[0];
+const double core_coefficient = options.gravity
+    * (source_mass_edge[0] - options.central_mass)
+    / (inner * inner * inner);
+\end{lstlisting}
+The potential uses the same face anchor, so both potential and force are
+continuous across the face. Refining the inner mesh tests the uniform-source
+approximation where central structure is scientifically relevant.
+
+\subsubsection{KDK and exact central drift}
+
+The first half-kick in a static background is
+\begin{equation}
+ w^{n+1/2}=w^n-\frac{\Delta t}{2}\Phi_r^n(r^n).
+\end{equation}
+The drift integrates free central motion analytically, including the changing
+radial component of the tangential velocity.  With \(L=\sqrt{2\eta}\),
+\begin{align}
+ r_*^2&=(r^n+\Delta t\,w^{n+1/2})^2
+       +\left(\Delta t\frac{L}{r^n}\right)^2,\\
+ w_*&=\frac{w^{n+1/2}(r^n+\Delta t\,w^{n+1/2})
+ +(L/r^n)(\Delta t L/r^n)}{r_*}.
+\end{align}
+After endpoint deposition and a second Poisson solve,
+\begin{equation}
+ w^{n+1}=w_*-\frac{\Delta t}{2}\Phi_r^{n+1}(r_*).
+\end{equation}
+For \(L>0\), the implementation keeps canonical momentum in an expanding background:
+\par\noindent\begin{minipage}{\linewidth}
+\codesource{GPU WPIC orbit pusher}{\path{gpu/src/wpic_vlasov_poisson.cu}}{Applies the expanding-background half kick and exact central drift to each active marker}
+\begin{lstlisting}[language=C++]
+double p = a0 * w - 0.5 * dt * a0 * phi_r;
+const double radial_axis = x + drift * p;
+const double tangential_axis = drift * L / x;
+const double new_x = hypot(radial_axis, tangential_axis);
+p = (p * radial_axis + (L / x) * tangential_axis) / new_x;
+r = a1 * new_x;
+w = p / a1;
+\end{lstlisting}
+\end{minipage}
+For \(r=a(t)x\) and \(p=aw\), the drift factor is
+\begin{equation}
+ S(t_n,t_{n+1})=\int_{t_n}^{t_{n+1}}\frac{\dd t}{a(t)^2}.
+\end{equation}
+For \(a=[(t+t_0)/t_0]^\alpha\), the code evaluates this power-law integral
+analytically and uses its logarithmic limit near \(1-2\alpha=0\).  The GPU
+option preflight enforces the same expansion domain as the CPU solver:
+\(\alpha\geq0\), \(t_0>0\), and \(t+t_0>0\), with every participating scalar
+finite.  Homogeneous-background subtraction additionally requires \(G>0\);
+ballistic \(G=0\) evolution remains valid only when the input marker masses
+already represent the desired contrast source and subtraction is disabled.
+
+A reflecting wall is applied at the time when this free trajectory reaches
+its fixed physical radius \(R\). The normal physical velocity changes sign,
+so \(w_{\rm out}=-w_{\rm in}-2H(t_{\rm hit})R\), while angular momentum
+remains constant. The shared CPU/CUDA routine in
+\path{cpu/include/ev/central_drift.hpp} locates the impact by dividing the
+trajectory at its turning points and bisecting each monotonic interval.
+After reflection it advances the unused part of the drift. This resolves
+inner-wall impacts even when the unconstrained orbit returns outside the
+wall before the full step ends.
+
+For exactly radial motion, \(L=0\), the signed comoving coordinate advances
+as \(x+p\int a^{-2}\dd t\). Its absolute value gives the new comoving
+radius. Crossing zero reverses the radial momentum. A forward step ending
+exactly at the origin stores the outgoing velocity, so the next step
+continues the orbit. The implementation treats this case directly:
+\codesource{Radial passage through the origin}
+{\path{gpu/src/wpic_vlasov_poisson.cu}}
+{Advance the signed radial coordinate and continue the orbit through zero}
+\begin{lstlisting}[language=C++]
+const double signed_x = x + drift * p;
+if (signed_x < 0.0) p = -p;
+else if (signed_x == 0.0 && dt > 0.0) p = fabs(p);
+r = a1 * fabs(signed_x);
+w = p / a1;
+\end{lstlisting}
+An origin start requires \(L=0\) and zero central point mass. The smooth
+central force then vanishes at the origin. With a nonzero central point mass,
+the force is singular there, and the solver rejects a radial step that
+reaches or crosses the origin. CPU and GPU use the same convention. The
+shared wall solver also accepts an origin start followed by a finite
+outer-wall impact within the same drift.
+
+The collisionless task uses the fixed KDK orbit step
+\code{--maximum-timestep}; only an output or final-time landing may shorten
+it.  This preserves the time symmetry and bounded energy error of KDK in a
+constant potential.  The cell dynamical estimate is used only by collisional
+tasks, whose event splitting already breaks the collisionless fixed-step
+symmetry.
+
+\subsection{GPU material SIDM collision module}
+
+The material and subhalo operators solve
+\begin{equation}
+ \frac{\partial f}{\partial t}+\{f,H\}=C[f]
+\end{equation}
+by sampling local particle pairs. Each family specifies its physical collision
+law and the probability with which a pair is proposed.  For material scattering let
+\(u=|\bm v_i-\bm v_j|\).  The configured law is area per represented mass,
+\(s(u)=\sigma(u)/m\), and the unequal-marker closure is
+\begin{equation}
+ \Sigma_{ij}(u)=\frac{m_i+m_j}{2}s(u).
+\end{equation}
+The GPU supports
+\begin{align}
+ s_{\rm const}(u)&=S\sigma_0,\\
+ s_{\rm pow}(u)&=S\sigma_0(u_*^2+u_0^2)^{-n/2},
+ \qquad u_*=\max(|u|,10^{-14}),\\
+ s_{\rm Y}(u)&=
+ S\frac{4\pi\alpha_\chi^2m_\chi^2}
+ {m_\phi^4[1+m_\chi^2u_*^2/m_\phi^2]}.
+\end{align}
+The Yukawa--Born differential law per represented mass is
+\begin{equation}
+ \frac{\dd s}{\dd\Omega}=
+ S\frac{\alpha_\chi^2m_\chi^2}
+ {[m_\phi^2+\tfrac12m_\chi^2u^2(1-\mu)]^2},
+ \qquad \mu=\cos\theta.
+\end{equation}
+The numerical parameters set the amplitude and speed scale after the physical
+conversion in Section~\ref{sec:yukawa-material-units}.  The GPU uses that same
+material area-per-mass convention.
+The angular inverse uses \(y=(m_\chi u/m_\phi)^2\) and a uniform
+upper-tail probability \(z\in(0,1)\):
+\begin{equation}
+ \mu=1-\frac{2z}{1+y(1-z)}.
+\end{equation}
+This approaches the uniform cosine \(1-2z\) as \(y\to0\).  For
+\(y>1\), the implementation uses the equivalent expression with numerator
+and denominator divided by \(y\).
+
+Active markers are sorted by \((r,{\rm id})\) into target-occupancy shells.
+A group with equal radii stays in one shell: the boundary advances through
+the whole group, and a final underfilled shell is merged. This gives the
+collision sampler positive shell volumes even for cell-centred particles.
+One block owns a shell; shared reductions construct a conservative majorant.
+For a shell with population \(N_s\ge2\) and volume \(V_s\), the pair
+scheduler uses
+\begin{equation}
+ m_s=\begin{cases}N_s-1,&N_s\ \hbox{even},\\
+                   N_s,&N_s\ \hbox{odd}.
+       \end{cases}
+\end{equation}
+These \(m_s\) partner-assignment rounds contain every unordered pair once.
+Each round assigns every marker at most one partner; for odd \(N_s\), one
+marker sits out.  A uniformly drawn round therefore includes each pair with
+probability \(1/m_s\).  A rejection draw from a 64-bit random word makes the
+round selection uniform.  The disjoint assignments let separate CUDA
+threads update their two markers safely:
+\par\noindent\begin{minipage}{\linewidth}
+\codesource{GPU material-SIDM pair scheduler}{\path{gpu/src/wpic_collisions.cu}; \path{gpu/include/venus_gpu/collision_matching.hpp}}{Maps the shared random round and thread-owned pair slot to two distinct markers}
+\begin{lstlisting}[language=C++]
+const collision_matching::Pair proposed =
+    collision_matching::pair_at(count, matching_round, pair);
+const std::uint64_t first_local = proposed.first;
+const std::uint64_t second_local = proposed.second;
+const std::uint64_t first_index = order[shell.begin + first_local];
+const std::uint64_t second_index = order[shell.begin + second_local];
+\end{lstlisting}
+\end{minipage}
+For an assigned pair, the acceptance probability over local step
+\(\delta t_s\) is
+\begin{equation}
+ P_{ij}=\frac{m_s}{V_s}u\Sigma_{ij}(u)\,\delta t_s.
+\end{equation}
+Multiplying by the inclusion probability \(1/m_s\) gives the physical
+pair probability \(u\Sigma_{ij}\delta t_s/V_s\).  The physical partner
+number density \((N_s-1)/V_s\) continues to set the mean-free-path diagnostic;
+the proposal exposure \(m_s/V_s\) sets acceptance and its timestep bound.
+Let \(B_s\) be the safe shell bound on \(u\Sigma_{ij}\), constructed from
+the maximum marker mass and speed.  The collision rate bound is
+\begin{equation}
+ \nu_s=\frac{m_s}{V_s}B_s,\qquad
+ B_s\ge\max_{ij\in s}(u\Sigma_{ij}).
+\end{equation}
+Reference mode advances every occupied shell with the common step
+\begin{equation}
+ \delta t_{\rm fixed}=\min\left(
+ \Delta t_{\rm batch}-t,
+ \frac{C_{\rm coll}}{\max_s\nu_s}\right).
+\end{equation}
+With \code{--sidm-adaptive-shell-timestep}, each shell instead stores \(t_s\)
+and takes
+\begin{equation}
+ \delta t_s=\min\left(
+ \Delta t_{\rm batch}-t_s,
+ \frac{C_{\rm coll}}{\nu_s}\right).
+\end{equation}
+All currently active shells share a CUDA launch.  The shell-description kernel
+then refreshes maximum speed and the safe \(u\Sigma\) majorant before the next
+local step.  Elastic scattering freezes radii and masses, hence shell
+membership, faces, density, and volume remain valid.  This device path supports
+constant, power-law, and Yukawa--Born laws and unequal marker masses.  In both
+modes \(\nu_s\delta t_s\le C_{\rm coll}\le1\); local clocks only avoid
+revisiting slow shells at every dense-core step.
+The host/device schedule is structurally
+\par\noindent\begin{minipage}{\linewidth}
+\codesource{GPU material-SIDM adaptive shell clock}{\path{gpu/src/wpic_collisions.cu}}{Advances independent host-owned shell clocks and launches the device collision and shell-refresh kernels}
+\begin{lstlisting}[language=C++]
+while (some_shell_is_unfinished) {
+  for (shell : shells)
+    shell_dt[shell] = min(batch_dt - elapsed[shell],
+                          collision_cfl / rate[shell]);
+  upload(shell_dt);
+  collide_shells_kernel<<<number_of_shells, threads>>>(...);
+  describe_shells_kernel<<<number_of_shells, threads>>>(...);
+}
+\end{lstlisting}
+\end{minipage}
+The pair marginals reproduce the instantaneous Boltzmann collision rate.
+Each marker experiences at most one collision per local step, so quantitative
+evolution requires convergence as \(C_{\rm coll}\) is reduced.  Material
+CPU/GPU comparison checks formulas, conservation, timestep convergence, and
+statistical ensembles.  MPI rank ownership changes the fixed-occupancy
+shells, so multi-GPU calculations also require rank-count convergence.
+
+\subsection{Unequal-mass elastic collision map}
+
+Both GPU collision families lift \((w,\eta)\) to a three-vector using a
+counter-RNG azimuth.  Define
+\begin{equation}
+ \bm V=\frac{m_i\bm v_i+m_j\bm v_j}{m_i+m_j},\qquad
+ \bm u=\bm v_i-\bm v_j.
+\end{equation}
+After drawing \(\widehat{\bm n}\) and setting
+\(\bm u'=u\widehat{\bm n}\),
+\begin{align}
+ \bm v_i'&=\bm V+\frac{m_j}{m_i+m_j}\bm u',\\
+ \bm v_j'&=\bm V-\frac{m_i}{m_i+m_j}\bm u'.
+\end{align}
+Projection back uses \(w'=v_x'\) and
+\(\eta'=r^2(v_y'^2+v_z'^2)/2\).  Pair momentum and kinetic energy are
+conserved at roundoff even for unequal masses.
+
+\subsection{GPU subhalo scatter and capture}
+
+The build converts the maintained CPU Plummer table into a CUDA header.
+Tracking that input as a build dependency gives both evaluators the same
+calibration whenever the table changes.  For masses \(M_i,M_j\),
+\begin{equation}
+ A_{ij}=\frac{A}{4}(\sqrt{M_i}+\sqrt{M_j})^2,
+ \qquad q=\frac{\min(M_i,M_j)}{\max(M_i,M_j)},
+\end{equation}
+and
+\begin{equation}
+ \sigma_{ij}^2=
+ \frac{\sqrt{M_i}\sigma_i^2+\sqrt{M_j}\sigma_j^2}
+ {\sqrt{M_i}+\sqrt{M_j}},
+ \qquad x=\frac{u}{\sigma_{ij}}.
+\end{equation}
+The mutually exclusive cross sections are
+\begin{equation}
+ \Sigma_{\rm scatt}=SA_{ij}F_{\rm scatt}(x,q),\qquad
+ \Sigma_{\rm cap}=SA_{ij}F_{\rm cap}(x,q).
+\end{equation}
+The table evaluator uses log-speed/log-mass-ratio interpolation, zero-aware
+closure, low-speed regularization, vanishing high-speed capture, and an
+\(x^{-4}\) scattering continuation. The pair area sets the dimensional
+normalization; the functions of speed and mass ratio supply the calibrated
+scattering and capture probabilities.
+
+This module uses the CPU
+\code{maximum_weight_importance} pair-majorant schedule. A pair majorant is
+an upper bound on the physical pair rate, used to propose candidate events.  Within each
+physical radial cell it sorts by internal dispersion and ID.  For proposal
+positions \(i<j\), a safe weight has form
+\begin{equation}
+ B_{ij}=C\,\sigma_j(\sqrt{M_i}+\sqrt{M_j})^2.
+\end{equation}
+Prefix sums of \(\sqrt M\) and \(M\) sample the complete pair distribution in
+\(O(N\log N)\) work and \(O(N)\) storage.  The stochastic trial count and
+acceptance probability are
+\begin{equation}
+ N_{\rm trial}=\left\lfloor
+ \frac{\Delta t_c}{V}\sum_{i<j}B_{ij}+z_{\rm round}
+ \right\rfloor,
+ \qquad
+ p_{ij}=\frac{u(\Sigma_{\rm scatt}+\Sigma_{\rm cap})}{B_{ij}}\le1.
+\end{equation}
+One accepted event per marker per substep is enforced.  Proposal arrays remain
+cached after elastic scattering because their masses and internal dispersions
+did not change.  A capture invalidates the cache, compacts the population, and
+rebuilds proposals before the captured cell advances again.
+
+Let \(\nu_{B,c}=\max_{k\in c}\nu_{B,k}\).  Reference mode uses
+\begin{equation}
+ \delta t_{\rm fixed}=\min\left(
+ \Delta t_{\rm batch}-t,
+ \frac{C_{\rm coll}}{\max_c\nu_{B,c}}\right)
+\end{equation}
+for every populated cell.  With \code{--subhalo-adaptive-cell-timestep}, cell
+\(c\) owns \(t_c\) and takes
+\begin{equation}
+ \delta t_c=\min\left(
+ \Delta t_{\rm batch}-t_c,
+ \frac{C_{\rm coll}}{\nu_{B,c}}\right).
+\end{equation}
+One CUDA thread owns a cell and performs at most
+\code{--subhalo-adaptive-batch-substeps} local steps per kernel launch.
+Elastic encounters reuse the proposal.  A capture terminates that cell's
+device loop immediately; host orchestration compacts the population, rebuilds
+proposals, and resumes unfinished cells from their saved elapsed time and
+local substep index.  \code{maximum_cell_substeps}, \code{cell_visits},
+\code{kernel_batches}, and \code{proposal_rebuilds} expose this scheduling
+work without changing the physical event counters.
+The device-owned clock is structurally
+\par\noindent\begin{minipage}{\linewidth}
+\codesource{GPU subhalo adaptive cell clock}{\path{gpu/src/wpic_subhalo_collisions.cu}}{Lets one CUDA thread advance one collision cell through bounded local substeps and stop immediately after capture}
+\begin{lstlisting}[language=C++]
+while (cell_elapsed[cell] < batch_dt && local_steps < batch_limit) {
+  dt_cell = min(batch_dt - cell_elapsed[cell],
+                collision_cfl / cell.maximum_trial_frequency);
+  captured = collide_one_cell_substep(cell, dt_cell, local_substep);
+  cell_elapsed[cell] += dt_cell;
+  if (captured) break;  // compact and rebuild before resuming
+}
+\end{lstlisting}
+\end{minipage}
+
+Capture merges complete objects.  For \(M=M_i+M_j\) and reduced mass
+\(\mu_{\rm red}=M_iM_j/M\),
+\begin{align}
+ \bm v_{\rm rem}&=\bm V,
+ &r_{\rm rem}&=\frac{M_ir_i+M_jr_j}{M},\\
+ E_{{\rm int},{\rm rem}}&=E_{{\rm int},i}+E_{{\rm int},j}
+ +\frac12\mu_{\rm red}u^2,
+ &\sigma_{\rm rem}&=\sqrt{\frac{2E_{{\rm int},{\rm rem}}}{3M}}.
+\end{align}
+Thus relative orbital kinetic energy becomes internal heat while total mass,
+vector momentum, and pair kinetic-plus-internal energy close.  Moving the
+deposited mass to the remnant radius can change the reconstructed potential
+energy; the complete gravitational budget and collision-cell refinement
+measure that contribution.
+
+The locality measure is
+\begin{equation}
+ \lambda_{\rm mfp}=
+ \frac{\langle u\rangle}
+ {n_{\rm partner}\langle u\Sigma_{ij}(u)\rangle}.
+\end{equation}
+The runner records \(\max(\Delta r/\lambda_{\rm mfp})\), warns when it
+exceeds unity, and stops when it exceeds the configured hard limit.  Collision coverage should also be reported using
+\begin{equation}
+ \tau_{\rm coll}(t)=\int^t\frac{\dd t'}{t_{\rm coll}(t')},
+\end{equation}
+alongside the final physical time. A history column containing the minimum
+cell collision time measures the fastest local rate. A halo-average collision
+age requires the chosen population average integrated through its evolution.
+
+\subsection{One MPI rank per GPU}
+
+The device-binding helper forms a node-local communicator and maps each local
+rank to one visible device.  For Vlasov--Poisson, rank \(a\) deposits local
+moments \(M_i^{(a)}\); host \code{MPI_Allreduce} constructs
+\begin{equation}
+ M_i=\sum_a M_i^{(a)}
+\end{equation}
+and the other \(O(N_r)\) moment arrays.  Every GPU uploads the same global
+moments, solves the same Poisson problem, and pushes only its local markers.
+KDK therefore performs two radial-moment reductions per step while each
+rank retains its own markers.
+
+The local collision sampler requires complete physical radial cells. These
+cells are assigned to contiguous rank slabs; markers migrate through host
+records with \code{MPI_Alltoallv}.  Random draws retain the global tuple
+\par\noindent\begin{minipage}{\linewidth}
+\codesource{Multi-GPU subhalo collision sampler}{\path{gpu/src/wpic_mpi.cpp} and \path{gpu/src/wpic_subhalo_collisions.cu}}{Assigns complete radial cells to ranks and keys every counter-based random draw by a rank-independent global collision identity}
+\begin{lstlisting}
+(seed, epoch, global collision cell, substep, trial, dimension)
+\end{lstlisting}
+\end{minipage}
+Fixed reference mode uses \code{MPI_Allreduce(MPI_MAX)} to obtain its common
+mesh-wide collision step. In adaptive mode the cells already have unique
+owners, so each advances independently inside the synchronized outer operator
+batch.  Global cell numbers preserve the counter-RNG definition.
+The migration supplies those complete populations and may dominate a short
+run with frequent collision calls.
+
+At checkpoint time, rank zero gathers complete marker records, sorts them by
+unique ID, and writes the ordinary version-6 checkpoint.  Restart clocks,
+RNG epoch, step, time, collision age, and potential-event age are preserved.
+
+\subsection{Optional receiver field clocks for subhalo collisions}
+
+The single-GPU subhalo task accepts \code{--coupled-receiver-clocks}
+with adaptive collision cells and a positive collision-timescale fraction.
+The orbit bound uses the existing positive-source cell floor and
+\begin{equation}
+ \Delta t_{\rm grav}=\min\left[\Delta t_{\max},
+ f_{\rm dyn}\min_i\left(|\Phi_{r,i}|/r_i+H_*^2\right)^{-1/2}\right],
+ \qquad H_*={2\over3(t+12)}.
+\end{equation}
+The parameter \(f_{\rm dyn}\) is the dynamical fraction. The minimum
+includes source cells above \(10^{-12}\) of the deposited source mass.
+The numerical frequency envelope retains \(H_*\) for a static background;
+its physical expansion rate and cosmological acceleration remain zero.
+All represented matter remains in the force source and characteristic update.
+
+For positive gravity, an already background-subtracted EdS source, TSC
+deposition, retained inner mass and zero central mass, the field
+observer uses resolved deposited shell masses and the positive hidden
+cloud masses inside the first face. For either potential or force
+values \(A\), let \(\omega_k\) denote receiver mass and let \(A_{0,k}\)
+and \(A_{1,k}\) be the fields before and after an observation interval
+\(h\). Their relative change is
+\begin{equation}
+ \delta_A^2={\sum_k\omega_k(A_{1,k}-A_{0,k})^2\over
+ \max(\sum_k\omega_k A_{0,k}^2,\sum_k\omega_k A_{1,k}^2)}.
+\end{equation}
+The resolved deposition supplies
+\(N_{\rm eff}=(\sum_i M_i)^2/\sum_i M_i^2/N_{{\rm eff},i}\),
+where \(M_i\) and \(N_{{\rm eff},i}\) are resolved shell masses and
+effective marker counts. The sampling floor is
+\(\epsilon_{\rm samp}=\max(4096\epsilon_{\rm fp},0.25/\sqrt{N_{\rm eff}})\), where
+\(\epsilon_{\rm fp}\) is binary64 machine precision. Above this floor,
+the selected channel time is \(h/\sqrt{\delta_A^2-\epsilon_{\rm samp}^2}\).
+At or below the floor the channel time is infinite. The smaller potential/force time
+controls the field contribution. Static and other unsupported observer
+configurations use the fallback maximum-norm field clock. Interior
+receivers use the uniform-density inner continuation at particle radii.
+Their hidden cloud fractions follow deposition's separately rounded
+operations. Hidden mass closes within \(2048\epsilon_{\rm fp}\) relative
+error, and resolved plus hidden receiver mass closes the source ledger
+within \(2\times10^{-11}\). A failure preserves diagnostics and stops.
+
+The additional \code{--collision-prestep-coordinate-due} option applies
+a positive carried collision age \(a\) at the current particle state when
+its fresh deadline \(d\) satisfies
+\begin{equation}
+ a>0,\qquad d>q,\qquad d-a\le q,\qquad
+ q=128\epsilon_{\rm fp}\max(1,|t|).
+\end{equation}
+The age must also satisfy the existing overdue screen
+\(a\le d+64\epsilon_{\rm fp}\max(1,|a|,|d|)\). The unchanged sampler
+consumes that age and advances its persistent random counter.
+Trial endpoints still recompute the field and collision deadline before
+commitment, and unsafe trials restore the incoming particle state before
+retry. Locality, collision exposure and capacity checks retain their
+existing thresholds. The policy defaults to off and requires a fresh output
+segment with the complete carried restart clocks. The source equations,
+supported backgrounds and diagnostic records are described in
+\path{gpu/docs/COUPLED_RECEIVER_CLOCKS.md}.
+The optional \code{--coupled-field-trace} writes receiver and cadence
+observations. It requires \code{--coupled-receiver-clocks}; its observations
+preserve physical state and random counters. The CPU expanding WPIC driver
+exposes the same default-off pre-step due option through the shared cadence
+helper.
+
+\subsection{GPU build and run}
+
+From the \path{VENUS} root, the complete single-GPU build is
+\par\noindent\begin{minipage}{\linewidth}
+\codesource{Single-GPU build}{\path{gpu/CMakeLists.txt}}{Configures the CUDA libraries, task executables, benchmarks, generated calibration table, and shared production drivers}
+\begin{lstlisting}[language=bash]
+cmake -S gpu -B build/gpu \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_CUDA_ARCHITECTURES=80 \
+  -DVENUS_CPU_REFERENCE_INCLUDE="$PWD/cpu/include"
+cmake --build build/gpu -j 8
+\end{lstlisting}
+\end{minipage}
+The bundled CPU include path is selected automatically when the trees remain
+siblings.  A full build contains all six task-specific runners, the restart
+comparator, focused VP/material benchmarks, and the generated subhalo table.
+The host-side comparator can be used without a visible GPU after the build.
+
+MPI adds
+\par\noindent\begin{minipage}{\linewidth}
+\codesource{One-rank-per-GPU build}{\path{gpu/CMakeLists.txt}}{Builds the MPI-enabled CUDA layer and exposes its production interface}
+\begin{lstlisting}[language=bash]
+cmake -S gpu -B build/gpu-mpi \
+  -DVENUS_GPU_ENABLE_MPI=ON \
+  -DVENUS_CPU_REFERENCE_INCLUDE="$PWD/cpu/include" \
+  -DCMAKE_CUDA_ARCHITECTURES=80
+cmake --build build/gpu-mpi -j 8
+srun --ntasks=2 --gpus-per-task=1 build/gpu-mpi/venus_gpu_vlasov_poisson_mpi --help
+\end{lstlisting}
+\end{minipage}
+That configuration also builds
+\path{gpu/benchmarks/benchmark_wpic_mpi.cu}, the global one-rank-per-GPU
+throughput harness.
+Use one rank per GPU and no more ranks than radial cells.
+
+Every GPU runner requires a weighted-PIC restart.  The subhalo task is:
+\par\noindent\begin{minipage}{\linewidth}
+\codesource{GPU subhalo production task}{\path{gpu/tools/venus_gpu_subhalo_boltzmann_poisson.cu} and \path{gpu/src/wpic_production_driver.cu}}{Selects the subhalo model and runs its shared restart, option, evolution, collision, and output driver}
+\begin{lstlisting}[language=bash]
+build/gpu/venus_gpu_subhalo_boltzmann_poisson \
+  --restart restart_state.bin \
+  --output-directory output/gpu/run \
+  --end-time 60 \
+  --subhalo-collision-strength 0.1
+\end{lstlisting}
+\end{minipage}
+Use \code{venus_gpu_vlasov_poisson} for the collisionless task and
+\code{venus_gpu_sidm_boltzmann_poisson}, \code{venus_gpu_sidm_constant},
+\code{venus_gpu_sidm_power_law}, or \code{venus_gpu_sidm_yukawa_born} for
+static material SIDM.  Appending \code{_mpi} selects one rank per GPU.
+All tasks fix \(G=1\), TSC deposition, origin parity and a reflecting
+outer wall. Single-GPU VP and subhalo tasks accept static total-density evolution or
+Einstein--de Sitter density-contrast evolution, with \(\alpha=2/3\) and time
+offset 12. EdS is the VP default. MPI builds restrict VP and subhalo tasks to EdS.
+Material tasks use a static, total-density halo. The VP fixed KDK cap and
+output/final-time clipping apply in both admitted single-GPU backgrounds.  Initial conditions,
+including \(\gamma_i\), come from the restart; GPU runners do not generate
+them.
+
+Table~\ref{tab:gpu-task-cli} gives the common and subhalo
+command-line contract.  Defaults in brackets apply when an optional switch is
+omitted.  A task executable rejects options from another collision family.
+
+\small
+\begin{longtable}{@{}p{0.43\linewidth}p{0.17\linewidth}p{0.34\linewidth}@{}}
+\caption{GPU common and subhalo command-line interface.}
+\label{tab:gpu-task-cli}\\
+\toprule
+Option & Default or admissible range & Physical or numerical meaning \\
+\midrule
+\endfirsthead
+\multicolumn{3}{l}{\small\itshape Table~\ref{tab:gpu-task-cli} continued}\\
+\toprule
+Option & Default or admissible range & Physical or numerical meaning \\
+\midrule
+\endhead
+\midrule
+\multicolumn{3}{r}{\small\itshape Continued on next page}\\
+\endfoot
+\bottomrule
+\endlastfoot
+\path{--restart FILE} & required & Versioned CPU/GPU WPIC checkpoint.  All
+imported markers must currently be active, and the requested end time must
+follow the checkpoint time.  A subhalo collisional run (\(S>0\))
+also requires a positive internal velocity dispersion for every participating marker and
+the stored closure
+\(E_{{\rm int},p}=3M_p\sigma_{s,p}^2/2\) to roundoff. \\
+\path{--output-directory DIR} & required & Run directory in which profiles,
+histories, metadata, checkpoints, and terminal status are published. \\
+\path{--end-time T} & required; \(T>0\) and \(T>t_{\rm restart}\) & Absolute
+final simulation time, not a duration measured from the restart. \\
+\path{--universe MODE} & VP default \code{eds} & Single-GPU VP accepts
+\code{static} or \code{eds}. MPI VP and subhalo tasks use \code{eds};
+material SIDM uses \code{static}. \\
+\path{--maximum-timestep DT} & \(0.015;\ DT>0\) & Fixed collisionless KDK
+step, apart from output/final landings; collisional tasks treat it as the
+absolute orbit-step ceiling before event deadlines. \\
+\path{--dynamical-fraction F} & \(0.04;\ F>0\) & Multiplier of the most
+restrictive cell dynamical estimate used by the orbit-step controller. \\
+\path{--output-interval DT} & \(10;\ DT>0\) & Simulation-time separation of
+radial profile outputs on an absolute cadence anchored at \(t=0\). \\
+\path{--history-every N} & \(5000;\ N\ge1\) integer & Append and flush the
+scalar evolution history every \(N\) accepted KDK steps; an output or final
+step also forces a row. \\
+\path{--restart-every N} & \(25000;\ N\ge1\) integer & Write an atomic
+versioned checkpoint every \(N\) accepted KDK steps; final and controlled-stop
+paths also checkpoint. \\
+\path{--radial-cells N} & \(256;\ N\ge2\) integer & Number of cells in the
+fixed logarithmic field mesh. \\
+\path{--radial-minimum R} & \(0.1;\ R>0\) & Inner face of the logarithmic field
+mesh.  Active mass inside it is carried by the origin-parity treatment. \\
+\path{--radial-maximum R} & \(1000;\ R>R_{\min}\) & Reflecting outer face of
+the logarithmic field mesh. \\
+\path{--subhalo-collision-strength S} & required; \(S>0\) & Dimensionless
+multiplier \(S\) of both calibrated subhalo scatter and capture cross
+sections.  This option is valid only for the subhalo task. \\
+\path{--subhalo-collision-interval DT} & \(0.5;\ DT>0\) & Hard upper bound on
+the physical time between subhalo collision calls; it is the fixed
+interval when the adaptive fraction is zero. \\
+\path{--subhalo-collision-timescale-fraction F} & \(0.05;\ 0\le F\le1\) &
+Adaptive fraction of the controlling collision, dynamical, and potential
+timescales.  \(F=0\) selects only the fixed maximum interval. \\
+\path{--subhalo-collision-cfl C} & \(0.2;\ 0<C\le1\) & Bounds the maximum
+trial probability per collision substep and therefore controls stochastic
+time subdivision. \\
+\path{--subhalo-collision-maximum-substeps N} & \(16384;\ N\ge1\) integer &
+Administrative safety ceiling on substeps in one collision call; exceeding it
+is an error, not permission to under-resolve the event. \\
+\path{--subhalo-adaptive-cell-timestep} & off & Give every collision cell an
+independent CFL clock inside one synchronized operator batch. \\
+\path{--subhalo-adaptive-batch-substeps N} & \(256;\ N\ge1\) integer & Maximum
+number of local cell steps performed by one CUDA thread in a kernel launch;
+capture always stops the cell earlier for proposal reconstruction. \\
+\path{--subhalo-inner-collision-cells N} & \(1;\ 1\le N\le256\) integer &
+Number of equal-volume virtual collision cells inside the field mesh's inner
+face.  These resolve carried inner mass without changing the field mesh. \\
+\path{--subhalo-collision-lanes N} & \(8;\ 1\le N\le256\) integer & Number of
+deterministic ID/epoch strata per physical collision cell.  Lanes partition
+pairing work and cell volume; they are not extra radial field cells. \\
+\path{--subhalo-locality-maximum-ratio X} & \(10;\ X\ge0\) & Controlled-stop
+threshold for \(\max(\Delta r/\lambda_{\rm mfp})\).  \(X=0\) disables the hard
+stop, but the diagnostic warning above unity remains active. \\
+\path{--subhalo-velocity-scale V} & \(0.1;\ V>0\) & Compatibility control,
+retained and range-checked by the interface.  This restart-only runner instead
+derives every pair scale from the markers' stored internal velocity
+dispersions, so changing \(V\) alone does not rescale the current collision
+kernel. \\
+\path{--subhalo-plummer-area-per-mass A} & \(1;\ A>0\) & Plummer geometric
+area per mass in simulation units, entering \(A_{ij}\) in the cross-section
+normalization. \\
+\path{--subhalo-low-speed-regularization E} & \(0.05;\ 0.05\le E<1\) & Lower
+dimensionless-speed regularization for table evaluation.  The lower limit is
+the first abscissa of the generated table in this release. \\
+\path{--help}, \path{-h} & no value & Print the same complete interface from
+the executable and exit successfully; no collision strength is required. \\
+\end{longtable}
+\normalsize
+
+\paragraph{Material-SIDM command line.}
+Material tasks use the common restart, output, endpoint, timestep, cadence, and
+radial-mesh options in the first part of the table.  They reject every
+\code{--subhalo-*} option and additionally accept:
+\begin{itemize}[leftmargin=1.5em]
+\item \code{--sidm-collision-strength S}: required and positive.
+\item \code{--cross-section-model MODEL}: required only for
+\code{venus_gpu_sidm_boltzmann_poisson}; choose \code{constant},
+\code{power_law}, or \code{yukawa_born}.  The other three material executables
+pin this choice.
+\item \code{--sidm-sigma0 X}: positive constant or power-law normalization.
+\item \code{--sidm-sigma-power P}: positive power-law exponent; default 4.
+\item \code{--sidm-sigma-u0 U}: positive power-law softening speed.
+\item \code{--sidm-yukawa-alpha A}: positive effective kernel amplitude;
+      default \(0.01\).
+\item \code{--sidm-yukawa-mchi M}: positive numerical shape parameter;
+      default 1.
+\item \code{--sidm-yukawa-mphi M}: positive numerical shape parameter;
+      \(m_\phi/m_\chi\) sets the speed scale; default 1.
+\item \code{--sidm-collision-interval DT}: positive fixed collision-event
+interval; default \(0.5\).
+\item \code{--sidm-collision-cfl C}: per-substep probability bound in
+\((0,1]\); default \(0.2\).
+\item \code{--sidm-collision-maximum-substeps N}: positive safety ceiling;
+default 16,384.
+\item \code{--sidm-adaptive-shell-timestep}: give every fixed-occupancy
+material shell an independent local CFL clock; valid for every GPU material
+cross-section law.
+\item \code{--sidm-target-shell-markers N}: target local shell occupancy;
+default 4,096.
+\item \code{--sidm-minimum-shell-markers N}: minimum shell occupancy; default
+32 and no larger than the target.
+\item \code{--sidm-fail-on-nonlocal-shell}: stop when a collision shell is
+wider than its mean free path.
+\end{itemize}
+The constant and power-law tasks require \code{--sidm-sigma0}; power law also
+requires \code{--sidm-sigma-u0}; Yukawa--Born uses the three amplitude/shape
+parameters and rejects \code{--sidm-sigma0}.  All material tasks require a
+static restart whose marker masses represent total density.
+
+For \(F>0\), the event-clock interval represented by the two collision-cadence
+options is
+\begin{equation}
+ \Delta t_{\rm coll}=\min\!\left[\Delta t_{\max},
+ F\min(\tau_{\rm collision},\tau_{\rm dyn},\tau_{\Phi})\right],
+\end{equation}
+when the controlling timescale is finite; otherwise the maximum interval is
+used.  For \(F=0\),
+\(\Delta t_{\rm coll}=\Delta t_{\max}\).  Collisionless calculations use
+\code{venus_gpu_vlasov_poisson}; the explicit subhalo and material task names
+require a positive strength.
+For \(S>0\), VENUS also requires the selected interval to exceed
+\(128\epsilon_{\rm mach}\max(1,|t|)\).  If it does not, advancing the
+floating-point time coordinate is no longer representable; the runner writes
+a controlled cadence-stop checkpoint instead of entering a zero-advance
+loop or silently skipping collisions.
+
+For a continuation, repeat the original mesh, collision and cadence
+arguments so the saved particle clocks retain their physical meaning.  The runner verifies the physics task, universe, Poisson source
+and collision model against existing metadata.  Retain the original command
+with the run so that the remaining physical parameters and numerical
+controls are supplied consistently.  The radial mesh contract and metadata
+remain associated with the initial segment.
+
+\subsection{GPU input and output contract}
+
+GPU library users configure public C++ option structures; the task executables
+use command-line options. They load particle initial data from CPU-generated
+weighted-PIC restarts.  The version-6 restart uses magic \code{VENUSWVPIC1}, a version and
+endian sentinel, metadata clocks/counters, and one complete record per marker.
+The legacy magic is intentionally unchanged so CPU and v1 checkpoints remain
+interoperable.
+GPU readers accept versions 1--6. Version 7 stores the CPU static
+Boltzmann event solver's frozen field and evolution controls; that
+integration path has a separate continuation contract.
+
+The reader derives the version-specific marker-record size and requires the
+declared count to equal the remaining payload byte-for-byte before resizing a
+marker vector.  It rejects negative or non-finite clocks, invalid delayed-inner
+return times, invalid marker states, duplicate IDs, non-finite physical fields,
+and trailing bytes.  Positive infinity is permitted only for an event
+timescale that has not yet been measured.  The checkpoint comparator treats
+matching positive-infinity sentinels as equal, treats a finite/infinite pair as
+a mismatch, and requires finite nonnegative tolerances.
+
+Material and subhalo collision entry points validate model enumerations,
+finite option domains, CUDA integer index bounds, adaptive-substep narrowing,
+and counter-based RNG exhaustion before launching affected kernels.  MPI
+marker migration and checkpoint gathering validate all byte counts and
+displacements collectively against the legacy \code{int} limits of
+\code{MPI_Alltoallv} and \code{MPI_Gatherv}; one rank cannot proceed after a
+peer detects an invalid layout.
+
+The task runner writes
+\begin{itemize}
+\item \path{profile_NNNNN.csv}: time, radius, density, radial mean and
+variance, tangential second moment, and effective marker number;
+\item \path{history_gpu.csv}: step, time, timestep clocks, mass, marker count,
+and wall time;
+\item \path{collision_history_gpu.csv}: trials, accepted events, scatter and
+capture counts, invariant residuals, locality, collision clocks, and (for
+material SIDM) shell-visit work;
+\item \path{restart_state.bin}, \path{metadata.json}, and
+\path{radial_mesh_contract.txt};
+\item explicit \path{completed.ok}, \path{walltime_checkpoint.ok},
+\path{locality_stopped.ok}, or \path{cadence_stopped.ok} terminal states.
+\end{itemize}
+The output moments are deposited after the final radial kick of the KDK
+step. Density is unchanged by this kick, while the radial mean and variance
+follow the completed endpoint velocities. This makes the profile and its
+particle checkpoint describe the same state.
+\codesource{GPU endpoint profile moments}
+{\path{gpu/src/wpic_production_driver.cu}}
+{Refresh the deposited moments from the completed particle state before output}
+\begin{lstlisting}[language=C++]
+vp.deposit_and_solve(state, time, vp_control);
+\end{lstlisting}
+For a continuation in the same directory, the runner checks the existing
+profile and history times before opening histories for append. A diagnostic
+later than the supplied checkpoint causes a clear error and leaves those
+files intact. When a checkpoint lies between profile outputs, the completed
+earlier profile is preserved and evolution resumes toward the next scheduled
+output. An earlier checkpoint can be evolved separately in a new output
+directory. The signals \code{SIGUSR1} and \code{SIGTERM} request an atomic
+checkpoint followed by exit status 99.
+\codesource{GPU continuation time check}
+{\path{gpu/src/wpic_production_driver.cu}}
+{Verify that existing diagnostics precede the supplied particle state}
+\begin{lstlisting}[language=C++]
+require_output_precedes_restart(run.output, source.time);
+\end{lstlisting}
+Plot/GIF refresh creates frame-time, last-curve-time, and input-count
+sidecars.  Those sidecars define the animation's physical-time mapping.
+
+\subsection{GPU scope limits}
+
+The task interfaces and scientific comparison have the following scope:
+\begin{itemize}
+\item material MPI changes the fixed-occupancy shell populations and requires
+rank-count convergence;
+\item task runners use zero central point mass, origin parity and a reflecting
+outer boundary. Expanding particle masses already represent density contrast;
+central-source and outflow library controls require their own validation.
+The delayed-return method remains in the CPU implementation;
+\item long chaotic Monte Carlo comparisons use conservation, resolved profiles,
+event rates and seed ensembles to test agreement of the predicted evolution;
+\item Einstein--Vlasov, SphDSMC, canonical-orbit and grid collision backends
+remain CPU implementations.
+\end{itemize}

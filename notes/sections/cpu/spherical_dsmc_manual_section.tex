@@ -1,0 +1,1414 @@
+\subsection{Persistent-Marker Spherical Direct Simulation Monte Carlo
+ (SphDSMC)}
+\label{sec:spherical-dsmc}
+
+\noindent\textbf{Maturity and validation.}
+The constant-cross-section self-interacting dark matter (SIDM) configuration
+implements the persistent-marker, sorting, collision-shell, and event-count
+conventions of the finite-time benchmark described below.  Following a halo
+through gravothermal core collapse additionally requires convergence in marker
+count, timestep, shell population, collision locality, and random seed, with
+conservation and restart checks throughout the evolution.  Velocity-dependent
+cross sections require their own finite-time and long-time comparisons.
+
+\begin{figure}[htbp]
+\centering
+\textbf{Physics flow: persistent-marker spherical DSMC module}
+\par\smallskip
+\begin{tikzpicture}[node distance=0.22cm]
+\node[physicsflow] (sd1) {Sample spherical markers from the initial distribution, or restore their individual masses and orbits from a restart};
+\node[physicsflow,below=of sd1] (sd2) {Sort the markers by radius and use their radial order to calculate enclosed mass and gravity};
+\node[physicsflow,below=of sd2] (sd3) {Choose one physical timestep from the orbital and collision-rate limits};
+\node[physicsflow,below=of sd3] (sd4) {Apply a half gravity kick, move every marker, sort the crossed markers again, and apply the second half kick};
+\node[physicsflow,below=of sd4] (sd5) {Retry any inaccurate close central passage with the regularized orbit calculation};
+\node[physicsflow,below=of sd5] (sd6) {Divide the newly sorted halo into local radial collision shells no wider than the mean free path when resolved};
+\node[physicsflow,below=of sd6] (sd7) {Choose trial pairs, accept them at the physical collision rate, and scatter accepted velocities elastically};
+\node[physicsflow,below=of sd7] (sd8) {Check mass, energy, orbit accuracy, and collision locality; then write profiles or a restart and continue};
+\draw[physicsarrow] (sd1) -- (sd2);
+\draw[physicsarrow] (sd2) -- (sd3);
+\draw[physicsarrow] (sd3) -- (sd4);
+\draw[physicsarrow] (sd4) -- (sd5);
+\draw[physicsarrow] (sd5) -- (sd6);
+\draw[physicsarrow] (sd6) -- (sd7);
+\draw[physicsarrow] (sd7) -- (sd8);
+\end{tikzpicture}
+\end{figure}
+
+\subsubsection{Purpose and physical picture}
+
+SphDSMC solves the static Boltzmann--Poisson equations (PIC0b)--(PIC0c), with
+\(H=0\), the full halo density as the Poisson source, and elastic binary
+scattering in \(C[f]\).  It uses the same spherical phase-space measure
+(PIC0a).  The marker ordering supplies the enclosed mass directly, so the
+force calculation implements the spherical Poisson equation without a
+separate gravity mesh.  The orbital update and local collision sampling then
+advance the two terms in the kinetic equation.
+
+This solver represents the halo by a large set of computational
+particles, called \emph{markers}.  Each marker keeps its radius, radial
+velocity, angular momentum, and positive mass throughout the run.  A fresh
+standard sample is equal mass, but the gravity, shell, collision, diagnostic,
+and restart paths accept unequal masses.  Gravity moves the markers along
+spherical orbits.  Collisions select nearby whole-object pairs and scatter
+their continuous three-dimensional velocities.
+An origin crossing is always reflected as
+\(r\mapsto|r|\), \(v_r\mapsto-v_r\).  There is no outer wall: \code{r_max}
+is the outer edge of the reported profile bins, not a reflecting boundary,
+and a marker outside it remains part of the gravitational state.
+
+It follows the SphDSMC construction of
+\href{https://doi.org/10.1093/mnras/stag2015}{van den Bosch and Tokayer (2026)}.
+The input \(f(r,w,L)\) supplies the probability distribution from which the
+initial markers are drawn.  After this sampling step, the markers themselves
+are the dynamical state.  The task selector and runnable interface are given
+only after the state, gravity, timestep, and collision laws below.
+
+One timestep proceeds as follows:
+\begin{enumerate}
+\item Sort the markers by radius and compute the spherical gravitational
+      force from their radial order.
+\item Apply half of the gravitational velocity kick.
+\item Move every marker to its new radius.
+\item Sort again, because markers may have crossed one another.
+\item Apply the second half of the gravitational kick using the new radial
+      order.
+\item Divide the sorted markers into radial collision shells.
+\item Draw the physical number of collision trials in each shell, accept
+      pairs with the Boltzmann probability, and scatter every accepted pair.
+\item Write profiles, conservation budgets, and restart data at their
+      requested intervals.
+\end{enumerate}
+
+The orbit and output logic lives in
+\path{cpu/include/ev/spherical_dsmc_solver.hpp}.  The pair-selection and
+finite-angle scattering logic lives in
+\path{cpu/include/ev/spherical_dsmc_collision.hpp}.
+
+\subsubsection{How SphDSMC differs physically and numerically from WPIC}
+
+The two modules approximate the same collisionless Vlasov--Poisson equation
+between encounters, but their Vlasov updates are not identical numerical
+algorithms.  In WPIC, unequal-weight markers deposit their mass onto a fixed
+radial mesh; the spherical Poisson equation is solved on that mesh, and the
+interpolated mesh force moves each marker.  In SphDSMC, the persistent markers
+are sorted by their instantaneous radius, the actual marker masses are
+prefix-summed in that order to obtain \(M(<r)\), and each marker receives the
+corresponding spherical force directly.  SphDSMC therefore needs a stable
+radius sort after every drift.  WPIC needs no radial sort for its gravity
+solve, although its material-collision path may sort markers when constructing
+adaptive collision shells.  Both use a time-centred kick--drift--kick orbit
+update, so they solve the same physics while having different force noise,
+spatial smoothing, and convergence errors.
+
+Their elastic SIDM collision cores share the same physical ingredients:
+local no-time-counter pair trials, the relative speed \(u\), a possibly
+velocity-dependent pair area \(\Sigma_{ij}(u)\), and exact unequal-mass
+centre-of-mass scattering.  ``No-time-counter'' means that trial pairs are
+drawn from a safe rate bound rather than by advancing a separate clock for
+every possible pair.  The complete SphDSMC pair remains two markers and the
+present SphDSMC module has no inelastic capture channel.  Its collision
+timestep is part of the one global physical timestep and elastic scattering
+is applied once per accepted global step.
+
+WPIC additionally has the Plummer-subhalo encounter operator.  It can either
+scatter two complete unequal-mass subhalos or capture them into one remnant of
+mass \(m_i+m_j\), placing the lost relative orbital kinetic energy into the
+remnant's internal energy and velocity dispersion.  WPIC also separates the
+ordinary Vlasov CFL timestep from the outer collision-operator deadline and
+from the collision sampler's internal probability-limiting substeps.  Thus
+the SphDSMC and WPIC collision laws can use the same elastic SIDM cross section,
+but the calling cadence, collision-region construction, gravitational force
+estimator, and available inelastic physics are not the same.
+
+\subsubsection{Marker mass and initial sampling}
+
+One marker stores
+\codesource{SphDSMC marker state}
+{\path{cpu/include/ev/spherical_dsmc_solver.hpp}}
+{Defines the persistent radius, radial velocity, angular momentum, identifier,
+ and represented mass carried by each spherical marker}
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\scriptsize]
+struct SphericalDSMCParticle {
+    double r;
+    double vr;
+    double L;
+    std::uint64_t id;
+    double mass;
+};
+\end{lstlisting}
+\code{SphericalDSMCParticle} is the C++ data record for one persistent
+marker: it holds the marker's current phase-space coordinates, immutable
+integer identifier, and represented mass.  Here \(v_r\equiv w\), and
+\[
+ L=r v_t,\qquad v_t^2=v_\theta^2+v_\phi^2.
+\]
+The standard initializer gives every marker the same mass
+\[
+ m_p=\frac{M_{\rm represented}}{N_p}.
+\]
+Normally \(M_{\rm represented}\) is the integral of the carrier grid.  If the
+source particle model supplies an independently known total mass,
+\code{bp_dsmc_total_mass} sets that mass explicitly.  It changes only \(m_p\):
+the normalized cumulative mass distribution, and therefore the sampled
+phase-space shape, stays fixed.
+
+For a spherical distribution \(f(r,v_r,L)\), integration over position and
+velocity angles gives
+\[
+ \dd M=8\pi^2 Lf(r,v_r,L)\,\dd r\,\dd v_r\,\dd L.
+\]
+Consequently, the piecewise-constant mass represented by one input cell is
+\[
+ \Delta M_{ijk}
+ =8\pi^2L_k f_{ijk}\,
+   \Delta r_i\,\Delta v_{r,j}\,\Delta L_k.                 \tag{S1}
+\]
+In equation (S1), \(i\), \(j\), and \(k\) index the radial,
+radial-velocity, and angular-momentum cells, respectively.  Elsewhere \(p\)
+denotes an arbitrary marker, \(q=0,\ldots,N_p-1\) denotes its position in the
+stratified initial sample, \(i\) denotes zero-based radial rank after sorting,
+and \(s\) denotes a collision shell; each local use is stated explicitly.
+The radial control-volume array has its innermost face at exactly \(r=0\).
+The velocity and angular-momentum widths are the same trapezoidal
+control-volume widths used by the grid solver.
+
+The code forms a cumulative table of the positive cell masses in (S1).
+It then places \(N_p\) evenly spaced target masses along that table, using one
+random offset \(\xi\in(0,1)\).  Marker \(q\) selects the cell containing
+\[
+ M_q=M_{\rm represented}\frac{q+\xi}{N_p},
+ \qquad q=0,\ldots,N_p-1.
+\]
+This gives exactly \(N_p\) initially equal-mass markers and spreads the
+selected cells evenly across the cumulative mass distribution.  The mass is
+then stored on each marker.  Restart versions 4--7 preserve it individually;
+collision code never infers equality from the initializer.
+
+Within the selected cell, \(r\) and \(v_r\) are uniform.  Since the measure in
+\(L\) is \(L\,\dd L=\tfrac12\dd(L^2)\), the sampler is uniform in \(L^2\):
+\codesource{SphDSMC grid-to-marker sampler}
+{\path{cpu/include/ev/spherical_dsmc_solver.hpp}}
+{Samples continuous spherical phase coordinates from a selected positive-mass
+ carrier cell, including the correct angular-momentum measure}
+\begin{lstlisting}[language=C++]
+particle.r = r0 + (r1 - r0) * rng.uniform_open();
+particle.vr = w0 + (w1 - w0) * rng.uniform_open();
+particle.L = std::sqrt(
+    L_lo * L_lo
+    + (L_hi * L_hi - L_lo * L_lo) * rng.uniform_open());
+\end{lstlisting}
+The transformation from \(\dd^3x\,\dd^3v\) to
+\(\dd r\,\dd v_r\,L\,\dd L\) cancels the radial \(r^2\) factor, yielding
+uniform sampling in \(r\) inside the selected cell.
+
+\subsubsection{Radius ordering, spherical force, and total energy}
+
+The marker array is maintained in nondecreasing radius order.  For zero-based
+radial rank \(i\), let \(m_i\) be that marker's mass, and let \(j<i\) denote
+all strictly interior ranks.  The fixed central point mass is
+\(M_\bullet=\code{central_mass}\); it is zero when no central object is
+present.  The shell-centered enclosed force mass is
+\[
+ M_i^{\rm enc}=M_\bullet+\sum_{j<i}m_j+\frac12m_i.         \tag{S2}
+\]
+The characteristic equations are
+\[
+ \dot r_i=v_{r,i},\qquad
+ \dot v_{r,i}=\frac{L_i^2}{r_i^3}
+              -\frac{GM_i^{\rm enc}}{r_i^2},
+ \qquad \dot L_i=0                                         \tag{S3}
+\]
+between collisions.
+
+Equation (S2) is the spherical-shell analogue of centering a finite-volume
+force in a mass cell.  The corresponding diagnostic kinetic and potential
+energies are
+\[
+ K=\sum_i\frac{m_i}{2}
+ \left(v_{r,i}^2+\frac{L_i^2}{r_i^2}\right),               \tag{S4}
+\]
+\[
+ W=-G\sum_i\frac{m_iM_i^{\rm enc}}{r_i}.                  \tag{S5}
+\]
+The half-self contribution in (S5) is
+\(-Gm_i^2/(2r_i)\) for the represented thin spherical shell and is consistent
+with the centered force (S2).  The reported Newtonian virial ratio is
+\(Q_{\rm vir}=2K/|W|\); values near one indicate global virial balance, but
+this single scalar does not prove local equilibrium.
+
+The ordinary update is kick--drift--sort--kick:
+\codesource{SphDSMC gravity step}
+{\path{cpu/include/ev/spherical_dsmc_solver.hpp}}
+{Applies time-centred spherical gravity and rebuilds enclosed mass after marker
+ crossings before the endpoint kick}
+\begin{lstlisting}[language=C++]
+particles[i].vr += 0.5 * dt
+    * spherical_dsmc_acceleration(
+          particles[i], enclosed_force_mass[i], p);
+particles[i].r += dt * particles[i].vr;
+spherical_dsmc_sort_particles(particles);
+rebuild_enclosed_force_mass_from_sorted_marker_masses();
+particles[i].vr += 0.5 * dt
+    * spherical_dsmc_acceleration(
+          particles[i], enclosed_force_mass[i], p);
+\end{lstlisting}
+The intermediate sort is physical: after shell crossings, the second kick
+must use the new enclosed rank.  A one-thread paper-exact run uses Frank and
+Tokayer's literal insertion pass after every evolved step.  A threaded
+paper-exact run produces the same stable radial ordering with either that
+literal pass or the stable block-and-merge decomposition described below.
+Only the one-time initial ordering uses a general stable ordering method.
+The generic VENUS path may use insertion, block-and-merge, or radix sorting
+according to the measured disorder.
+
+\paragraph{Insertion sort: repairing the order left by a small step.}
+Insertion sort walks from the second marker to the end of the array.  At
+position \(i\), it temporarily saves the marker as a \emph{key}, shifts every
+preceding marker with radius larger than the key one place to the right, and
+inserts the key into the empty position.  Equal radii are not shifted past one
+another, so the ordering is \emph{stable}: markers with equal sort keys retain
+their previous relative order.  In source form the essential operation is
+\codesource{SphDSMC stable insertion sorter}
+{\path{cpu/include/ev/spherical_dsmc_solver.hpp}}
+{Repairs a nearly ordered radial marker range without changing the relative
+ order of equal-radius markers}
+\begin{lstlisting}[language=C++]
+for (std::size_t i = begin + 1; i < end; ++i) {
+    if (!(particles[i].r < particles[i - 1].r)) continue;
+    SphericalDSMCParticle key = particles[i];
+    std::size_t j = i;
+    while (j > begin && key.r < particles[j - 1].r) {
+        particles[j] = particles[j - 1];
+        --j;
+    }
+    particles[j] = key;
+}
+\end{lstlisting}
+For example, let the radius order after the drift be
+\[
+ [0.11_A,\;0.15_B,\;0.13_C,\;0.18_D].
+\]
+When \(C\) is the key, \(B\) moves one place to the right and \(C\) is
+inserted before it:
+\[
+ [0.11_A,\;0.13_C,\;0.15_B,\;0.18_D].
+\]
+One \emph{inversion} is one out-of-order pair, such as \(B,C\) in this
+example.  If the array has \(I\) inversions, insertion sort costs
+\(O(N_p+I)\) operations and \(O(1)\) extra marker storage.  After a sufficiently
+small physical timestep, most markers remain close to their former radial
+rank, \(I\) is small, and insertion sort is almost linear.  Its worst case is
+\(O(N_p^2)\), so it is inappropriate after broad radial disorder.
+
+\paragraph{Threaded stable insertion-and-merge path.}
+Paper-exact execution must reproduce the stable radial ordering generated by
+Frank's insertion sort.  VENUS first counts adjacent inversions in parallel
+and counts the 32-separated predicates
+\[
+ r_i<r_{i-32}\qquad (i\ge32).
+\]
+This second count is a probe for broad disorder; it is not a stored
+measurement of how many ranks a particular marker moved.  With no adjacent
+inversion, no sort is needed.  If at most \(N_p/4\) of the 32-separated
+predicates are inverted, the paper-exact path applies the literal stable
+insertion pass.  Above that threshold, the marker array is divided into
+contiguous blocks.  Different threads insertion-sort different blocks, after
+which successive stable merge levels combine blocks of width one, two, four,
+and so on.  A scratch array holding \(N_p\) complete marker records is used
+during the merge.  Choosing a marker from the left block when two radii are
+equal preserves the same tie order as the serial stable sort.
+
+For an evolved generic run, VENUS instead counts adjacent inversions.  At
+most \(N_p/64\) adjacent inversions select insertion sort; a larger count
+selects per-thread stable sorting of contiguous blocks followed by the same
+stable merge tree.  A multi-thread initial sort uses radix sorting, while a
+one-thread initial sort uses the standard stable general sort.  These
+thresholds choose work, not physics: every branch returns the same
+nondecreasing stable radius order needed by the force calculation.
+
+\paragraph{Radix sort for a broadly disordered general run.}
+A radix is the number of possible digits processed in one pass.  VENUS uses
+radix 256, so one digit is one byte and there are 256 buckets.  A
+\emph{bucket} is the consecutive output region assigned to one byte value.
+All valid radii are finite and nonnegative; for such IEEE-754 double-precision
+numbers, the unsigned 64-bit bit pattern has the same order as the numerical
+radius.  The code therefore processes the eight bytes of the radius from
+least significant to most significant.  Each byte pass is stable, so after
+eight passes the complete 64-bit keys are in numerical order.
+
+The parallel byte pass has four steps:
+\begin{enumerate}
+\item Divide the input into \(T\) consecutive thread chunks.  Thread \(t\)
+      counts its byte values in a private histogram \(H_{td}\), where
+      \(d=0,\ldots,255\).  A histogram is simply a table of counts.
+\item Sum the thread histograms to obtain the total size of each bucket and
+      its global starting position \(B_d\).
+\item Give thread \(t\) its private starting offset
+      \[
+       O_{td}=B_d+\sum_{q<t}H_{qd}.
+      \]
+\item Each thread scans its own input chunk from left to right and writes a
+      marker into its current \(O_{td}\), then increments that offset.
+\end{enumerate}
+The offsets assign disjoint output positions, so scattering requires no
+atomic updates or locks.  Earlier input chunks receive earlier positions
+inside every bucket, and each thread scans in input order; these two facts
+make the parallel pass stable.
+
+As a one-byte example, suppose two threads receive
+\[
+\begin{split}
+ t=0 &: [13_A,2_B,13_C,5_D],\\
+ t=1 &: [2_E,9_F,5_G,13_H].
+\end{split}
+\]
+The nonzero local counts are
+\[
+\begin{array}{c|rrrr}
+ &d=2&d=5&d=9&d=13\\ \hline
+H_{0d}&1&1&0&2\\
+H_{1d}&1&1&1&1
+\end{array}
+\]
+and the global bucket starts are \(B_2=0\), \(B_5=2\), \(B_9=4\), and
+\(B_{13}=5\).  Thread 0 therefore starts at positions
+\((0,2,4,5)\); thread 1 starts at \((1,3,4,7)\).  Parallel scattering produces
+\[
+ [2_B,2_E,\;5_D,5_G,\;9_F,\;13_A,13_C,13_H],
+\]
+including the original order of equal keys.  The actual radius sorter repeats
+this operation for all eight bytes:
+\codesource{SphDSMC stable radix sorter}
+{\path{cpu/include/ev/spherical_dsmc_solver.hpp}}
+{Performs the general parallel stable radius ordering used for a broadly
+ disordered or explicitly forced sort}
+\begin{lstlisting}[language=C++]
+for (int pass = 0; pass < 8; ++pass) {
+    build_thread_private_histograms(pass);
+    build_global_bucket_and_thread_offsets();
+    parallel_stable_scatter(source, scratch, pass);
+    std::swap(source, scratch);
+}
+\end{lstlisting}
+Radix sorting costs \(O(8N_p)\) marker visits and one \(N_p\)-marker scratch
+array.  Because it reads and writes the full 40-byte marker record eight
+times, it is usually limited by memory bandwidth and is wasteful when only a
+few crossings need repair.  The generic sorter therefore keeps insertion
+sort for nearly ordered data.  Radix sorting can be forced for a benchmark
+with \code{EV_SPHERICAL_DSMC_RADIX_SORT=1}; it is separate from the
+paper-exact post-drift insertion rule.
+
+\subsubsection{Physical global timestep}
+
+The gravity timestep follows the SphDSMC dynamical criterion
+\[
+ \Delta t_{\rm grav}
+ =\left[
+ 2\eta_{\rm grav}
+ \min_i\left(\frac{r_i}{|a_{r,i}|}\right)
+ \right]^{1/2},                                            \tag{S6}
+\]
+where \(\eta_{\rm grav}=\code{bp_dsmc_gravity_eta}\).  This supplies the orbit
+accuracy criterion.
+
+For collision shell \(s\), the code finds an upper bound
+\({\cal K}_s\) on the physical pair kernel
+\(u\Sigma_{ij}(u)\) for every possible marker pair in
+that shell.  Collision-sampling literature calls such an upper bound a
+\emph{majorant}.  Let
+\[
+ n_{{\rm partner},s}=\frac{N_s-1}{V_s}
+\]
+be the finite-shell density of possible partners for one selected marker.
+The implemented collision limit is
+\[
+ \Delta t_{\rm coll}
+ =\epsilon_{\rm coll}\min_s
+ \begin{cases}
+ \displaystyle
+ \frac{4}{n_{{\rm partner},s}{\cal K}_s},
+     &\text{paper-exact path},\\[1.1ex]
+ \displaystyle
+ \frac{1}{n_{{\rm partner},s}{\cal K}_s},
+     &\text{generic path},
+ \end{cases}                                               \tag{S7}
+\]
+Here
+\(\epsilon_{\rm coll}=\code{bp_dsmc_collision_epsilon}\); its default is one.
+For equal masses \(m_p\), a constant cross section per unit mass
+\(s_\chi\), and the paper majorant, this becomes
+\({\cal K}_s=4v_{\max,s}m_ps_\chi\), so the factor four cancels and
+\[
+ \Delta t_{\rm coll}
+ =\epsilon_{\rm coll}
+  \min_s\frac{1}{n_{{\rm partner},s}m_ps_\chi v_{\max,s}}.
+\]
+This is Frank and Tokayer's equation~(12), with the finite-\(N_s\) partner
+density retained.  The \(4v_{\max}\) factor belongs to their trial-pair
+majorant and must not shorten the paper collision timestep by another factor
+of four.  The selected step is
+\[
+ \Delta t=\min\left(
+ \Delta t_{\max},\Delta t_{\rm grav},\Delta t_{\rm coll},
+ t_{\rm end}-t\right).                                     \tag{S8}
+\]
+Scattering is called once per physical global step.  The SphDSMC cadence is
+therefore fixed by equations (S7)--(S8).
+
+\subsubsection{Selective Levi--Civita orbit retry}
+
+Very radial trajectories can have a pericentre timescale much shorter than
+the global orbital time.  Near pericentre, the terms \(L^2/r^3\) and
+\(GM/r^2\) can change rapidly during one ordinary step.
+
+VENUS handles these markers through the following sequence:
+\begin{enumerate}
+\item Advance every marker with the ordinary kick--drift--kick step.
+\item For each marker, compare the orbital energy before and after that step.
+\item Accept the ordinary result when the relative energy change satisfies
+      \code{vp_orbit_energy_tolerance}.
+\item Return a failed marker to its original state and integrate the same
+      interval in the regularized coordinate \(\varrho=\sqrt r\).
+\item Accept the regularized result after its adaptive integrator converges
+      and the energy check passes.
+\end{enumerate}
+
+The paper-exact energy criterion is Frank and Tokayer's full equation~(5).
+For equal marker mass \(m_p\) and zero-based radial rank \(i\), it is
+\[
+ {\cal E}_i
+ =\frac12v_{r,i}^2+\frac{L_i^2}{2r_i^2}
+  -G\left[\frac{M_\bullet}{r_i}
+  +m_p\left(\frac{i+1}{r_i}
+  +\sum_{j=i+1}^{N_p-1}\frac1{r_j}\right)\right]. \tag{S9}
+\]
+The \(i+1\) term includes this marker's full spherical self contribution;
+\(M_\bullet\) adds the configured central point mass.  The implementation
+sums individual masses in both terms when the markers have unequal masses.
+The full self-consistent energy of all markers is also tracked as a global
+gravity diagnostic.
+
+When the relative defect in (S9) exceeds
+\code{vp_orbit_energy_tolerance}, the original marker is retraced using
+\[
+ \varrho=\sqrt r,\qquad \frac{\dd t}{\dd\tau}=r=\varrho^2. \tag{S10}
+\]
+For physical orbit equations
+\((\dot r,\dot v_r)=F(r,v_r)\), the transformed system is
+\[
+ \frac{\dd\varrho}{\dd\tau}
+   =\frac{\varrho}{2}\dot r,\qquad
+ \frac{\dd v_r}{\dd\tau}=r\dot v_r,\qquad
+ \frac{\dd t}{\dd\tau}=r.                                 \tag{S11}
+\]
+The paper-exact path integrates the transformed equations with
+kick--drift--kick leapfrog steps in fictitious time, accumulates physical time
+with the midpoint value of \(\varrho^2\), and linearly interpolates the final
+overshooting step.  A failed equation~(S9) check repeats the original orbit
+with the fictitious step halved.  The generic VENUS path retains its adaptive
+Dormand--Prince integrator.
+
+The retry is accepted only when the adaptive integrator converges and the
+final defect in (S9) meets the requested tolerance.  The history reports the
+numbers attempted, accepted,
+unresolved, and failed inside the adaptive integrator, as well as the largest
+ordinary and final energy defects.  A production result requires zero
+unresolved retries.
+\code{EV_SPHERICAL_DSMC_FORCE_CONSISTENT_ORBIT_AUDIT=1} is an opt-in
+finite-\(N\) diagnostic: it subtracts the half-self term that is present in
+the published equation-(5) audit potential but absent from the force used to
+advance a marker.  It does not change that force, the published diagnostic,
+the total energy, or any collision.  The resolved choice is recorded in
+\path{metadata.json}.
+
+\subsubsection{Adaptive radial collision shells and locality}
+
+Collisions should pair markers that occupy the same local region.  The
+generic execution path builds radial collision shells after the gravity update:
+\begin{enumerate}
+\item Start from the radius-sorted marker list.
+\item Divide it into blocks containing approximately
+      \code{bp_dsmc_shell_particles} markers.
+\item Compute each block's radial width, density, evolving orbital velocity
+      dispersion, and pair-rate-averaged mean free path.
+\item Split a block in half when its width exceeds its mean free path and both
+      children contain at least \code{bp_dsmc_min_shell_particles} markers.
+\item Apply the same criterion recursively to the children.
+\end{enumerate}
+
+Paper-exact mode follows Frank and Tokayer's sequential shell construction.
+At the first unused marker, it proposes the next target number of markers,
+halves that candidate until its width is local or the population floor is
+reached, accepts the shell, and advances to the next unused marker.  The next
+candidate starts again at the target population.  The final candidate contains
+the remaining consecutive markers, and the faces are their radial extrema,
+as in their equation~(6).  Rebuilding either shell construction after gravity
+uses the current marker positions.
+
+\codesource{Paper-exact SphDSMC collision shells}
+{\path{cpu/include/ev/spherical_dsmc_solver.hpp}}
+{Shortened moving-cursor update; \code{describe} abbreviates the source's
+ shell-description call, while \code{target} and \code{minimum} are the
+ configured populations}
+\begin{lstlisting}[language=C++]
+while (begin < particles.size()) {
+    std::size_t end = std::min(particles.size(), begin + target);
+    auto shell = describe(begin, end);
+    while (shell.outer_edge - shell.inner_edge > shell.mean_free_path
+           && end - begin >= 2 * minimum) {
+        end = begin + (end - begin) / 2;
+        shell = describe(begin, end);
+    }
+    shells.push_back(shell);
+    begin = end;
+}
+\end{lstlisting}
+
+For shell edges \(r_{s,-},r_{s,+}\), marker count \(N_s\), and individual
+marker masses \(m_i\),
+\[
+ V_s=\frac{4\pi}{3}(r_{s,+}^3-r_{s,-}^3),\qquad
+ \rho_s=\frac{\sum_{i\in s}m_i}{V_s},\qquad
+ n_s=\frac{N_s}{V_s},\qquad
+ n_{{\rm partner},s}=\frac{N_s-1}{V_s},                    \tag{S12}
+\]
+\[
+ \overline v_{r,s}=\frac{\sum_i m_i v_{r,i}}{\sum_i m_i},
+ \qquad
+ \sigma_{v,s}^{\,2}=
+ \frac{\sum_i m_i[(v_{r,i}-\overline v_{r,s})^2+v_{t,i}^2]}
+ {3\sum_i m_i},                                           \tag{S13a}
+\]
+\[
+ \boxed{\displaystyle
+ \lambda_s=
+ \frac{\langle u_{ij}\rangle_s}
+ {n_{{\rm partner},s}
+  \langle u_{ij}\Sigma_{ij}(u_{ij})\rangle_s}}.             \tag{S13b}
+\]
+Here \(v_{r,i}\) and \(v_{t,i}=L_i/r_i\) are radial and tangential speed,
+\(\overline v_{r,s}\) is the shell's mass-weighted radial drift,
+\(\sigma_{v,s}\) is its one-dimensional orbital velocity dispersion,
+\(u_{ij}\) is pair relative speed, and \(\Sigma_{ij}\) is the complete
+unequal-mass physical pair area.  The density \(n_s\) estimates all objects,
+whereas \(n_{{\rm partner},s}\) excludes the selected object itself; replacing
+the latter by \(n_s\) is the large-\(N_s\) continuum approximation.  Angle
+brackets average over unordered pairs and their unresolved relative
+tangential azimuth.  VENUS uses all pairs when the shell contains at most 512
+unordered pairs and otherwise uses 512 deterministic samples.  This
+lets the evolving distribution function determine both the velocity scale
+and a velocity-dependent cross section.  A single RMS-speed substitution is
+not made.
+
+For equal masses \(m_p\) and constant \(s_\chi=\sigma/m\),
+\(\Sigma_{ij}=m_p s_\chi\), so equation (S13b) gives
+\[
+ \lambda_s=\frac{N_s}{N_s-1}\frac{1}{\rho_s s_\chi}.
+\]
+It approaches Frank and Tokayer's continuum expression
+\(1/(\rho_s s_\chi)\) as \(N_s\) grows.  For an equal-mass,
+constant-cross-section paper run, the code evaluates this finite-\(N_s\)
+form directly.  The published Frank benchmark starts with equal masses, but
+\code{EV_SPHERICAL_DSMC_PAPER_EXACT=1} does not reject an unequal-mass
+restart.  In that case VENUS uses the unequal pair area and the sampled
+velocity-dependent average in equation (S13b).  The shell, cadence,
+remainder, and orbit conventions remain paper-exact; unequal masses are a
+VENUS extension rather than a claim about the original benchmark.
+The recursive decision in the source is
+\codesource{SphDSMC adaptive collision-shell builder}
+{\path{cpu/include/ev/spherical_dsmc_solver.hpp}}
+{Bisects a radial collision region when its width exceeds the sampled physical
+ mean free path and both child shells retain the minimum population}
+\begin{lstlisting}[language=C++]
+if (outer_edge - inner_edge > mean_free_path
+    && size >= 2 * minimum) {
+    split(begin, middle);
+    split(middle, end);
+}
+\end{lstlisting}
+
+After subdivision, VENUS targets
+\[
+ \Delta r_s\leq\lambda_s.                                  \tag{S14}
+\]
+Following Frank's SphDSMC algorithm, if the minimum marker population
+prevents (S14), shell refinement stops at that population and the run
+continues.  This is a spatial-resolution limit: collisions in such a shell
+can transport heat too far.  The maximum \(\Delta r_s/\lambda_s\) and number
+of violating shells are therefore written to \path{history.csv} and must be
+compared with the resolved core size before late collapse is trusted.
+Reduce the minimum population in a convergence sequence until the resolved
+density and heat-flow profiles are insensitive to that choice.
+
+\subsubsection{Equal-mass initial resolution at a target central density}
+\label{sec:sphdsmc-marker-scaling}
+
+Two length comparisons answer different physical questions.  The numerical
+locality requirement is
+\[
+ \Delta r_{\rm coll}<\lambda_{\rm mfp},
+\]
+where \(\Delta r_{\rm coll}\) is the width of a collision shell.  Increasing
+the marker resolution can improve this inequality.  The core Knudsen
+condition is
+\[
+ r_{\rm core}<\lambda_{\rm mfp}.
+\]
+It states that the physical core is in the long-mean-free-path regime.
+Changing the numerical marker count cannot change this second inequality.
+SphDSMC can in principle describe a short-mean-free-path core,
+\(\lambda_{\rm mfp}<r_{\rm core}\), but only if its collision shells remain
+smaller than \(\lambda_{\rm mfp}\).  A conducting-fluid or kinetic--fluid
+description becomes more economical when the core contains many mean free
+paths.
+
+The equal-mass resolution scaling follows from the innermost nearly uniform
+core.  Let \(M\) be the total represented mass, \(N_p\) the global number of
+equal-mass markers, and \(k\) the minimum population of the innermost
+collision shell.  One marker represents
+\[
+ m_p=\frac{M}{N_p}.
+\]
+If the central shell has density \(\rho\) and characteristic radius
+\(\Delta r\), its represented mass gives
+\[
+ k m_p\simeq \frac{4\pi}{3}\rho\,\Delta r^3,
+ \qquad
+ \Delta r\simeq
+ \left(\frac{3kM}{4\pi N_p\rho}\right)^{1/3}.              \tag{S14a}
+\]
+Define the physical cross section per unit mass
+\[
+ s\equiv\frac{\sigma}{m},
+ \qquad
+ \lambda_{\rm mfp}=\frac{k}{k-1}\frac{1}{\rho s}.
+\]
+The second equality is the finite-\(k\) mean free path in the innermost
+collision shell; \(1/(\rho s)\) is its continuum limit.
+The locality ratio is therefore
+\[
+ \chi\equiv\frac{\Delta r}{\lambda_{\rm mfp}}
+ \simeq
+ \frac{k-1}{k}\,
+ s\left(\frac{3kM}{4\pi N_p}\right)^{1/3}\rho^{2/3}.
+                                                               \tag{S14b}
+\]
+Solving for the required global marker count gives
+\[
+ \boxed{
+ N_{\rm req}\simeq
+ \frac{3kM}{4\pi}\,
+ \left(\frac{k-1}{k}\right)^3
+ s^3\rho_{\rm target}^2\chi_{\rm target}^{-3}}
+                                                               \tag{S14c}
+\]
+and hence the central result
+\[
+ N_{\rm req}\propto
+ \frac{(k-1)^3}{k^2}
+ \left(\frac{\sigma}{m}\right)^3\rho_{\rm target}^2
+ \ \longrightarrow\
+ k\left(\frac{\sigma}{m}\right)^3\rho_{\rm target}^2
+ \quad(k\gg1).
+                                                               \tag{S14d}
+\]
+Thus one additional decade in target density costs two decades in equal-mass
+markers.  Doubling \(\sigma/m\) costs a factor \(2^3=8\).  In the continuum
+approximation, lowering the minimum shell population from \(k=32\) to \(k=8\)
+saves a factor of four in marker count and extends the density reach by a
+factor of two.  Retaining the finite-\(k\) correction changes those factors
+to about \(5.43\) and \(2.33\), respectively; this modest difference is
+smaller than the need to demonstrate distribution-function convergence in a
+shell containing only eight markers.
+Demanding the safer margin \(\chi_{\rm target}=0.5\), rather than marginal
+locality at \(\chi_{\rm target}=1\), costs another factor of eight.
+
+\paragraph{Marker-count and memory planning.}
+Equation (S14c) should be evaluated in the run's consistent unit system using
+the target density, selected minimum shell population, and desired locality
+margin.  For an equal-mass velocity-dependent model, the local effective
+cross section per mass is
+\[
+ s_{\rm eff}=
+ \frac{\langle u\,s(u)\rangle}{\langle u\rangle}.
+\]
+Using the largest locally relevant \(s(u)\) gives a conservative upper bound
+for initial resource planning, while the evolving pair average in equation
+(S13b) supplies the actual locality diagnostic.
+
+The SphDSMC work arrays require approximately 180--210 bytes per marker: the
+40-byte particle record is accompanied by energy, potential, rank,
+shell-speed, collision-remainder, and sorting workspaces.  A useful estimate
+is therefore
+\[
+ M_{\rm RAM}\simeq190N_p\ {
+m bytes}.                    \tag{S14e}
+\]
+A version-6 restart has a 100-byte header and stores 40 bytes per marker;
+paper-exact version 7 adds an 8-byte count and an 8-byte collision-remainder
+record per marker.  The marker-count parameter is a 32-bit
+integer and cannot exceed \(2.147\times10^9\).  SphDSMC uses one shared-memory
+process rather than distributing markers over MPI ranks, so the complete
+state and sorting workspace must fit on one node.  Runtime grows at least
+linearly with marker count for transport and sorting, and the number of steps
+also rises during collapse as the collision and orbital times shorten.
+
+\subsubsection{Reconstructing local three-dimensional velocities}
+
+At a radius, spherical symmetry stores only \(v_r\) and the tangential speed
+\(v_t=L/r\); the tangential azimuth is uniformly distributed.  In the
+paper-exact path a fresh azimuth \(\phi_i\) is sampled whenever a trial pair
+is evaluated:
+\[
+ \bm v_i=(v_{r,i},v_{t,i}\cos\phi_i,v_{t,i}\sin\phi_i).
+                                                               \tag{S15}
+\]
+In code,
+\codesource{SphDSMC local velocity reconstruction}
+{\path{cpu/include/ev/spherical_dsmc_solver.hpp}}
+{Combines stored radial motion with a sampled tangential azimuth to recover a
+ local three-dimensional velocity for a collision trial}
+\begin{lstlisting}[language=C++]
+velocities[local] = {
+    particle.vr,
+    vt * std::cos(angle),
+    vt * std::sin(angle),
+};
+\end{lstlisting}
+This is a continuous-velocity reconstruction, followed by direct assignment
+of the post-collision marker velocity.
+
+At \(r=0\), finite velocity requires \(L=0\) and the distribution is
+isotropic. The stored radial departure speed is then the full speed.
+Both collision samplers reconstruct an isotropic Cartesian direction there
+and retain the outgoing magnitude after scattering. Their stored kinetic
+energy therefore equals the conserved Cartesian kinetic energy. The
+assignment is
+\codesource{SphDSMC stored velocity after an elastic encounter}
+{\path{cpu/include/ev/spherical_dsmc_solver.hpp}}
+{Preserves the complete outgoing speed at the origin and the radial and
+ angular components at positive radius}
+\begin{lstlisting}[language=C++]
+particle.vr = particle.r == 0.0
+    ? std::hypot(velocity.x, std::hypot(velocity.y, velocity.z)) : velocity.x;
+particle.L = particle.r * std::hypot(velocity.y, velocity.z);
+\end{lstlisting}
+The local dispersion gives zero mean projection and one-third of the squared
+speed along any chosen axis at the origin. The positive-radius construction
+in equation (S15) retains its radial and tangential meanings.
+
+\subsubsection{Sampling the Boltzmann collision rate}
+
+Consider one radial shell with \(N_s\) markers, volume \(V_s\), number
+density \(n_s=N_s/V_s\), and possibly unequal marker masses.  The configured
+material cross section per unit mass is
+\[
+ s_\chi(u)\equiv\frac{\sigma(u)}{m}.
+\]
+This notation applies to the \code{constant}, \code{powerlaw}, and
+\code{yukawa_born} laws. The \path{softened_gravity} fit is a
+physical-area model with a different unequal-mass scaling, given below.
+A value of \(\sigma/m\) fixes the physical pair area only for the
+single-species equal-mass problem.  It does not, by itself, derive a mixed
+cross section for two different physical species.  The maintained
+whole-object extension uses the explicit symmetric closure
+\[
+ \Sigma_{ij}(u)=\frac{m_i+m_j}{2}s_\chi(u),\qquad
+ K_{ij}=u_{ij}\Sigma_{ij}(u_{ij}).                         \tag{S16a}
+\]
+This law is homogeneous under common refinement and recovers the configured
+equal-mass area exactly.  Those two properties do not make it a
+first-principles mixed-species interaction.  Production material-SIDM
+benchmarks initialize equal masses and elastic scattering leaves them equal.
+If \(m_i,m_j\) are distinct physical species, their microphysical
+\(\Sigma_{ij}(u)\) must be supplied as additional physics.  If they are merely
+unequal numerical sampling weights for one SIDM species, updating both whole
+markers cannot simultaneously reproduce both weighted Boltzmann loss rates
+and conserve represented pair momentum event by event; a dedicated weighted
+DSMC construction is required.  VENUS does not silently claim otherwise.
+
+Under the stated whole-object closure, neither partner is divided into
+equal-mass packets.  The paper-exact pair-sampling algorithm is:
+\begin{enumerate}
+\item Bound every possible \(K_{ij}\) in the shell by \({\cal K}_s\).
+      For a constant \(s_\chi\), the code uses
+      \({\cal K}_s=4v_{\max,s}m_{\max,s}s_\chi\).
+\item Compute the equation-(7) expected trial count and convert it to an
+      integer using the persistent equation-(8) remainders.
+\item Choose two distinct markers uniformly from the shell.
+\item Give both markers fresh random tangential azimuths and compute their
+      relative speed \(u_{ij}\).
+\item Accept the pair with probability \(K_{ij}/{\cal K}_s\).
+\item Scatter each accepted pair elastically in an isotropic outgoing
+      direction.
+\end{enumerate}
+
+The upper bound is
+\[
+ {\cal K}_s\geq\max_{i,j}K_{ij},
+ \qquad u_{ij}=|\bm v_i-\bm v_j|.                          \tag{S16b}
+\]
+The equation-(7) expected count is
+\[
+ \widehat N_{{\rm coll},s}
+ =\binom{N_s}{2}\frac{{\cal K}_s\Delta t}{V_s}
+ =\frac12(N_s-1)n_s{\cal K}_s\Delta t.                     \tag{S17}
+\]
+This is the physical unordered-pair count; self-pairs are excluded.  It
+uses number density because each selected marker is a complete collision
+partner.  Its mass enters through \(\Sigma_{ij}\), not through the pair
+proposal probability.
+
+Paper-exact execution uses \(\lfloor\widehat N_{{\rm coll},s}\rfloor\)
+trials immediately.  Its fractional part is divided equally among the
+shell's persistent particle accumulators \(A_i\).  When
+\(\sum_{i\in s}A_i>1\), one extra trial is taken and \(1/N_s\) is subtracted
+from every \(A_i\) in the shell.  The accumulators remain attached to
+immutable particle IDs as particles change shells and are stored in
+paper-exact restart format version 7.  A selected pair is accepted with
+probability
+\[
+ P_{ij}=
+ \frac{K_{ij}}{{\cal K}_s}.                                \tag{S18}
+\]
+For \(m_i=m_j\) and constant \(s_\chi\), this reduces exactly to
+\(u_{ij}/(4v_{\max,s})\).
+The generic non-paper VENUS path retains the exponential null-collision
+clock and velocity-dependent analytic majorants described below.  It is not
+used for the Frank benchmark.
+
+Analytic majorants are used for every supported law.  For example,
+\[
+ s_\chi(u)=A s_0(u^2+u_0^2)^{-n/2}
+\]
+where \(A=\code{bp_collision_strength}\), \(s_0=\code{bp_sigma0}\),
+\(u_0=\code{bp_sigma_u0}\), and \(n=\code{bp_sigma_n}\),
+has the interior maximum of \(u s_\chi(u)\) at
+\[
+ u_*=\frac{u_0}{\sqrt{n-1}}\quad(n>1),                     \tag{S19}
+\]
+The Born-Yukawa cross section per mass is
+\[
+ s_{\chi,{\rm Y}}(u)=
+ A\frac{4\pi\alpha_\chi^2m_\chi^2}
+ {m_\phi^4[1+(m_\chi u/m_\phi)^2]}.                        \tag{S20}
+\]
+Here \(\alpha_\chi=\code{bp_yukawa_alpha}\),
+\(m_\chi=\code{bp_yukawa_mchi}\), and
+\(m_\phi=\code{bp_yukawa_mphi}\) are numerical input parameters.  Their
+ratio sets a speed scale \(u_{\rm Y}=m_\phi/m_\chi\), and their amplitude
+sets the zero-speed cross section per mass
+\(s_0=4\pi\alpha_\chi^2m_\chi^2/m_\phi^4\).  Thus (S20) is
+\(A s_0/[1+(u/u_{\rm Y})^2]\).  The material collision law interprets
+this output in units of cross section per mass; \code{bp_sigma0} is unused
+for this selection.  The conversion from a microscopic model is given below.
+The product \(u s_{\chi,{\rm Y}}(u)\) has its maximum at
+\(u_*=m_\phi/m_\chi\).
+The constant, softened-gravity, and endpoint values are treated similarly.
+If a sampled kernel exceeds its analytic majorant, the operator raises an
+explicit error before applying collisions.
+
+\paragraph{Converting a microscopic Yukawa model to material-SIDM inputs.}
+\label{sec:yukawa-material-units}
+In natural units \(\hbar=c=1\), let \(m_{\chi,{\rm phys}}\) and
+\(m_{\phi,{\rm phys}}\) be the physical particle and mediator masses, and
+let \(\alpha_{\rm phys}\) be their dimensionless coupling.  The Born
+differential cross section is
+\[
+ \frac{\dd\sigma_{\rm phys}}{\dd\Omega}
+ =\frac{\alpha_{\rm phys}^2m_{\chi,{\rm phys}}^2}
+ {\left[m_{\phi,{\rm phys}}^2+
+ \tfrac12m_{\chi,{\rm phys}}^2u^2(1-\mu)\right]^2},
+ \qquad \mu=\cos\theta.                                  \tag{S20Y1}
+\]
+Here \(u\) is the relative speed in units of \(c\), and
+\(y=(m_{\chi,{\rm phys}}u/m_{\phi,{\rm phys}})^2\) measures the angular
+dependence of the scattering.  The zero-speed total cross section is
+\(\sigma_0=4\pi\alpha_{\rm phys}^2m_{\chi,{\rm phys}}^2/
+m_{\phi,{\rm phys}}^4\).  Integration over solid angle gives the total
+cross section; weighting the same integral by \(1-\mu\) gives the
+momentum-transfer cross section:
+\[
+ \sigma_{\rm tot}=\frac{\sigma_0}{1+y},\qquad
+ \sigma_{\rm T}=\frac{2\sigma_0}{y^2}
+       \left[\ln(1+y)-\frac{y}{1+y}\right].              \tag{S20Y2}
+\]
+Both approach \(\sigma_0\) as \(y\to0\).  The cross section per mass is
+\(s_0=\sigma_0/m_{\chi,{\rm phys}}\), converted to the chosen physical
+area and mass units before supplying a simulation input.
+
+Let \(M_{\rm u}\), \(R_{\rm u}\), and \(V_{\rm u}\) be the simulation's
+mass, length, and speed units.  The required numerical amplitude and speed are
+\[
+ s_{0,{\rm code}}=\frac{M_{\rm u}}{R_{\rm u}^2}s_{0,{\rm phys}},
+ \qquad
+ u_{{\rm Y},{\rm code}}=
+ \frac{c}{V_{\rm u}}\frac{m_{\phi,{\rm phys}}}{m_{\chi,{\rm phys}}}.
+                                                               \tag{S20Y3}
+\]
+Choose any positive numerical \(m_{\chi,{\rm code}}\), set
+\(m_{\phi,{\rm code}}=u_{{\rm Y},{\rm code}}m_{\chi,{\rm code}}\),
+and calibrate the input amplitude by
+\[
+ \alpha_{{\rm code}}=
+ \left(\frac{s_{0,{\rm code}}m_{\phi,{\rm code}}^4}
+ {4\pi m_{\chi,{\rm code}}^2}\right)^{1/2}.               \tag{S20Y4}
+\]
+Using these three numerical values in (S20) gives the intended physical
+cross section per mass in native units.  The scattering angle uses the same
+speed ratio.  The strength \(A\) then multiplies that calibrated law.
+The Eulerian grid collision modules interpret their kernel output as an
+area and require their own area normalization.
+
+\codesource{Material-SIDM Yukawa parameter conversion}
+{\path{cpu/include/ev/common.hpp};
+ \path{cpu/include/ev/finite_angle_boltzmann.hpp}}
+{Constructs the input amplitude and speed scale for equations (S20) and
+ (S20Y3)--(S20Y4); \code{s0_code} and \code{u_y_code} are the converted
+ physical inputs}
+\begin{lstlisting}[language=C++]
+p.bp_yukawa_mchi = 1.0;
+p.bp_yukawa_mphi = u_y_code * p.bp_yukawa_mchi;
+p.bp_yukawa_alpha = std::sqrt(
+    s0_code * std::pow(p.bp_yukawa_mphi, 4)
+    / (4.0 * PI * p.bp_yukawa_mchi * p.bp_yukawa_mchi));
+p.bp_collision_strength = 1.0;
+\end{lstlisting}
+
+\paragraph{Unequal-mass softened-gravity area.}
+The \code{softened_gravity} option is a saturated gravitational
+momentum-transfer fit, not a material cross section per unit mass.  Let
+\[
+ m_{\rm ref}=\code{bp_subhalo_mass},\qquad
+ a_{\rm ref}=\code{bp_subhalo_radius},\qquad
+ \ln\Lambda=\code{bp_coulomb_log}.
+\]
+Here \(m_{\rm ref}\) and \(a_{\rm ref}\) are the reference subhalo mass and
+radius, and \(\ln\Lambda\) is the Coulomb logarithm that represents the
+resolved range of gravitational impact parameters.  Homologous constant-
+density radii are
+\[
+ a_i=a_{\rm ref}\left(\frac{m_i}{m_{\rm ref}}\right)^{1/3},
+ \qquad
+ a_j=a_{\rm ref}\left(\frac{m_j}{m_{\rm ref}}\right)^{1/3},
+ \qquad
+ a_{ij}=\frac{a_i+a_j}{2}.                                \tag{S20a}
+\]
+The reference saturation area is
+\[
+ \Sigma_{{\rm sat},{\rm ref}}=
+ \begin{cases}
+ \code{bp_sigma0},&\code{bp_sigma0}>0,\\
+ 2\pi a_{\rm ref}^2,&\code{bp_sigma0}=0,
+ \end{cases}
+\]
+and the unequal-pair saturation area is
+\[
+ \Sigma_{{\rm sat},ij}
+ =\Sigma_{{\rm sat},{\rm ref}}
+  \left(\frac{a_{ij}}{a_{\rm ref}}\right)^2.              \tag{S20b}
+\]
+Thus, only in this softened-gravity branch, a positive
+\code{bp_sigma0} has dimensions of physical area rather than area per mass.
+The high-speed gravitational amplitude and area are
+\[
+ C_{ij}=4\pi G^2m_{\rm ref}^2\ln\Lambda
+ \left(\frac{m_i+m_j}{2m_{\rm ref}}\right)^2,\qquad
+ \Sigma_{{\rm high},ij}(u)=\frac{C_{ij}}{u^4},            \tag{S20c}
+\]
+where \(G=\code{vp_gravity}\).  The final physical pair area is the harmonic
+interpolation
+\[
+ \boxed{\displaystyle
+ \Sigma_{ij}(u)=
+ \frac{A}{
+  \Sigma_{{\rm sat},ij}^{-1}
+  +\Sigma_{{\rm high},ij}^{-1}(u)}} ,                    \tag{S20d}
+\]
+with \(A=\code{bp_collision_strength}\).  It approaches
+\(A\Sigma_{{\rm sat},ij}\) at low speed and
+\(A C_{ij}u^{-4}\) at high speed.  The associated outgoing direction is
+sampled isotropically; this maintained option is a scalar transfer fit, not a
+resolved gravitational deflection calculation.
+
+\subsubsection{Elastic finite-angle scattering}
+
+For an accepted incoming pair, define
+\[
+ M=m_1+m_2,\qquad
+ \mu_{\rm red}=\frac{m_1m_2}{M},\qquad
+ \bm V=\frac{m_1\bm v_1+m_2\bm v_2}{M},\qquad
+ \bm u=\bm v_1-\bm v_2,\qquad u=|\bm u|.                   \tag{S21}
+\]
+After sampling an outgoing unit relative direction \(\hat{\bm n}\),
+\[
+ \bm v_1'=\bm V+\frac{m_2}{M}u\hat{\bm n},\qquad
+ \bm v_2'=\bm V-\frac{m_1}{M}u\hat{\bm n}.                 \tag{S22}
+\]
+Equation (S22) conserves pair momentum and kinetic energy algebraically:
+\[
+ m_1\bm v_1'+m_2\bm v_2'
+ =m_1\bm v_1+m_2\bm v_2,
+\]
+\[
+ \frac12m_1v_1'^2+\frac12m_2v_2'^2
+ =\frac12m_1v_1^2+\frac12m_2v_2^2.                        \tag{S23}
+\]
+The updated spherical variables are assigned directly:
+\codesource{SphDSMC finite-angle collision update}
+{\path{cpu/include/ev/spherical_dsmc_solver.hpp};
+ \path{cpu/include/ev/spherical_dsmc_collision.hpp}}
+{Maps the momentum- and energy-conserving outgoing three-dimensional velocity
+ back to persistent radial velocity and angular momentum}
+\begin{lstlisting}[language=C++]
+particle.vr = velocities[local].x;
+particle.L = particle.r * std::hypot(
+    velocities[local].y,
+    velocities[local].z);
+\end{lstlisting}
+Equation (S22) supplies the complete direct continuous-velocity update.
+
+For constant, softened power-law, and softened-gravity total cross sections,
+the outgoing relative direction is isotropic.  For Born-Yukawa scattering,
+\[
+ \frac{\dd\sigma}{\dd\Omega}
+ =A\frac{\alpha_\chi^2m_\chi^2}
+ {\left[
+ m_\phi^2+\tfrac12m_\chi^2u^2(1-\mu)
+ \right]^2},\qquad \mu=\cos\theta.                         \tag{S24}
+\]
+The code analytically inverts the cumulative probability in \(\mu\) and
+samples the scattering azimuth uniformly.  Integrating (S24) over
+\(2\pi\,\dd\mu\) gives (S20), fixing the differential-to-total normalization
+used by the sampler.
+
+\subsubsection{Maxwellian equilibrium}
+
+At equilibrium, every collision channel has the same probability as its
+reverse channel.  This equality of forward and reverse rates is called
+detailed balance.  It follows directly from elastic pair conservation.
+
+For equal masses with common mean velocity \(\bm U\) and one-component
+velocity variance \(T\),
+\[
+ f_M(\bm v)\propto
+ \exp\left[-\frac{|\bm v-\bm U|^2}{2T}\right],
+\]
+pair momentum and kinetic-energy conservation imply
+\[
+ f_M(\bm v_1)f_M(\bm v_2)
+ =f_M(\bm v_1')f_M(\bm v_2').                              \tag{S25}
+\]
+Reversing the outgoing relative direction in (S22) recovers the incoming
+pair, and equations (S17)--(S18) sample the physical factor
+\(u\,\dd\sigma/\dd\Omega\).  Detailed balance therefore makes the
+equal-mass Maxwellian an exact stationary distribution of the underlying
+continuous collision process.  For unequal physical object masses, the
+equilibrium product instead uses the mass-weighted exponent derived after
+(PIC35M), with a common thermodynamic temperature.
+The finite-marker realization fluctuates statistically, but its ensemble
+residual decreases with \(N_p\).
+
+For a quantitative equilibrium reference, consider \(N\) equal-mass markers
+of mass \(m_p\) in volume \(V\).  Define
+\[
+ n=\frac{N}{V},\qquad
+ n_{\rm partner}=\frac{N-1}{V},\qquad
+ \rho=nm_p,\qquad
+ \Sigma_0=m_ps_0 ,
+\]
+where \(s_0=\sigma/m\) is the constant cross section per unit mass and
+\(\Sigma_0\) is the physical pair area.  The analytic accepted-event rate per
+volume is
+\[
+ {\cal R}_{\rm event}
+ =\frac12 n\,n_{\rm partner}\Sigma_0\langle u\rangle
+ =\frac12\frac{\rho^2s_0}{m_p}
+  \left(1-\frac1N\right)\langle u\rangle,\qquad
+ \left\langle u\right\rangle=4\sqrt{\frac{T}{\pi}}.         \tag{S26}
+\]
+Here \(T\) is the variance of each Cartesian velocity component in equation
+(S25).  The factor \(1-1/N\) is the exact finite-ensemble exclusion of
+self-pairs.  The sampled rate should approach equation (S26) within its
+Monte--Carlo uncertainty, and independent realizations at successively larger
+\(N_p\) should show the expected \(N_p^{-1/2}\) decrease of the velocity-
+histogram fluctuation.  A fixed numerical value from one random ensemble is
+not a physical calibration.
+
+\subsubsection{Conservation ledgers}
+
+Each persistent marker carries its own fixed represented mass throughout the
+elastic SphDSMC run.  Every operator step writes explicit before/after
+mass-weighted budgets to
+\path{operator_mass_budget.csv}.  The fields include
+\begin{itemize}[itemsep=0.25em]
+\item transport mass and full energy before and after gravity;
+
+\item collision mass before and after scattering;
+
+\item collision radial momentum before and after scattering;
+
+\item collision kinetic energy before and after scattering;
+
+\item maximum pair-level momentum and kinetic-energy residuals.
+\end{itemize}
+The stored global spherical observables are radial momentum and full pair
+kinetic energy.  The tangential azimuth in (S15) supplies an auxiliary local
+realization.
+
+The collision step must preserve marker mass exactly, and its mass-weighted
+pair momentum and kinetic energy must close to floating-point roundoff.
+Transport energy is an integration diagnostic rather than an exact
+kick--drift--kick invariant; it must converge as the gravity timestep is
+reduced.  A physically interpreted run additionally requires
+\(\max_s\Delta r_s/\lambda_s<1\) and zero unresolved LC retries.  These
+requirements belong to every run and are not replaced by one stored benchmark
+number.
+
+\subsubsection{Initial-condition provenance and acceptance checks}
+
+The consuming constant-law task is
+\code{venus_cpu_sidm_sphdsmc_constant}, selected by
+\path{cpu/src/apps/sidm/sphdsmc_constant.cpp}.  In the grid-backed route,
+\code{read_initial_data_rwl} in \path{cpu/include/ev/initial_data.hpp} imports
+an \code{EVICRWL1} object such as
+\path{cpu/examples/initial_data/frank_core_eq2_r1e3_model1e6_originlinear_Nr64_Nw32_NL40.bin}.
+\code{EVICRWL1} is the bounded magic identifier at the start of a versioned
+binary carrier containing the \((r,w,L)\) coordinate grids and the sampled
+distribution array \(f(r,w,L)\); it is a file format, not an evolution
+variable.  Then \code{spherical_dsmc_sample_initial_particles} in
+\path{cpu/include/ev/spherical_dsmc_solver.hpp} samples the in-memory
+\code{std::vector<SphericalDSMCParticle>} that becomes the dynamical state.
+This C++ object is a contiguous variable-length list of the marker records
+defined above.
+
+The solver writes \code{VENUSSPHDSMC1} restart objects beneath the configured
+\path{restart_dir}.  \code{VENUSSPHDSMC1} is the bounded magic identifier for
+the versioned SphDSMC checkpoint format; the checkpoint contains evolution
+time and step metadata together with the persistent marker state and the
+version-specific deterministic collision remainder data.
+A direct marker route is provided by
+\path{cpu/tools/generate_frank_core_spherical_dsmc_restart.py}.  That generator
+writes the same \code{VENUSSPHDSMC1} object consumed through
+\code{--restart-from}, bypassing carrier-grid sampling.
+
+Whichever route is used, validate the file identifier and version, finite
+positive individual masses, unique identifiers, total represented mass,
+radial support, the virial ratio \(Q_{\rm vir}=2K/|W|\), energy diagnostics,
+initial equilibrium drift, collision-shell occupancy, and mean-free-path
+locality.  Repeat the calculation under marker, seed, and timestep refinement;
+agreement of one generated state is not a convergence test.
+
+\subsubsection{Restart format and determinism}
+
+SphDSMC restart formats 6 and 7 store each marker's radius, radial velocity,
+angular momentum, ID, and individual mass as fixed-width native binary values.
+Their header also stores the next collision timestep and a fingerprint of
+the collision settings that generated it.  Version 7 includes the per-particle
+integer+remainder state used by paper-exact collisions.
+
+The next collision limit is part of the evolving numerical state.  After a
+collision stage, the solver computes this limit from that stage's shell
+geometry and retained pair-kernel majorants.  A fresh shell reconstruction
+from the scattered particles can give a different limit, particularly when
+paper-exact scattering changes the largest speed.  Restoring the stored
+limit therefore preserves the next accepted timestep.  The implementation
+selects the stored value before it enters the timestep loop:
+\codesource{SphDSMC collision-clock restoration}
+{\path{cpu/include/ev/spherical_dsmc_solver.hpp}}
+{Restores the carried collision timestep and reconstructs an initial limit
+ for a fresh ensemble or a legacy checkpoint}
+\begin{lstlisting}[language=C++]
+if (restored_collision_dt.has_value()) {
+    next_collision_dt = restored_collision_dt.value();
+} else {
+    const std::vector<SphericalDSMCShell> initial_shells =
+        spherical_dsmc_build_shells(
+            particles, particle_mass, state.global_p,
+            timestep_shell_workspace);
+    next_collision_dt = spherical_dsmc_collision_timestep(
+        initial_shells, state.global_p);
+    if (restart_input_version != 0) {
+        std::cout << "spherical_dsmc legacy restart version="
+                  << restart_input_version
+                  << " has no persisted collision clock; "
+                     "reconstructing the first collision limit\n";
+    }
+}
+\end{lstlisting}
+The fingerprint checks the cross-section law and its parameters, angular
+kernel, collision strength, shell target and floor, collision timestep
+fraction, random seed, and collision mode.  It also includes the gravitational
+constant used by the softened-gravity pair law.  Changing these settings
+requires a separately initialized physical case; an exact continuation
+rejects a mismatched clock.  An infinite positive limit represents an
+inactive collision constraint.
+
+Legacy versions 2--5 remain readable.  Versions 2 and 3 copy their common
+header mass onto every restored marker; versions 4 and 5 already store
+individual masses.  These legacy files initialize the first collision limit
+from the restored ensemble, and metadata records this reconstruction.  Their
+subsequent checkpoints use the complete current state.  This import preserves
+the stored physical ensemble and the available fractional remainders; exact
+reproduction of the missing historical collision clock requires a current
+checkpoint.
+
+The reader validates the bounded magic identifier, supported version,
+nonnegative finite time and safely representable step, initial energy and
+counters, positive finite masses, finite coordinates, nonnegative \(L\), and
+the uniqueness and range of all stable marker IDs.  Before allocating the
+particle vector, it proves that the count fits the version-specific payload.
+The complete payload must end after its declared particle and remainder
+records, and a stored collision limit must be positive and non-NaN.
+Because the writer does not canonicalize byte order or floating-point
+representation, move a checkpoint between machines only when their binary
+representations are compatible; the CSV diagnostics are the portable
+exchange format.
+
+The checkpoint is first written to a temporary file and atomically renamed.
+The random streams are deterministic functions of the base seed, global step,
+and shell index.  With unchanged physical and numerical settings,
+continuation at a natural step boundary preserves the stored stochastic
+state, collision clock, and marker ordering.  The actual-solver regression
+compares six uninterrupted steps with a three-step run followed by three
+resumed steps in both collision modes, including accepted collisions and the
+complete final checkpoint.
+
+\subsubsection{Shared-memory organization and computational scaling}
+
+The module requires one process:
+\codesource{SphDSMC process-layout contract}
+{\path{cpu/Makefile}; \path{cpu/include/ev/parallel.hpp};
+ \path{cpu/include/ev/spherical_dsmc_solver.hpp}}
+{Documents the enforced one-process execution model and assigns parallel work
+ to portable C++ threads or OpenMP threads inside that process}
+\begin{lstlisting}
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=<OpenMP threads>
+export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
+\end{lstlisting}
+The unsuffixed executable uses the portable C++ \code{std::thread} backend;
+the \code{_openmp} executable uses OpenMP.  Both run as one process.  Gravity
+loops are parallel over markers.  Collision shells are disjoint and
+dynamically scheduled over the selected thread backend, giving each marker
+one thread owner during a shell update.
+
+The stochastic work is proportional to the number of physically sampled NTC
+trials.  Each accepted event realizes one continuous outgoing angle and
+directly updates its two markers.  Marker drifts, force evaluations, profile
+deposition, inversion counting, radix histograms, and independent collision
+shells are parallel.  The stable radius merge, enclosed-mass prefix work,
+suffix potential, and memory movement contain serial or memory-bandwidth
+limits, so doubling the thread count need not halve the elapsed time.  For
+\(N_p\) markers, state and sorting scratch require \(O(N_p)\) memory, while
+one ordinary step costs \(O(N_p+N_{\rm trial})\) after sorting, where
+\(N_{\rm trial}\) is the NTC trial count.  Measure a short fixed-work
+strong-scaling run at 1, 2, 4, 8, 16, and 32 threads on the target machine and
+choose the smallest allocation beyond which the elapsed time changes little.
+
+\subsubsection{Configuration block}
+
+A constant-cross-section SphDSMC run begins with the task selectors, physical
+controls, initial-data source, time limits, input/output (I/O) paths, and
+thread count below:
+\codesource{\code{venus_cpu_sidm_sphdsmc_constant}}
+{\path{cpu/src/apps/sidm/sphdsmc_constant.cpp};
+ \path{cpu/include/ev/config.hpp}}
+{Parses the explicit constant-law SphDSMC configuration and rejects task-
+ incompatible physics selections}
+\begin{lstlisting}
+[physics]
+physics_model = boltzmann_poisson
+vp_universe = static
+vp_gravity = 1
+vp_poisson_source = total_density
+vp_orbit_regularization = auto
+vp_orbit_energy_tolerance = 0.01
+vp_orbit_lc_relative_tolerance = 1e-9
+vp_orbit_lc_absolute_tolerance = 1e-12
+vp_orbit_lc_max_steps = 2048
+vp_orbit_lc_max_refinements = 20
+
+[collisions]
+bp_collision_operator = spherical_dsmc
+bp_cross_section = constant
+bp_boltzmann_kernel = isotropic
+bp_collision_strength = 1
+bp_sigma0 = 1
+bp_dsmc_particles = 1000000
+bp_dsmc_total_mass = 1.1252580933331495
+bp_dsmc_shell_particles = 4096
+bp_dsmc_min_shell_particles = 32
+bp_dsmc_collision_epsilon = 1
+bp_dsmc_gravity_eta = 0.01
+bp_dsmc_seed = 5489
+
+[initial_data]
+initial_data = binary_rwl
+initial_data_file = examples/initial_data/frank_core_eq2_r1e3_model1e6_originlinear_Nr64_Nw32_NL40.bin
+custom_ic_normalize_mass = false
+
+[time_integration]
+integrator = semi_lagrangian_kick_drift_kick
+t_end = 0.05
+dt_max = 0.01
+max_steps = 1000000
+
+[output]
+output_dir = output/spherical_dsmc_example
+restart_dir = output/spherical_dsmc_example/restarts
+save_every = 1
+phase_every = 0
+restart_every = 5
+
+[parallelism]
+threads = 8
+\end{lstlisting}
+Because this example selects \code{bp_cross_section = constant},
+\code{bp_sigma0} is interpreted as cross section per unit mass in the chosen
+code units, so the continuum local rate is \(\rho u(\sigma/m)\).  The value
+one above is a runnable dimensionless example.  For
+\code{bp_cross_section = softened_gravity}, however, a positive
+\code{bp_sigma0} is the physical reference saturation area in equation
+(S20b), not a cross section per mass.  A literature benchmark must convert
+its quoted cross section, density, velocity, length, and time into one
+consistent unit system before replacing these values.
+
+Build the constant-cross-section task frontend and run the parameter file from
+the CPU source directory:
+\codesource{\code{venus_cpu_sidm_sphdsmc_constant}}
+{\path{cpu/src/apps/sidm/sphdsmc_constant.cpp};
+ \path{cpu/Makefile}}
+{Builds and runs the fail-closed constant-isotropic SphDSMC task frontend}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+cd VENUS/cpu
+make venus_cpu_sidm_sphdsmc_constant
+./venus_cpu_sidm_sphdsmc_constant --config params.ini
+\end{lstlisting}
+The executable's \code{--help} interface lists the collision, orbit, shell
+and restart controls. A fresh calculation reads its initial distribution;
+a continuation reads the complete persistent-marker restart. The physical
+SIDM demonstrations and saved profiles are described in \path{analysis/README.md}.
+
+\subsubsection{Convergence requirements}
+
+A gravothermal-collapse calculation requires a joint refinement of the
+marker, orbit, collision, and output scales:
+\begin{enumerate}
+\item increase the marker count by factors of two and compare density,
+velocity dispersion, heat flux, collision rate, and core radius;
+\item halve \(\epsilon_{\rm coll}\), the gravity parameter, and the target
+shell population independently, then jointly;
+\item require pair momentum and kinetic energy to close to floating-point
+accuracy, transport energy error to decrease with timestep, all orbit retries
+to resolve, and \(\Delta r_s/\lambda_s<1\) in every collision shell;
+\item compare constant and velocity-dependent kernels with equation (S26),
+detailed balance, the analytic majorants, and the Yukawa differential-to-total
+normalization where applicable;
+\item compare uninterrupted and restarted evolution at a natural step
+boundary and repeat stochastic profile comparisons with independent seeds;
+\item compare with the selected literature density profile through the
+      full quoted dimensionless time;
+\item follow a constant-cross-section Plummer core-formation and core-collapse
+      sequence with the same unit conversion and boundary convention.
+\end{enumerate}

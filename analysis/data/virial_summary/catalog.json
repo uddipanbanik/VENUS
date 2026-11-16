@@ -1,0 +1,107 @@
+{
+  "sources": {
+    "g03_bp": {
+      "file": "g03_bp.csv",
+      "sha256": "05d9b728cb895c24f78f6567bae2962928c87ed9aa8babe3a27144559136be16",
+      "first_time": 0.0,
+      "last_time": 10000.0,
+      "rows": 1002,
+      "kind": "constant-line saved source and resolved physical velocity moments",
+      "metadata_sha256": "f37662386961dd524f90dfdc21b3d4b632921ecbf85068c2fa609efac6d9a4e1"
+    },
+    "g05_bp": {
+      "file": "g05_bp.csv",
+      "sha256": "d060ac105b40a57d09a3932bf75c7400f754c1b65a13d0cd9edb86fc7605d2e5",
+      "first_time": 0.0,
+      "last_time": 10000.0,
+      "rows": 1001,
+      "metadata_sha256": "fd467ae283dadd88658afd8f0b78f9b9ff665e35508b60506da552feaa583bb0",
+      "kind": "constant-line source and resolved physical velocity moments"
+    },
+    "g08_bp": {
+      "file": "g08_bp.csv",
+      "sha256": "815c6a035eb7ec8d767ec2e0d538311694ab4718c60c14ede4511efd4e6b4642",
+      "first_time": 0.0,
+      "last_time": 10000.0,
+      "rows": 1003,
+      "metadata_sha256": "6cb0c5f8157e3a104fa5ae753a762295cebad65a4fc3689c3f0f7d9735d92d29",
+      "kind": "constant-line saved source and resolved physical velocity moments"
+    },
+    "g05_vp": {
+      "file": "g05_vp.csv",
+      "sha256": "d78091127a18b08ede01520d54692b8f6a2a67e057d95d82e2f47a950cb1cd03",
+      "first_time": 0.0,
+      "last_time": 10000,
+      "rows": 1001,
+      "metadata_sha256": "4edb8f27c4d654489c63d11d0aa0587f48246b6a04240ae14f1fa05c34189658",
+      "kind": "constant-line source and resolved physical velocity moments"
+    },
+    "static_g05_bound": {
+      "file": "static_g05_iterative_bound.csv",
+      "sha256": "0c5539dd2d7bc09ffd3dc603aba2cfe694a8f9c634a846b205f4bff3b13c2acc",
+      "kind": "Instantaneous own-potential iterative unbinding at unchanged physical velocities; plot stable membership only; Phi(infinity)=0",
+      "valid_sample_times": [
+        300,
+        800,
+        2000,
+        5000,
+        10000
+      ],
+      "unresolved_times": [
+        0,
+        10,
+        30,
+        100
+      ],
+      "display": "The five converged own-bound measurements are joined by straight segments at their actual times; four unresolved early selections remain excluded."
+    },
+    "gaussian_static_vp": {
+      "file": "gaussian_static_vp.csv",
+      "sha256": "685dbd9e71b8453ef2f91c0fa8220910fb049f29749b257ac7d59bbcca3aa4de",
+      "kind": "Complete-particle physical kinetic and applied halo force moments; background force included once",
+      "rows": 11,
+      "scenario_id": "narrow_gaussian_shell_vp",
+      "scope": "Eleven actual full-particle native snapshots; symbols are measurements and connecting lines guide the eye."
+    },
+    "gaussian_expanding_vp": {
+      "file": "gaussian_expanding_vp.csv",
+      "sha256": "a3114322e181a7fe1a34bc2128bb214ec56bee602a9454a63eb9c0054e8a7f28",
+      "kind": "Complete-particle physical kinetic and applied halo force moments; background force included once",
+      "rows": 11,
+      "scenario_id": "narrow_gaussian_shell_vp",
+      "scope": "Eleven actual full-particle native snapshots; symbols are measurements and connecting lines guide the eye."
+    },
+    "gaussian_static_bound": {
+      "file": "gaussian_static_bound.csv",
+      "sha256": "827aa9c19cc77c04ebdd09c4355370d279947e0868071d099d43deacf01e7dcb",
+      "rows": 1,
+      "valid_sample_times": [
+        10000
+      ],
+      "kind": "One-pass E_full<0 static Gaussian endpoint, with unchanged velocities and reconstructed own gravity.",
+      "selected_mass_fraction": 0.7626838684082031,
+      "selected_ID_sha256": "ec79953f907ea954c40129d33e52475035df531947d6ba59792c755837ebd3af"
+    }
+  },
+  "Q_definition": "2*K_physical/abs(W_phi+(Hdot+H^2)*I)",
+  "physical_scope": "Expanding power-law curves use approved resolved-profile moments. Gaussian curves use emitted complete-particle applied-force moments. The static gamma=.5 curve uses iterative self-bound subsets in their own reconstructed field at five stable snapshots. Cold controls remain a distinct figure.",
+  "static_bound_definition": {
+    "file": "static_g05_iterative_bound.csv",
+    "sha256": "0c5539dd2d7bc09ffd3dc603aba2cfe694a8f9c634a846b205f4bff3b13c2acc",
+    "kind": "Instantaneous own-potential iterative unbinding at unchanged physical velocities; plot stable membership only; Phi(infinity)=0",
+    "valid_sample_times": [
+      300,
+      800,
+      2000,
+      5000,
+      10000
+    ],
+    "unresolved_times": [
+      0,
+      10,
+      30,
+      100
+    ],
+    "display": "The five converged own-bound measurements are joined by straight segments at their actual times; four unresolved early selections remain excluded."
+  }
+}

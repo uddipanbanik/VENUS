@@ -1,0 +1,765 @@
+\section{Relativistic Material Collisions in Spherical Spacetime}
+\hypertarget{sec:relativistic-material-collisions}{}
+\label{sec:relativistic-material-collisions}
+
+The relativistic collision library adds elastic material-particle scattering
+to the Schwarzschild-coordinate (SC) and advanced Eddington--Finkelstein (EF)
+representations developed above. A material particle has rest mass
+\(m_\chi>0\). A statistical packet carries represented rest mass \(W\), so
+it represents \(q=W/m_\chi\) particles. Its momentum and its statistical
+weight have separate physical roles. Local scattering changes momentum,
+while conservative packet splitting preserves represented particle number
+and rest mass.
+
+The library first evaluates collision rates on the chosen spacetime slice,
+then scatters each accepted pair in a local orthonormal frame. Persistent cell
+clocks carry coordinate time, remaining proposal waiting depth, and random
+state between coupled transport and collision steps. The constant-cross-section spherical sampler
+and local amplitude interface have distinct entry points. The derivation
+below establishes their measures and normalizations before introducing those
+source calls.
+
+\subsection{Invariant equation and represented mass}
+
+Use signature \((-+++)\), geometrized units \(G=c=1\), and physical
+four-momentum \(k^\alpha=m_\chi u^\alpha\), where
+\(u_\alpha u^\alpha=-1\). Let \(f_N(x,k)\) be the scalar number
+distribution in physical momentum. In a local orthonormal frame,
+\(E=k^{\hat0}>0\), and
+\[
+ \dd\Pi=\frac{\dd^3 k}{E},\qquad
+ J^\alpha=\int k^\alpha f_N\dd\Pi,\qquad
+ T^{\alpha\beta}=\int k^\alpha k^\beta f_N\dd\Pi.
+ \tag{REB1}
+\]
+The invariant particle count crossing an oriented hypersurface is
+\(\dd N=f_N k^\alpha\dd\Sigma_\alpha\dd\Pi\), with the surface
+orientation chosen to make the future crossing count positive.
+For a spacelike slice this is equivalently
+\(\dd N=f_N(-k\cdot n)\dd\Sigma\dd\Pi\), where \(n\) is its
+future unit normal. These expressions supply the different SC and EF
+counting measures.
+
+For classical elastic \(2\to2\) scattering at one spacetime event, the
+Boltzmann equation is
+\[
+ \begin{split}
+ k^\alpha\partial_\alpha f_N
+ -\Gamma^i{}_{\alpha\beta}k^\alpha k^\beta
+       \frac{\partial f_N}{\partial k^i}
+ &=C_N[f_N],\\
+ C_N[f_{N1}]&=\int\dd\Pi_2\,\mathcal F
+   \int\dd\Omega\,\frac{\dd\Sigma}{\dd\Omega}
+       (f_{N3}f_{N4}-f_{N1}f_{N2}),\\
+ \mathcal F&=\sqrt{(k_1\cdot k_2)^2-m_\chi^4}.
+ \end{split}\tag{REB2}
+\]
+Here \(\Gamma^i{}_{\alpha\beta}\) is the coordinate connection, and
+\(\dd\Sigma/\dd\Omega\) is the physical differential cross section. The solid angle \(\dd\Omega\)
+specifies the outgoing relative momentum in the pair centre-of-momentum frame.
+The connection governs transport between events. At a collision event, a
+local tetrad supplies an orthonormal observer frame in which the two incoming
+momenta are scattered. The collision integral uses the metric at that same
+event. The supplied
+interaction obeys inverse-scattering reciprocity, which gives the stated
+gain-minus-loss form. The spherical sampler uses
+\(\dd\Sigma/\dd\Omega=\Sigma/(4\pi)\), with constant material area
+\(\Sigma\) in code units. The M\o ller flux factor
+\(\mathcal F/(E_1E_2)\) can exceed one. Each particle velocity still
+has magnitude below one.
+
+The preceding EV chapters use specific momentum \(u=k/m_\chi\) and a
+represented-rest-mass distribution \(f\). Changing momentum variables
+gives
+\[
+ f=m_\chi^4 f_N,\qquad
+ \dd\Pi=m_\chi^2\dd\Pi_u,\qquad
+ \mathcal F=m_\chi^2\mathcal F_u,\qquad
+ \mathcal F_u=\sqrt{(u_1\cdot u_2)^2-1}.
+ \tag{REB3}
+\]
+Consequently \(L_u[f]=m_\chi^{-1}C_u[f]\), where \(L_u\) is the
+transport operator on the left of (REB2), expressed in specific momentum and \(C_u\) has the form in (REB2)
+with \(\dd\Pi_u,\mathcal F_u,f\). The material coefficient in this
+equation is therefore \(\Sigma/m_\chi\). The implemented stress retains
+the same rest-mass packet weights as the EV solver.
+
+\subsection{SC proper volume and collision rate}
+
+Schwarzschild coordinate time is \(\tau\). A stationary local observer
+measures proper interval \(e^\mu\dd\tau\). In the SC metric, the local
+specific radial momentum is \(w\), and
+\(\eta=L^2/2\) uses specific angular momentum \(L\). Define
+\(\epsilon=\sqrt{1+w^2+2\eta/r^2}\). The slice normal measures energy
+\(E=m_\chi\epsilon\), and \(u^\tau=e^{-\mu}\epsilon\).
+Dividing the invariant equation by \(u^\tau\) gives
+\[
+ \begin{split}
+ \partial_\tau f
+ +e^{\mu-\lambda}\frac{w}{\epsilon}\partial_r f
+ -\left[\lambda_\tau w+e^{\mu-\lambda}\mu_r\epsilon
+       -e^{\mu-\lambda}\frac{2\eta}{r^3\epsilon}\right]
+       \partial_w f
+ =\frac{e^\mu}{m_\chi\epsilon}C_u[f].
+ \end{split}\tag{REB4}
+\]
+Writing \(\beta\) for tangential momentum azimuth gives
+\(\dd\Pi_u=\dd w\dd\eta\dd\beta/(r^2\epsilon)\).
+Integration over position angles and \(\beta\) yields represented rest
+mass \(\dd M_{\rm rest}=8\pi^2e^\lambda f\dd r\dd w\dd\eta\).
+
+In a homogeneous proper cell of volume \(V\), the empirical number
+measure is \(f_N\dd\Pi=\sum_i q_i\delta_i/(VE_i)\). Multiplication
+by proper four-volume \(e^\mu V\dd\tau\) then gives the unordered
+physical pair rate \(q_iq_j e^\mu\Sigma\mathcal F/(VE_iE_j)\).
+An accepted packet event scatters \(\min(q_i,q_j)\) particles from each
+packet. Its event hazard per SC coordinate time is thus
+\[
+ \Gamma_{ij}^{\rm SC}
+ =\max(W_i,W_j)\frac{\Sigma}{m_\chi}
+   \frac{e^\mu\mathcal F_u}{V\epsilon_i\epsilon_j}.
+ \tag{REB5}
+\]
+The finite radial-cell adapter computes \(V\) and the volume-averaged
+lapse from the reconstructed SC metric. The reported metric ranges sample
+its eight quadrature points. This is a homogeneous-cell approximation.
+Its empty-Minkowski limit gives
+\(V=4\pi(r_{\rm R}^3-r_{\rm L}^3)/3\) and mean lapse one.
+
+\subsection{EF null flux and collision rate}
+
+For \(\dd s^2=-ab^2\dd v^2+2b\dd v\dd r+r^2\dd\Omega^2\), retain
+the preceding EF chapter's positive specific canonical momentum \(P=u_r\).
+Define \(\chi=1+2\eta/r^2\). The future mass shell and the prescribed
+radial observer are
+\[
+ \begin{gathered}
+ u_v=-\frac b2\left(aP+\frac\chi P\right),\qquad
+ u^v=\frac P b,\qquad
+ u^r=\frac12\left(aP-\frac\chi P\right),\\
+ U=\frac1b\partial_v+\frac{a-1}{2}\partial_r,\qquad
+ e_{\hat r}=\frac1b\partial_v+\frac{a+1}{2}\partial_r.
+ \end{gathered}\tag{REB6}
+\]
+For finite \(a\) and \(b>0\), this observer is unit timelike and its
+radial vector is unit spacelike, including at \(a=0\). It measures
+\[
+ \epsilon_U=\frac12\left(P+\frac\chi P\right),\qquad
+ w_U=\frac12\left(P-\frac\chi P\right),\qquad
+ \boldsymbol{k}_\perp=
+   \frac{m_\chi\sqrt{2\eta}}r(\cos\beta,\sin\beta).
+ \tag{REB7}
+\]
+The physical energy and radial momentum are \(m_\chi\epsilon_U\) and
+\(m_\chi w_U\). Projecting an outgoing momentum gives
+\(P=(E+k^{\hat r})/m_\chi\). The code evaluates the equivalent
+\(P=\chi/(\epsilon_U-w_U)\) for negative \(w_U\) to avoid cancellation.
+
+The Jacobian \(\dd w_U/\dd P=\epsilon_U/P\) determines both the
+shell measure and the null-slice count:
+\[
+ \dd\Pi_u=\frac{\dd P\dd\eta\dd\beta}{r^2P},\qquad
+ \dd M_{\rm rest}=8\pi^2 f\dd r\dd P\dd\eta.
+ \tag{REB8}
+\]
+The directed null surface has count
+\(\dd N=J^v b r^2\dd r\dd\Omega\). With coordinate shell volume
+\(V_0=4\pi r^2\dd r\), a packet contributes
+\(J^v=q/(bV_0)\). Its empirical invariant momentum measure is therefore
+\(f_N\dd\Pi=\sum_iq_i\delta_i/(bV_0k_i^v)\). Combining this measure
+with invariant four-volume \(bV_0\dd v\) gives
+\[
+ \Gamma_{ij}^{\rm EF}
+ =\max(W_i,W_j)\frac{\Sigma}{m_\chi}
+   \frac{b\mathcal F_u}{V_0P_iP_j}.
+ \tag{REB9}
+\]
+The EF rate is therefore normalized by the particles crossing a null slice.
+The SC rate in (REB5) instead counts particles within a proper spatial cell.
+These distinct counts explain the different coordinate-time prefactors.
+
+The coordinate Boltzmann equation follows by dividing by \(u^v=P/b\):
+\[
+ \begin{split}
+ \partial_v f+\frac b2\left(a-\frac\chi{P^2}\right)\partial_r f
+ +\left[-\frac P2(ab_r+ba_r)-\frac{b_r\chi}{2P}
+           +\frac{2b\eta}{Pr^3}\right]\partial_P f
+ =\frac b{m_\chi P}C_u[f].
+ \end{split}\tag{REB10}
+\]
+The same null measure gives the implemented constraint sources
+\[
+ T_{rr}=\frac1{V_0}\sum_iW_iP_i,\qquad
+ S=\frac1{V_0}\sum_iW_i\frac{\chi_i}{P_i}.
+ \tag{REB11}
+\]
+At one radius, elastic four-momentum conservation preserves both sums
+instantaneously. The changed momentum distribution subsequently changes
+transport and the other stress components. Passive-coordinate tests compare
+the same physical event, observer and surface. SC and EF time slices are
+different physical surfaces, so their coordinate-time hazards describe
+their respective crossing ensembles.
+
+\subsection{Coupled inputs, streaming and cell geometry}
+
+The entry points are \code{eb::advance_sc} and \code{eb::advance_ef} in
+\path{cpu/include/ev/relativistic_boltzmann/coupled_evolution.hpp}.
+Their state contains the marker ensemble, global coordinate time, one
+persistent collision clock per radial cell, and the next unused packet
+identifier. The caller supplies the field grid, EV evolution controls and
+\code{eb::SplitControls}. The latter owns material mass, constant code
+area, packet/proposal limits and the finite-cell policy.
+
+The maintained state definition makes this ownership explicit:
+\par\medskip\noindent
+\begin{minipage}{\linewidth}
+\codesource{Coupled material state}{\path{cpu/include/ev/relativistic_boltzmann/coupled_evolution.hpp}, lines 28--36}{Carry the marker ensemble and all persistent clocks on the selected slice}
+\begin{lstlisting}[language=C++,showstringspaces=false]
+template<class Marker> struct CoupledState {
+    std::vector<Marker> markers;
+    std::vector<Cell> collision_clocks;
+    double time = 0;
+    std::uint64_t next_id = 1;
+};
+
+using SCState = CoupledState<ev::WeightedPICMarker>;
+using EFState = CoupledState<ev::eddington_finkelstein::Marker>;
+\end{lstlisting}
+\end{minipage}
+
+A caller supplies its physical distribution, material mass and area in
+\code{SplitControls::model}, and sizes \code{collision_clocks} to the field-cell
+count. Each cell starts at the global coordinate time with a recorded random
+state, and \code{next_id} exceeds every input identifier. The default local
+policy uses a co-located population. Setting
+\code{allow_radial_cell_approximation=true} declares the finite homogeneous
+radial-cell approximation. The caller then invokes
+\code{eb::advance_sc} with the state, requested interval, grid, evolution
+options and split controls, or its EF counterpart.
+Both require the isolated vacuum outer-boundary guard. EF initial data are
+constructed on the chosen null surface using the transformation derived in
+the preceding chapter.
+
+Each entry point first copies the caller's state and advances the
+maintained self-consistent EV solver. Its returned \code{accepted_dt}
+is the collision exposure, including any shortening by a transport retry.
+Thus SC exposure is a Schwarzschild coordinate interval and EF exposure
+is an advanced-time interval. The endpoint field remains fixed throughout
+the collision suboperator. This streaming--collision composition is
+first order. A zero area or zero accepted interval returns the direct EV
+update while advancing the persistent coordinate clocks consistently.
+
+The SC streaming call is:
+\par\medskip\noindent
+\begin{minipage}{\linewidth}
+\codesource{Self-consistent SC streaming}{\path{cpu/include/ev/relativistic_boltzmann/coupled_evolution.hpp}, lines 108--115}{Use the accepted EV update and retain the direct collision-off control}
+\begin{lstlisting}[language=C++,showstringspaces=false]
+    out.streaming = ev::advance_weighted_einstein_vlasov_pic_self_consistent(s.markers,dt,grid,evolution);
+    out.field = out.streaming.endpoint_field;
+    if (c.model.cross_section == 0 || out.streaming.accepted_dt == 0) {
+        s.time += out.streaming.accepted_dt;
+        for (auto& clock : s.collision_clocks) clock.coordinate_time = s.time;
+        caller = std::move(s);
+        return out;
+    }
+\end{lstlisting}
+\end{minipage}
+
+The EF entry point obtains its accepted interval from the maintained null
+streaming update:
+\par\medskip\noindent
+\begin{minipage}{\linewidth}
+\codesource{Self-consistent EF streaming}{\path{cpu/include/ev/relativistic_boltzmann/coupled_evolution.hpp}, lines 185--192}{Use the accepted advanced-time interval and preserve the direct collision-off branch}
+\begin{lstlisting}[language=C++,showstringspaces=false]
+    out.streaming = ef::advance_self_consistent(s.markers,dv,grid,evolution);
+    out.field = out.streaming.endpoint_field;
+    if (c.model.cross_section == 0 || out.streaming.accepted_dt == 0) {
+        s.time += out.streaming.accepted_dt;
+        for (auto& clock : s.collision_clocks) clock.coordinate_time = s.time;
+        caller = std::move(s);
+        return out;
+    }
+\end{lstlisting}
+\end{minipage}
+
+The streamed radius determines current cell membership through a binary
+search of increasing field faces. The method fills each containing cell's packet list directly. Marker identifiers and source labels retain their own
+meaning. This assignment supplies local collision partners, while WPIC
+gravity continues to use deposited stress on the field mesh. The incoming
+SC material markers must be active with zero unresolved subhalo internal
+energy and dispersion. EF retains every active material marker.
+\par\medskip\noindent
+\begin{minipage}{\linewidth}
+\codesource{Current-radius cell assignment}{\path{cpu/include/ev/relativistic_boltzmann/coupled_evolution.hpp}, lines 57--62}{Find the containing radial cell after the accepted drift}
+\begin{lstlisting}[language=C++,showstringspaces=false]
+inline std::size_t radial_cell(double r, const ev::WeightedPICFieldGrid& grid) {
+    const auto upper = std::upper_bound(grid.mesh.edge.begin(),grid.mesh.edge.end(),r);
+    rb::require(upper != grid.mesh.edge.begin() && r < grid.mesh.edge.back(),
+                "Matter reached the isolated collision-domain boundary.");
+    return static_cast<std::size_t>(upper-grid.mesh.edge.begin()-1);
+}
+\end{lstlisting}
+\end{minipage}
+
+Before refilling each cell's packets, the code checks that its coordinate
+clock equals the global time. Clearing membership preserves its random
+state, residual optical depth, carried number-weight bound and counters:
+\par\medskip\noindent
+\begin{minipage}{\linewidth}
+\codesource{Persistent clock ownership}{\path{cpu/include/ev/relativistic_boltzmann/coupled_evolution.hpp}, lines 84--93}{Refill membership while retaining sampler state}
+\begin{lstlisting}[language=C++,showstringspaces=false]
+inline void prepare_clocks(CoupledState<Marker>& s, const ev::WeightedPICFieldGrid& grid) {
+    rb::require(s.collision_clocks.size() == grid.radius.size(),"One persistent collision clock per cell is required.");
+    for (auto& clock : s.collision_clocks) {
+        rb::require(clock.coordinate_time == s.time,"The material and collision clocks disagree.");
+        // Refill packet membership from the transported population below.
+        // Random state, residual optical depth and the carried majorant persist.
+        clock.packets.clear();
+    }
+}
+
+\end{lstlisting}
+\end{minipage}
+
+An entering packet raises the cell's carried \(q_{\max}\) when needed.
+For SC, eight-point radial Gauss--Legendre quadrature of the endpoint
+metric supplies proper volume \(V=\int4\pi r^2e^\lambda\dd r\) and
+mean lapse \(V^{-1}\int e^\mu\dd V\). Its sampled ranges describe those
+quadrature nodes. Each occupied cell then uses proper volume and mean lapse from that
+endpoint field. The following call advances its persistent collision clock
+by the returned accepted interval.
+\par\medskip\noindent
+\begin{minipage}{\linewidth}
+\codesource{SC cell exposure}{\path{cpu/include/ev/relativistic_boltzmann/coupled_evolution.hpp}, lines 138--146}{Use endpoint geometry and the actual accepted coordinate interval}
+\begin{lstlisting}[language=C++,showstringspaces=false]
+        const auto geometry = rb::sc_cell_geometry(grid,out.streaming.endpoint_field,i);
+        const auto g = collision_geometry(Slice::schwarzschild,geometry.proper_volume,
+            geometry.mean_lapse,geometry.outer_radius-geometry.inner_radius,c);
+        const auto before = cell.collisions;
+        const auto nonlocal = cell.radially_nonlocal_collisions;
+        advance_cell(cell,out.streaming.accepted_dt,c.model,g);
+        out.collisions += cell.collisions-before;
+        out.nonlocal_collisions += cell.radially_nonlocal_collisions-nonlocal;
+        s.next_id = cell.next_id;
+\end{lstlisting}
+\end{minipage}
+
+
+
+For EF, the code uses the exact coordinate shell volume
+\(V_0=4\pi(r_{i+1}^3-r_i^3)/3\) and the endpoint value of \(b\) at
+that cell's centre. The null momentum factors supply the remaining flux
+conversion in (REB9):
+\par\medskip\noindent
+\begin{minipage}{\linewidth}
+\codesource{EF endpoint geometry and exposure}{\path{cpu/include/ev/relativistic_boltzmann/coupled_evolution.hpp}, lines 211--217}{Use coordinate volume and the endpoint centre value of b for the accepted interval}
+\begin{lstlisting}[language=C++,showstringspaces=false]
+        const double b = out.streaming.endpoint_field.metric.b[i];
+        const double V0 = grid.mesh.shell_volume[i];
+        const auto g = collision_geometry(Slice::advanced_null,V0,b,
+            grid.mesh.edge[i+1]-grid.mesh.edge[i],c);
+        const auto before = cell.collisions;
+        const auto nonlocal = cell.radially_nonlocal_collisions;
+        advance_cell(cell,out.streaming.accepted_dt,c.model,g);
+\end{lstlisting}
+\end{minipage}
+
+\subsection{Proposal clock, conservative update and source feedback}
+
+Let \(N\) be the current packet count and \(q_{\max}\) a carried upper
+bound on packet number weight. Splitting never increases a packet's
+weight. On SC set \(D_{\max}=1\). On EF recompute
+\(D_{\max}=\max_i(\epsilon_{Ui}/P_i)\) after every accepted state
+change. The implementation evaluates this angle-independent bound at
+the start of every proposal loop. The inequality
+\(\mathcal F_u/(P_iP_j)\leq2D_{\max}^2\) provides a valid EF
+envelope. The current momenta therefore determine the EF rate bound.
+With \((A,V)=(e^\mu,V)\) on SC and \((b,V_0)\) on EF, the proposal
+rate and uniform-unordered-pair acceptance are
+\[
+ \begin{split}
+ R&=\frac{A\Sigma}{V}q_{\max}N(N-1)D_{\max}^2,\\
+ \mathcal P_{ij}&=\frac{\max(q_i,q_j)}{q_{\max}}
+       \frac{B_{ij}}{2D_{\max}^2},\qquad
+ B_{ij}=\begin{cases}
+  \mathcal F_u/(\epsilon_i\epsilon_j),&\mathrm{SC},\\
+  \mathcal F_u/(P_iP_j),&\mathrm{EF}.
+ \end{cases}
+ \end{split}\tag{REB12}
+\]
+Multiplying by the unordered selection probability \(2/[N(N-1)]\)
+recovers (REB5) or (REB9). The factor for unordered incoming pairs is
+therefore already accounted for. The persistent optical depth starts at
+\(-\ln U\), where \(U\) is uniform on \((0,1)\). A waiting interval
+consumes \(R\Delta t\). Residual optical depth and random-generator
+state persist across calls.
+
+Write \(\mathcal T\) for carried optical depth and \(t\) for the selected
+SC or EF coordinate clock. For an unfinished interval of length \(h\), the
+discrete clock update is
+\[
+ (t,\mathcal T)\longmapsto
+ \begin{cases}
+ (t+h,\mathcal T-Rh),&\mathcal T>Rh,\\
+ (t+\mathcal T/R,-\ln U'),&\mathcal T\leq Rh.
+ \end{cases}\tag{REB12a}
+\]
+The second branch processes one proposal before drawing its next optical
+depth \(-\ln U'\). An accepted collision can change the next EF envelope,
+so the loop recomputes its rate before spending the remaining exposure.
+\par\medskip\noindent
+\begin{minipage}{\linewidth}
+\codesource{Proposal rate and carried optical depth}{\path{cpu/include/ev/relativistic_boltzmann/spherical_collisions.hpp}, lines 178--192}{Consume only the available coordinate-time exposure}
+\begin{lstlisting}[language=C++,showstringspaces=false]
+        const double n = static_cast<double>(s.packets.size());
+        // Unordered pair count n(n-1)/2 and the flux envelope 2 Dmax^2 produce
+        // the n(n-1) factor. The time factor is the SC lapse or EF b, and volume
+        // is respectively proper spatial volume or null-slice coordinate volume.
+        const double rate = g.time_factor*model.cross_section/g.volume
+            *s.number_majorant*n*(n-1)*Dmax*Dmax;
+        rb::require(rate > 0 && std::isfinite(rate),"Unrepresentable slice collision majorant.");
+        if (s.optical_depth < 0) s.optical_depth = -std::log(s.random.uniform());
+        const double wait = s.optical_depth/rate;
+        // Spend only the optical depth covered by this frozen interval. The
+        // remaining depth survives transport and cell rebinding at the next step.
+        if (wait > end-s.coordinate_time) {
+            s.optical_depth -= rate*(end-s.coordinate_time);
+            break;
+        }
+\end{lstlisting}
+\end{minipage}
+
+The next excerpt chooses two distinct packets, samples their tangential
+azimuths and applies the slice factor from (REB12). The integer sampler uses rejection to keep each index uniform, then maps
+the second index around the first. Two independent tangential azimuths
+lift the selected spherical momenta to physical local four-momenta. A
+fresh independent uniform draw tests acceptance. These draws produce
+uniform unordered pairs for the identical material interaction.
+\par\medskip\noindent
+\begin{minipage}{\linewidth}
+\codesource{Pair proposal and acceptance}{\path{cpu/include/ev/relativistic_boltzmann/spherical_collisions.hpp}, lines 197--216}{Reject a flux-envelope violation before changing packet momenta}
+\begin{lstlisting}[language=C++,showstringspaces=false]
+        const std::size_t i = rb::random_index(s.random,s.packets.size());
+        std::size_t j = rb::random_index(s.random,s.packets.size()-1);
+        if (j >= i) ++j;
+        const Packet a = s.packets[i];
+        const Packet b = s.packets[j];
+        // Independent tangential azimuths sample the spherical distribution at
+        // the representative event. Each lifted momentum still has material
+        // mass m_chi, regardless of the packet rest weight.
+        const rb::Four ka = lift(a,model,g.slice,2*rb::pi*s.random.uniform());
+        const rb::Four kb = lift(b,model,g.slice,2*rb::pi*s.random.uniform());
+        const double factor = pair_factor(a,b,ka,kb,model,g);
+        s.maximum_null_flux_factor = std::max(s.maximum_null_flux_factor,
+            g.slice == Slice::advanced_null ? factor : 0);
+        // The number-weight ratio and exact slice flux remove the conservative
+        // proposal envelope. The bound must hold before the random accept/reject
+        // draw; an exceeded envelope stops the transaction.
+        const double probability = std::max(a.rest_weight,b.rest_weight)/(model.material_mass*s.number_majorant)
+            *factor/(2*Dmax*Dmax);
+        rb::require(probability >= 0 && probability <= 1,"Slice flux envelope was exceeded.");
+        if (s.random.uniform() < probability) {
+\end{lstlisting}
+\end{minipage}
+
+\par\medskip\noindent
+\begin{minipage}{\linewidth}
+\codesource{SC and EF pair flux}{\path{cpu/include/ev/relativistic_boltzmann/spherical_collisions.hpp}, lines 146--151}{Convert the same local invariant flux to the selected slice rate}
+\begin{lstlisting}[language=C++,showstringspaces=false]
+inline double pair_factor(const Packet& a, const Packet& b, rb::Four ka, rb::Four kb,
+                          const Model& model, const Geometry& g) {
+    const double F = rb::invariant_flux(ka,kb);
+    return g.slice == Slice::schwarzschild ? F/(ka.t*kb.t)
+        : F/(model.material_mass*model.material_mass*a.radial*b.radial);
+}
+\end{lstlisting}
+\end{minipage}
+
+For an accepted event, the code forms the total physical momentum
+\(K^\alpha=k_i^\alpha+k_j^\alpha\), its invariant
+\(s=-K^\alpha K_\alpha\), and its centre-of-momentum velocity
+\(\boldsymbol V=\boldsymbol K/K^0\). Two independent uniform draws give
+\(\cos\vartheta=2U-1\) and \(\varphi=2\pi U'\), defining the isotropic
+unit vector \(\boldsymbol n_*\). Set
+\(\gamma_V=(1-|\boldsymbol V|^2)^{-1/2}\). Transforming the spacelike
+vector \((0,\boldsymbol n_*)\) to the original local frame gives
+\[
+ n^0=\gamma_V\boldsymbol V\cdot\boldsymbol n_*,\qquad
+ \boldsymbol n=\boldsymbol n_*+
+ \frac{\gamma_V-1}{|\boldsymbol V|^2}
+   (\boldsymbol V\cdot\boldsymbol n_*)\boldsymbol V.
+ \tag{REB12b}
+\]
+At \(\boldsymbol V=0\), the continuous limit is
+\(n^\alpha=(0,\boldsymbol n_*)\). The unit total momentum is
+\(U_K^\alpha=K^\alpha/\sqrt s\), and the centre-of-momentum magnitude is
+\(q_*=\mathcal F/\sqrt s=\sqrt{s/4-m_\chi^2}\). The code constructs
+\[
+ k_3^\alpha=\frac{\sqrt s}{2}U_K^\alpha+q_*n^\alpha,\qquad
+ k_4^\alpha=\frac{\sqrt s}{2}U_K^\alpha-q_*n^\alpha.
+ \tag{REB12c}
+\]
+The relations \(n\cdot U_K=0\), \(n\cdot n=1\), and
+\(U_K\cdot U_K=-1\) give \(k_3^2=k_4^2=-m_\chi^2\) and
+\(k_3+k_4=K\). The implementation evaluates the outgoing energy from
+its spatial momentum and checks the floating-point projection against
+this covariant construction. These operations are in
+\path{relativistic_collision.hpp}, \code{pair_geometry},
+\code{scatter_isotropic} and \code{scatter_with_direction}. It scatters represented weight \(W_{\min}\) in each packet
+and retains a larger incoming packet's unscattered remainder. This update
+preserves represented number and local four-momentum for unequal weights.
+Packet-cap, flux-envelope and conditioning failures reject the transaction
+before replacing the caller's state.
+
+\par\medskip\noindent
+\begin{minipage}{\linewidth}
+\codesource{Centre-of-momentum outgoing pair}{\path{cpu/include/ev/relativistic_boltzmann/relativistic_collision.hpp}, lines 184--187}{Form both physical outgoing momenta before the guarded mass-shell projection}
+\begin{lstlisting}[language=C++,showstringspaces=false]
+    const Four first = g.energy1_cm*g.unit_total+g.momentum_cm*direction;
+    const Four second = g.energy2_cm*g.unit_total-g.momentum_cm*direction;
+    const Four first_shell = on_shell(m1,first.p);
+    const Four second_shell = on_shell(m2,second.p);
+\end{lstlisting}
+\end{minipage}
+
+
+For an accepted event, the represented-mass update is
+\[
+ W_i'=W_j'=\min(W_i,W_j),\qquad
+ W_{\rm rem}=|W_i-W_j|.
+ \tag{REB12d}
+\]
+The remainder carries the larger incoming packet's momentum. The two
+scattered packets carry the outgoing pair momenta, so their represented
+four-momentum plus the remainder equals the incoming represented total.
+\par\medskip\noindent
+\begin{minipage}{\linewidth}
+\codesource{Elastic event and conservative weight split}{\path{cpu/include/ev/relativistic_boltzmann/spherical_collisions.hpp}, lines 219--234}{Scatter the common represented weight and preserve the untouched remainder}
+\begin{lstlisting}[language=C++,showstringspaces=false]
+            const auto out = rb::scatter_isotropic(model.material_mass,ka,model.material_mass,kb,s.random);
+            // Scatter the equal rest weight min(W1,W2) from both packets. A heavier
+            // packet keeps a positive remainder with the incoming momentum and a new
+            // ID. This preserves represented rest mass and weighted local four-momentum.
+            const double scattered_weight = std::min(a.rest_weight,b.rest_weight);
+            s.packets[i].rest_weight = scattered_weight;
+            s.packets[j].rest_weight = scattered_weight;
+            project(s.packets[i],out.first,model,g.slice);
+            project(s.packets[j],out.second,model,g.slice);
+            if (a.rest_weight != b.rest_weight) {
+                rb::require(s.next_id < std::numeric_limits<std::uint64_t>::max(),"Packet ID overflow.");
+                auto remainder = a.rest_weight > b.rest_weight ? a : b;
+                remainder.rest_weight -= scattered_weight;
+                remainder.id = s.next_id++;
+                s.packets.push_back(remainder);
+            }
+\end{lstlisting}
+\end{minipage}
+
+Projection stores specific radial and tangential momenta in the maintained
+marker convention. In the inward EF branch the reciprocal expression
+preserves positive canonical momentum while avoiding a subtraction of
+nearly equal energies.
+\par\medskip\noindent
+\begin{minipage}{\linewidth}
+\codesource{Specific-momentum projection}{\path{cpu/include/ev/relativistic_boltzmann/spherical_collisions.hpp}, lines 84--94}{Return the local outgoing momentum to SC or positive EF canonical variables}
+\begin{lstlisting}[language=C++,showstringspaces=false]
+    const double w = k.p.x/model.material_mass;
+    const double transverse2 = (k.p.y*k.p.y+k.p.z*k.p.z)/(model.material_mass*model.material_mass);
+    p.eta = 0.5*p.r*p.r*transverse2;
+    if (slice == Slice::schwarzschild) {
+        p.radial = w;
+    } else {
+        const double epsilon = k.t/model.material_mass;
+        p.radial = w >= 0 ? epsilon+w : (1+transverse2)/(epsilon-w);
+        rb::require(p.radial > 0 && std::isfinite(p.radial),"EF projection lost the future shell.");
+    }
+}
+\end{lstlisting}
+\end{minipage}
+
+
+
+After either acceptance or rejection, a fresh exponential optical depth
+starts the next proposal. Empty cells, one-packet cells and zero-area
+calls advance their coordinate clocks without collision draws. The local
+clock update is literal:
+\par\medskip\noindent
+\begin{minipage}{\linewidth}
+\codesource{Renewal after every proposal}{\path{cpu/include/ev/relativistic_boltzmann/spherical_collisions.hpp}, lines 246--250}{Renew after accepted or rejected proposals and commit the local clock}
+\begin{lstlisting}[language=C++,showstringspaces=false]
+        s.optical_depth = -std::log(s.random.uniform());
+    }
+    s.coordinate_time = end;
+    validate(s,model,g);
+    caller = std::move(s);
+\end{lstlisting}
+\end{minipage}
+
+An unequal-weight remainder receives a new identifier. Its ancestor points
+to the incoming marker record, so auxiliary properties and source labels
+survive replacement. The next unused identifier advances across the whole
+cell traversal. The caller owns its persistence together with every cell
+clock and the global transport state.
+
+\subsection{Outgoing stress, constraints and transaction acceptance}
+
+After all cell batches have supplied outgoing markers, a new constraint
+solve reconstructs their gravitational source. Each collision batch used
+the same streamed endpoint metric. The SC solve retains its positive
+polar-areal gap guard. EF retains the complete interior population and
+the isolated vacuum outer guard.
+The reported mass difference measures the finite collision/deposition
+step before the global clock is advanced.
+\par\medskip\noindent
+\begin{minipage}{\linewidth}
+\codesource{Outgoing SC source reconstruction}{\path{cpu/include/ev/relativistic_boltzmann/coupled_evolution.hpp}, lines 161--170}{Measure the ADM residual and commit the accepted global time}
+\begin{lstlisting}[language=C++,showstringspaces=false]
+    out.field = ev::deposit_and_solve_weighted_einstein_vlasov_pic_field(
+        s.markers,grid,evolution.shape,evolution.threads);
+    rb::require(out.field.metric.min_gap > grid.parameters.gap_stop,"Postcollision SC constraint gap reached its stop.");
+    // Local elastic four-momentum conservation and global ADM conservation
+    // are different checks. Reconstructing the field measures the ADM change
+    // associated with this frozen collision substep.
+    out.collision_adm_change = out.field.adm_mass-out.streaming.endpoint_field.adm_mass;
+    s.time += out.streaming.accepted_dt;
+    caller = std::move(s);
+    return out;
+\end{lstlisting}
+\end{minipage}
+
+The EF entry point uses the same accepted-interval rule with its null rate.
+It constructs radial constraint options that retain the complete interior
+population and first measures a regular-centre ADM value.
+It then reapplies the isolated conserved-ADM boundary condition. Keeping
+both values exposes the source-feedback residual to the caller.
+\par\medskip\noindent
+\begin{minipage}{\linewidth}
+\codesource{Outgoing EF constraints and boundary condition}{\path{cpu/include/ev/relativistic_boltzmann/coupled_evolution.hpp}, lines 235--251}{Retain every particle and expose the independently reconstructed ADM residual}
+\begin{lstlisting}[language=C++,showstringspaces=false]
+    // Independent regular-center reconstruction exposes any collision/sampling
+    // ADM residual before the isolated fixed-ADM boundary is reapplied.
+    // With no specified outer ADM value, this reconstruction integrates from
+    // the regular center and measures the mass implied by the outgoing source.
+    const auto regular = ef::deposit_and_solve_field(s.markers,grid,evolution.shape,evolution.threads,constraint);
+    out.regular_center_reconstructed_adm = regular.metric.adm_mass;
+    out.collision_adm_change = regular.metric.adm_mass-out.streaming.conserved_adm_mass;
+    // The following solve instead fixes the outer ADM integration constant
+    // to the streaming value. Its inner mass condition is therefore a distinct
+    // boundary choice; the regular reconstruction above remains the source
+    // normalization diagnostic.
+    constraint.fixed_adm_mass = out.streaming.conserved_adm_mass;
+    // After every cell has returned its outgoing momentum, solve the radial
+    // constraints with the declared boundary choice. The clock advances by
+    // the actual accepted streaming interval, including a shortened step.
+    out.field = ef::deposit_and_solve_field(s.markers,grid,evolution.shape,evolution.threads,constraint);
+    s.time += out.streaming.accepted_dt;
+\end{lstlisting}
+\end{minipage}
+
+\subsection{Amplitude interface, source map and checks}
+
+A supplied reciprocal scalar amplitude can determine a local differential
+cross section. Write \(\mathcal M(x,s,t)\) for this amplitude, with
+\(s=-(k_1+k_2)^2\) the squared centre-of-momentum energy and
+\(t=-(k_1-k_3)^2\) the momentum-transfer invariant. The squares are
+metric contractions. With standard quantum field theory (QFT)
+external-state normalization and
+\(\hbar=c=1\), elastic scattering has
+\[
+ \frac{\dd\Sigma}{\dd\Omega}
+   =\frac{|\mathcal M(x,s,t)|^2}{64\pi^2s\,S_{\rm f}},\qquad
+ \dd\Pi_{\rm QFT}=\frac{\dd^3k}{2E(2\pi)^3}.
+ \tag{REB13}
+\]
+Here \(S_{\rm f}=2!\) for
+identical final particles integrated over the full sphere. The supplied
+amplitude already includes physical exchange symmetry. This final-state
+factor is separate from incoming unordered-pair counting. The local
+sampler uses a certified differential envelope and joint angular/rate
+thinning for a bounded anisotropic callback. A chosen scalar-contact
+benchmark supplies a nonconstant total cross section proportional to
+\(1/s\). Curvature-dependent coefficients describe a supplied local
+interaction model. Covariance alone specifies their transformation law.
+The quasiparticle, local-interaction and slowly varying background
+approximations determine the physical domain of this construction.
+
+For numerical masses and momenta expressed in energy unit \(E_{\rm unit}\),
+the numerical natural-unit area converts as
+\(\Sigma_{\rm code}=\Sigma_{\rm natural}
+[\hbar c/(E_{\rm unit}L_{\rm unit})]^2\).
+The geometrized material mass uses the same physical energy through
+\(m_{\chi,\rm code}=GE_\chi/(c^4L_{\rm unit})\).
+The spherical coupled sampler currently takes a constant code area.
+An amplitude-dependent spherical coupled restart and its physical unit
+mapping require their own model contract.
+
+All paths in the following source map share
+\path{cpu/include/ev/relativistic_boltzmann/}:
+\begin{description}[style=nextline]
+\item[\path{relativistic_collision.hpp}]
+\path{rb::pair_geometry}, \path{rb::scatter_with_direction} and
+\path{rb::scatter_isotropic} provide local mass-shell kinematics and flux.
+\item[\path{local_dsmc.hpp}]
+\path{rb::advance_cell} supplies proper-volume weighted collisions and
+mechanical local-state serialization.
+\item[\path{schwarzschild_collision_adapter.hpp}]
+\path{rb::sc_cell_geometry} evaluates proper volume and lapse from the
+maintained field. The adapter also lifts SC markers and computes stress.
+\item[\path{coordinate_geometry.hpp}]
+Local metric, tetrad and shell-measure utilities support passive general
+coordinate transformations at a common event.
+\item[\path{invariant_amplitude.hpp}]
+The model callback, differential kernel and joint angular/rate sampler
+implement supplied scalar interactions with certified bounds.
+\item[\path{spherical_collisions.hpp}]
+\path{eb::advance_cell} implements (REB12), conservative packet splitting
+and SC/EF stress with represented rest weights.
+\item[\path{ef_frame.hpp}]
+\path{eb::ef_frame} implements (REB6), including its horizon-regular
+observer and Jacobian for the canonical momentum \(P\).
+\item[\path{eb_restart.hpp}]
+\path{eb::serialize_cell} and \path{eb::deserialize_cell} bind the local
+clock, packets and model to the selected slice and cell geometry.
+\item[\path{coupled_evolution.hpp}]
+\path{eb::advance_sc} and \path{eb::advance_ef} connect maintained EV
+streaming, cell collisions and Einstein-source reconstruction.
+\end{description}
+
+Finite component validation covers horizon-regular EF frames, absolute null
+collision rates, local conservation, model-bound cell restart, collision-off
+EV identity and small SC/EF source-feedback steps. Kinematic and amplitude
+checks cover boosts, coordinate transformations and angular/rate sampling.
+Each call also enforces its finite conditioning, capacity and conservation
+guards. The implementation regression sources are maintained separately from
+the distributed solver and analysis package.
+
+\subsection{Spatial locality, restart and scientific domain}
+
+The default spatial policy requires a co-located radial population. This
+represents a local spherical distribution with sampled tangential momentum
+azimuths. A finite radial collision cell requires explicit opt-in and
+records every separated radial exchange. Distinct radii on an SC slice
+are spacelike separated. Distinct radii on one EF null slice lie along a
+null surface, where a two-way instantaneous exchange also needs a
+spatial-locality approximation. Future mass shells and a transport CFL
+condition each constrain a different part of this algorithm.
+
+Internal Poisson times parameterize the frozen collision suboperator.
+A layer-to-layer causal transport demonstrator belongs to its stated
+discrete domain of dependence. Continuous event-to-transport chronology
+requires causal departure times, propagation delays and self-consistent
+metric control.
+
+The public entry points commit the copied state only after the full
+streaming, collision, projection and constraint sequence passes. A
+conditioning, capacity, boundary or source failure leaves the caller's
+markers and random state at the incoming accepted state.
+
+Local serialization restores the complete model-bound collision cell.
+A full coupled restart also needs global markers, geometry, field and
+evolution controls, packet IDs and every persistent cell clock. The
+current finite tests establish component conservation, rates and source
+feedback. Compact-halo stability, collisional convergence, physical
+escape budgets, gravothermal core collapse and trapped-surface formation
+remain scientific calculations requiring their own initial data,
+collisionless controls and accuracy study.

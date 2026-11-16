@@ -1,0 +1,40 @@
+{
+  "static_initial/checkpoint_moments/result.json": {
+    "K_physical": 0.0013901784421443794,
+    "W_force": -0.04330080201215445,
+    "H": 0,
+    "H_dot": 0,
+    "I": 38.190579367714776,
+    "mass": 0.8000001440347692
+  },
+  "expanding_initial/checkpoint_moments/result.json": {
+    "K_physical": 0.0032775807522878735,
+    "W_force": -0.04330080201215445,
+    "H": 0.05555555555555555,
+    "H_dot": -0.004629629629629629,
+    "I": 38.190579367714776,
+    "mass": 0.8000001440347692
+  },
+  "expanding_final/checkpoint_moments/result.json": {
+    "K_physical": 0.046998011730715356,
+    "W_force": -0.09259673474058581,
+    "H": 0.00022133687472332888,
+    "H_dot": -7.348501816843589e-08,
+    "I": 44364.34726508688,
+    "mass": 0.8000001440347692
+  },
+  "static_final/checkpoint_bound_static/result.json": {
+    "all": {
+      "I": 130142.84921591113,
+      "Q_self_force": 1.1498853397182414
+    },
+    "instantaneously_bound_in_full_potential": {
+      "I": 561.683948224387,
+      "Q_self_force": 0.9967169532050283
+    },
+    "instantaneously_unbound_in_full_potential": {
+      "I": 129581.16526768675,
+      "Q_self_force": 858.7153643467944
+    }
+  }
+}

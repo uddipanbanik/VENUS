@@ -1,0 +1,199 @@
+\subsection{Complete particle snapshots: phase-space and energy distributions}
+\label{sec:complete-particle-analysis}
+
+The GPU particle runners can save the complete marker population together
+with the gravitational field at selected times. Each marker then has an orbital state and a potential evaluated at the
+same time, so the complete mass-weighted orbital distribution can be measured.
+
+Use \code{analysis/scripts/phase_space_snapshot_analysis.py} to calculate the
+phase-space distributions.
+
+Use \code{analysis/scripts/shifted_energy_snapshot_analysis.py} to calculate the
+energy distributions. Both tools run on a CPU and require NumPy.
+
+A complete group contains \code{particles.bin}, \code{field.json}, and
+\code{manifest.json}. The supported native format is the version-6 GPU
+particle format: a 112-byte header followed by 81 bytes per marker. The
+header stores the accepted time, step, counters, and event clocks. Each
+marker supplies mass $m_p$, physical radius $r_p$, peculiar radial
+velocity $w_p$, and $\eta_p=L_p^2/2$, where $L_p$ is specific angular
+momentum. Internal energy is stored separately. The supported population
+has active positive-mass markers at positive radii within the outer field
+face. The reader checks the exact file size, complete SHA256 hashes,
+count and clock agreement, finite values, and unique marker identifiers.
+
+The field file supplies physical cell faces, source mass at those faces,
+constant source line density within each cell, the potential $\Phi$ and
+its radial derivative, and the prescribed expansion rate $H$. For the
+supported positive source with homogeneous subtraction disabled, the
+reader verifies the enclosed-mass recurrence, the hidden central mass,
+and the complete deposited-mass budget. It independently integrates this
+source to check the saved potential and force. The potential is normalized
+to zero at infinity. Static total-mass snapshots and the expanding
+runners' directly supplied positive contrast-mass snapshots use this
+format. The shifted-energy calculation also requires zero central point
+mass, giving a finite central potential.
+
+At a fixed time the physical radial velocity is $u=w+Hr$. This velocity
+shift has unit Jacobian, so the mass distribution $f$ satisfies
+\begin{equation}
+ \boxed{\mathrm dM=8\pi^2 f\,\mathrm dr\,\mathrm du\,\mathrm d\eta.}
+ \label{eq:df-analysis-measure}
+\end{equation}
+Integrating over angular momentum and averaging over a radial--velocity
+bin gives the discrete projection
+\begin{equation}
+ \boxed{\left\langle\int f\,\mathrm d\eta\right\rangle_{ij}
+ =\frac{\sum_{p\in(i,j)}m_p}{8\pi^2\Delta r_i\Delta u_j}.}
+ \label{eq:df-analysis-phase-bin}
+\end{equation}
+Here $\Delta r_i$ and $\Delta u_j$ are the physical bin widths. A
+logarithmic radius axis still uses
+$\Delta r_i=10^{x_{i+1}}-10^{x_i}$, where $x_i$ is a logarithmic edge.
+The code accumulates the mass and squared mass before forming the
+projection and the effective population
+$N_{\rm eff}=(\sum m_p)^2/\sum m_p^2$. In
+\code{analysis/scripts/phase_space_snapshot_analysis.py:709}, these operations
+are shown here, with \code{PHASE_MEASURE} equal to $8\pi^2$.
+\codesource{Mass-weighted phase portrait}{\path{analysis/scripts/phase_space_snapshot_analysis.py}, \code{histogram}, lines 709--718}{Divide each marker-mass bin by its physical phase measure and calculate its effective population}
+\begin{lstlisting}[language=Python]
+    mass = mass.reshape(shape)
+    mass2 = mass2.reshape(shape)
+    # Use physical radial widths to recover the eta-integrated distribution from mass bins.
+    dr = np.diff(10**xedge)
+    du = np.diff(uedge)
+    dx = np.diff(xedge)
+    f_eta = mass / (PHASE_MEASURE * dr[:, None] * du[None, :])
+    # Keep the mass density per log-radius interval separately from the distribution per physical dr.
+    mass_log_radius = mass / (dx[:, None] * du[None, :])
+    neff = np.divide(mass * mass, mass2, out=np.zeros_like(mass), where=mass2 > 0)
+\end{lstlisting}
+
+The same markers can be grouped by instantaneous specific orbital energy,
+\begin{equation}
+ \boxed{E=\frac{(w+Hr)^2}{2}+\frac{\eta}{r^2}+\Phi(r,t).}
+ \label{eq:df-analysis-energy}
+\end{equation}
+The background and halo field can evolve, so this energy changes during
+the simulation. The analysis uses the saved field at the marker time.
+For a subhalo marker, $E$ describes its center-of-mass motion; the
+subhalo's stored internal energy remains a separate quantity.
+
+Counting marker mass in energy bins gives a mass spectrum. To infer a mean
+phase-space density, divide that mass by the phase volume available within
+each energy bin. Let $\Phi_{\rm c}=\Phi(0,t)$, and let $R_{\rm wall}$ be the outer saved
+field face. The spherical phase volume below energy $E$ is
+\begin{equation}
+ \boxed{\Omega(E)=\frac{16\pi^2}{3}
+ \int_0^{R_{\rm wall}}r^2[2(E-\Phi(r,t))]_+^{3/2}\,\mathrm dr,}
+ \label{eq:df-analysis-phase-volume}
+\end{equation}
+where $[x]_+=\max(x,0)$. This follows by integrating the velocity-space
+sphere allowed at each physical radius. For energy bin $k$, with edges
+$E_k,E_{k+1}$ and marker mass $M_k$, the discrete quantities are
+\begin{equation}
+ \boxed{\left.\frac{\mathrm dM}{\mathrm dE}\right|_k
+ =\frac{M_k}{E_{k+1}-E_k},\qquad
+ \langle f\rangle_{E,k}=\frac{M_k}{\Omega(E_{k+1})-\Omega(E_k)}.}
+ \label{eq:df-analysis-energy-bin}
+\end{equation}
+The mean $\langle f\rangle_{E,k}$ applies to the finite-time distribution,
+including velocity anisotropy. The logarithmic energy coordinate is
+$E-\Phi_{\rm c}>0$; the mass spectrum retains the linear energy-bin width.
+
+The phase-volume integral is divided at each saved radial face and at
+the turning radius where $E=\Phi(r,t)$. Gauss--Legendre quadrature uses
+24 and 48 nodes per segment; the relative difference of every finite-bin
+volume must be below $10^{-6}$. On the final segment, with lower and upper radii $a$ and $b$, the change of
+coordinate $r=b-(b-a)(1-z)^2$, $0\le z\le1$, resolves the velocity cutoff
+at the upper endpoint. The numerical quadrature and final division are
+implemented by the following two operations. Let $r_s(z)$ be the radial
+mapping on segment $s$, and let $z_\ell$ and $\omega_\ell$ be the $q$
+Gauss--Legendre nodes and weights on $[0,1]$. The discrete integral is
+\begin{equation}
+ \boxed{\Omega_q(E)=\frac{16\pi^2}{3}
+ \sum_s\sum_{\ell=1}^q\omega_\ell r_s^2(z_\ell)r_s'(z_\ell)
+ [2(E-\Phi(r_s(z_\ell),t))]_+^{3/2}.}
+ \label{eq:df-analysis-quadrature}
+\end{equation}
+Here $r_s'(z)=\mathrm dr_s/\mathrm dz$. In the first excerpt,
+\code{z} and \code{weights} are Gauss--Legendre nodes and weights on
+$[0,1]$, \code{value} is $E-\Phi_{\rm c}$, and
+\code{self.offset(r)} is $\Phi(r)-\Phi_{\rm c}$.
+\codesource{Finite spherical phase volume}{\path{analysis/scripts/shifted_energy_snapshot_analysis.py}, \code{PhaseVolume.integrate}, lines 74--86}{Integrate the allowed velocity-space sphere over saved radial segments}
+\begin{lstlisting}[language=Python]
+            r = a + (b - a) * z
+            jac = np.broadcast_to(b - a, r.shape).copy()
+            # The last segment ends at the turning radius (or physical wall).
+            r[-1] = b[-1] - (b[-1] - a[-1]) * (1 - z) ** 2
+            jac[-1] = 2 * (b[-1] - a[-1]) * (1 - z)
+            # Only radii with positive available kinetic energy contribute to the velocity-ball phase volume.
+            speed = np.sqrt(2 * np.maximum(value - self.offset(r), 0))
+            # Combine the spherical radial measure with the coordinate-map Jacobian and quadrature weights.
+            measure = r * r * jac * weights
+            cumulative.append(
+                (16 * math.pi**2 / 3)
+                * float(np.sum(measure * speed**3, dtype=np.longdouble))
+            )
+\end{lstlisting}
+Subtracting cumulative volumes at neighboring energy edges gives the phase
+volume of that bin. The code compares both quadrature orders because this
+volume sets the normalization of the inferred distribution.
+The final division uses \code{mass} for $M_k$ and
+\code{delta_volume} for $\Omega(E_{k+1})-\Omega(E_k)$.
+\codesource{Energy spectrum and mean distribution}{\path{analysis/scripts/shifted_energy_snapshot_analysis.py}, \code{main}, lines 339--359}{Check finite-bin quadrature and divide marker mass by energy width or phase volume}
+\begin{lstlisting}[language=Python]
+        coarse, _, _ = volume.integrate(edge, 24)
+        omega, _, turn_edge = volume.integrate(edge, 48)
+        # A bin volume is the difference of cumulative phase volumes, rather than g at its center times bin width.
+        delta_volume = np.diff(omega)
+        coarse_volume = np.diff(coarse)
+        assert np.all(delta_volume > 0)
+        error = np.abs(delta_volume / coarse_volume - 1)
+        assert np.max(error) < 1e-6, ("phase quadrature", float(np.max(error)))
+        base.require(
+            np.all(delta_volume > 0) and np.max(error) < 1e-6,
+            "Finite-bin phase-volume quadrature failed.",
+        )
+        _, g_point, turn_center = volume.integrate(center, 48)
+        neff = np.divide(
+            mass * mass, squared, out=np.zeros_like(mass), where=squared > 0
+        )
+        dmass = mass / np.diff(edge)
+        # This is the phase-volume mean on the instantaneous finite energy bin.
+        # It applies to the sampled distribution during nonequilibrium evolution.
+        # Divide the measured bin mass by its actual phase volume to obtain the bin-averaged distribution.
+        mean_f = mass / delta_volume
+\end{lstlisting}
+ The source is the same saved constant-line-mass field
+used for the marker energies. Every marker contributes to the cached
+histograms; the output also records $N_{\rm eff}$, turning radii, and the
+fraction of each energy bin's phase volume inside the first field face.
+These quantities identify the population and central continuation used
+by a plotted curve.
+
+To generate complete snapshots, add
+\code{--phase-space-snapshot-times 0,30,100,300} to a GPU runner with an
+initial state at $t=0$ and profile spacing 10. Each requested time must be
+a profile time. The selected groups are written below the run's
+\code{phase_space/} directory. From the repository root, run
+\codesource{Complete-snapshot reduction commands}{\path{analysis/scripts/phase_space_snapshot_analysis.py} and \path{analysis/scripts/shifted_energy_snapshot_analysis.py}, \code{main}}{Read authenticated GPU snapshot groups and write complete phase-space and energy reductions}
+\begin{lstlisting}[language=bash]
+python analysis/scripts/phase_space_snapshot_analysis.py \
+  --snapshots output/my_halo/phase_space \
+  --output-directory analysis/my_halo_phase
+python analysis/scripts/shifted_energy_snapshot_analysis.py \
+  --snapshots output/my_halo/phase_space \
+  --output-directory analysis/my_halo_energy
+\end{lstlisting}
+The first command writes phase-space and linear-energy histograms. The
+second writes logarithmic shifted-energy bins and their phase-volume
+means. Both write one NPZ file per snapshot, an analysis manifest, and
+analytic-check results. The default phase mesh has 360 radial bins and
+240 radial-velocity bins; the default shifted-energy mesh has 192 bins.
+The command-line bin controls and \code{--edges-from previous_snapshot.npz}
+allow common bins to be used in comparisons. Optional expected input,
+executable, and metadata SHA256 values enforce the identities chosen by
+the reader. The complete files are checked again after reduction.
+\code{analysis/README.md} gives a complete run example, array names, plotting
+commands, and the supported input conditions.

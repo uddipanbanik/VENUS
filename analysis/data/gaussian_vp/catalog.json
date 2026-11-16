@@ -1,0 +1,385 @@
+{
+  "scenario_id": "narrow_gaussian_shell_vp",
+  "description": "Narrow Gaussian shells under VP and BP evolution in static and prescribed expanding backgrounds.",
+  "G": 1,
+  "mass": 3.5968447592701334,
+  "marker_count": 1048576,
+  "radial_cells": 512,
+  "radial_minimum": 0.01,
+  "reflecting_wall_radius": 10000.0,
+  "maximum_timestep": 0.0075,
+  "density_source": "Positive mass with the homogeneous background prescribed through expansion.",
+  "velocity_convention": "Physical radial velocity u=w+H*r; eta=r^2*v_t^2/2.",
+  "virial_definition": "Q=2*K_physical/abs(W_force+(H_dot+H^2)*I)",
+  "virial_scope": "Eleven exact full-particle native samples. The halo force is the actual applied constant-line PIC force.",
+  "boundary_scope": "Saved endpoint occupancy and energy. Cumulative GPU wall-impact counts are unavailable.",
+  "cases": {
+    "static_vp": {
+      "label": "VP, static",
+      "profile_times": [
+        0,
+        10,
+        20,
+        30,
+        50,
+        100,
+        800,
+        10000
+      ],
+      "profiles": [
+        {
+          "file": "static_vp/profile_00000.csv.gz",
+          "sha256": "291c2533790c21bff3c1acfc941404f3b26f2bb21bb832d1e558e832069137be",
+          "source_csv_sha256": "cdcd75280868ca4fe628092c672e8019c77e8f026346b63532ceba2e4faf361a",
+          "nominal_time": 0,
+          "actual_time": 0.0,
+          "rows": 512
+        },
+        {
+          "file": "static_vp/profile_00010.csv.gz",
+          "sha256": "71acfcb753909a69c9290864e98495436cdc2334845d3c5bef69b8b81c875b79",
+          "source_csv_sha256": "c73f7c7f09969275721271226aebf3c4b106284ba7ba4a43a54b68ce6106f2b1",
+          "nominal_time": 10,
+          "actual_time": 10.0,
+          "rows": 512
+        },
+        {
+          "file": "static_vp/profile_00020.csv.gz",
+          "sha256": "120f5f2094dbbf726c848f038d78768e6937776a2079b967c4bafac9af9561da",
+          "source_csv_sha256": "adaded6a274390a2d1f0d2380d2d06d1ad0e52c92cb680f9bd0af8c41ef58bb2",
+          "nominal_time": 20,
+          "actual_time": 20.0,
+          "rows": 512
+        },
+        {
+          "file": "static_vp/profile_00030.csv.gz",
+          "sha256": "52b0aaf04ac4d11400d5fceecdcc18448cb15b8732c566dc1bac41d20dcfe213",
+          "source_csv_sha256": "7f1f4fd99fb8bbe9b3cc6276d90f8c49db7dab10685d769bd4ddc6986140efba",
+          "nominal_time": 30,
+          "actual_time": 30.0,
+          "rows": 512
+        },
+        {
+          "file": "static_vp/profile_00050.csv.gz",
+          "sha256": "79df465b09c88303fbed9b5ab63f8761be19ec11166d5169e5d872ae2714d946",
+          "source_csv_sha256": "f898e1747eccee3fcc092ab71f8396ad859986a4a5062c24af2d79c20b10e9c8",
+          "nominal_time": 50,
+          "actual_time": 50.0,
+          "rows": 512
+        },
+        {
+          "file": "static_vp/profile_00100.csv.gz",
+          "sha256": "09e415e23975faf0c420782e2c13e3945f44385184161db94c0ab206f8e7253e",
+          "source_csv_sha256": "3af6ed9281bdf149f6bdf5db2e6f7b8bfdf5f12054563cb94caac65b361ccbf4",
+          "nominal_time": 100,
+          "actual_time": 100.0,
+          "rows": 512
+        },
+        {
+          "file": "static_vp/profile_00800.csv.gz",
+          "sha256": "2e31a894466f84f1ac072d2a1db9e6eb7cb0b85acc94779761d9fcff8d1f1a60",
+          "source_csv_sha256": "574a8438b1637987e07a61afe8ec1b13b39e494ec808b1007d4bfda1fecf4e89",
+          "nominal_time": 800,
+          "actual_time": 800.0,
+          "rows": 512
+        },
+        {
+          "file": "static_vp/profile_10000.csv.gz",
+          "sha256": "c8f3b7bc3e5a1bdea907689e4cd4a7ddcf65a6d4ff06975cea16602ce4d14315",
+          "source_csv_sha256": "32c5dff029667a384c1dce00a835ddaf31b04e4a6555778ceb2539fbb9c18b55",
+          "nominal_time": 10000,
+          "actual_time": 10000.0,
+          "rows": 512
+        }
+      ],
+      "moments": {
+        "file": "static_vp/moments.csv",
+        "sha256": "685dbd9e71b8453ef2f91c0fa8220910fb049f29749b257ac7d59bbcca3aa4de"
+      },
+      "moment_sources": {
+        "file": "static_vp/moment_sources.json",
+        "sha256": "eca2aa7c841da0238361c98fbfa7590d4b86a30e48b34aa7b3371a72544f90e5"
+      },
+      "endpoint_occupancy": {
+        "file": "static_vp/endpoint_occupancy.json",
+        "sha256": "419dac1f842d336b515082a13b8bab2755215fe6cb5b1144f309a1b67c04f1d8"
+      },
+      "actual_acquisition_sha256": "96b5760169366067fb6144bc2090d11f03b45bfd92b4e8a6fa622e27c42c59a1",
+      "initial_native_sha256": "e1a8be50078571f5013d715a4e0da591c6028f45867731bce52df7a26018adec",
+      "final_native_sha256": "2044ba99a5870a638dc8d4afb5650f5fa90ff5a2a13eb10347e95525c0c2aff7",
+      "complete_native_profile_count": 5004,
+      "packed_profile_array_sha256": "455e517e6fa275d577eb1218681adbf77e0915eaba23085286c55701c56cb542"
+    },
+    "expanding_vp": {
+      "label": "VP, expanding",
+      "profile_times": [
+        0,
+        10,
+        20,
+        26,
+        50,
+        100,
+        800,
+        10000
+      ],
+      "profiles": [
+        {
+          "file": "expanding_vp/profile_00000.csv.gz",
+          "sha256": "d8001481d0565bca3f199cc241ea27e4255ba5f262aedb6063a013aa0dcac4e3",
+          "source_csv_sha256": "172998bd3dc32f4cb1eb9511b2721a28ff18c3324678f6f7ac3827b9e5ea7f83",
+          "nominal_time": 0,
+          "actual_time": 0.0,
+          "rows": 512
+        },
+        {
+          "file": "expanding_vp/profile_00010.csv.gz",
+          "sha256": "7cf5457f54e5784d91051255fee7185a0294da85f550b02f77516c2c869e06f7",
+          "source_csv_sha256": "738e2b738714de4a2520089ad2a32526431f32418ac398408438128939c0be08",
+          "nominal_time": 10,
+          "actual_time": 10.0,
+          "rows": 512
+        },
+        {
+          "file": "expanding_vp/profile_00020.csv.gz",
+          "sha256": "b2a71d7fd706f3180e70069687d5d6751bdf0a3f703ae03f35363d62888ed0cd",
+          "source_csv_sha256": "4301f6a4589c722d86268e2c511025a561c48e97131544f8a8193fe644ca7cf1",
+          "nominal_time": 20,
+          "actual_time": 20.0,
+          "rows": 512
+        },
+        {
+          "file": "expanding_vp/profile_00026.csv.gz",
+          "sha256": "b84a8a0aa8660513a57e94cdc75eaa144b273ffd70261a098a8eec53f898a26c",
+          "source_csv_sha256": "8d59b96c6e7343428eb1e3e194bb6c950f92859e021b78188de647e7670527f6",
+          "nominal_time": 26,
+          "actual_time": 26.0,
+          "rows": 512
+        },
+        {
+          "file": "expanding_vp/profile_00050.csv.gz",
+          "sha256": "5b34094816baff0473ff369cf30e3024c8f2cbf45d815868e1655d9ed72f0d9a",
+          "source_csv_sha256": "a0968da3c77b9d909f9315f6bf5937e76af170832db5c77d8093a7d2d2b64a0b",
+          "nominal_time": 50,
+          "actual_time": 50.0,
+          "rows": 512
+        },
+        {
+          "file": "expanding_vp/profile_00100.csv.gz",
+          "sha256": "6bf473c23eeaf6529834cedccabe075e2e8ef2a536c8f87c33f149b5e45ccd2e",
+          "source_csv_sha256": "133ede212d632eadb5c01c265aa9217ae5c30499a55254e06c2adbecd7acb4c3",
+          "nominal_time": 100,
+          "actual_time": 100.0,
+          "rows": 512
+        },
+        {
+          "file": "expanding_vp/profile_00800.csv.gz",
+          "sha256": "9573183f697794cb844d3c9546df9d5353d155f3320b62f5db8f9676baa642b5",
+          "source_csv_sha256": "3343f5afe38fa4ab7034b5cc1371373607ca318df70a71116dfcbb6e7e6645d7",
+          "nominal_time": 800,
+          "actual_time": 800.0,
+          "rows": 512
+        },
+        {
+          "file": "expanding_vp/profile_10000.csv.gz",
+          "sha256": "9daab9215a028f739eaf4b932c5d606dd6f404423e31ac6fcf3f8ce70c05bc13",
+          "source_csv_sha256": "5269fe62ad324f0783814d01e94f871979afd0d673c2719aef79381e2c308a78",
+          "nominal_time": 10000,
+          "actual_time": 10000.0,
+          "rows": 512
+        }
+      ],
+      "moments": {
+        "file": "expanding_vp/moments.csv",
+        "sha256": "a3114322e181a7fe1a34bc2128bb214ec56bee602a9454a63eb9c0054e8a7f28"
+      },
+      "moment_sources": {
+        "file": "expanding_vp/moment_sources.json",
+        "sha256": "690646006fa4510956a1d260f0edeb33f7c53c532ad63f21266ca323b0ab79e9"
+      },
+      "endpoint_occupancy": {
+        "file": "expanding_vp/endpoint_occupancy.json",
+        "sha256": "f11df69e6de9d695df5a56ac07be0c8392f96145ef82e2d6241282f4f009d44b"
+      },
+      "actual_acquisition_sha256": "72179e0f62525a4ac3a1e8e06a1f5ea5cf7a256fe86ac5feed851285b0b81257",
+      "initial_native_sha256": "1967589c72d411ed2a61c1d4ca3e3094941dc2525e9e2c1c4584bac96fe54bc9",
+      "final_native_sha256": "f07d552726c35869a881bb0fe97b94a48038fb5458ec89267f27dbbda1593c8a",
+      "complete_native_profile_count": 5002,
+      "packed_profile_array_sha256": "a3ad628b8bb5e673ce29c024282936985e7b91eb216ec44c39e23b5fbb6f2ac1"
+    },
+    "static_bp": {
+      "label": "BP, static",
+      "profile_times": [
+        0.0,
+        10.0,
+        20.0,
+        30.0,
+        50.0,
+        100.0,
+        800.0,
+        5254.0
+      ],
+      "profiles": [
+        {
+          "file": "static_bp/profile_0.csv.gz",
+          "sha256": "54fe3b6612815355960a1b978eeb187969f6e610696a2bb96ae9be20c5ec31cb",
+          "source_csv_sha256": "f31f160f353e3946a61a3994da53a5292eacb98febd0572e810105e53f039c8a",
+          "nominal_time": 0.0,
+          "actual_time": 0.0,
+          "rows": 512
+        },
+        {
+          "file": "static_bp/profile_10.csv.gz",
+          "sha256": "420ed33fd188babea0b2131af78a18a2e532bda3db6ae4c681adb02be81fda55",
+          "source_csv_sha256": "8567e3250ca6486f50d5855a73a3ceb1baa5ff2e52d70b6ca77a4ff951d56435",
+          "nominal_time": 10.0,
+          "actual_time": 10.0,
+          "rows": 512
+        },
+        {
+          "file": "static_bp/profile_20.csv.gz",
+          "sha256": "58d1ff8efef4c4e624bb53d4286a5b61349cfd685297126d8cd67246de1b1b7a",
+          "source_csv_sha256": "f8513e4da3ff23a651db7734625edc805700a13f9e025bec59b4eb3cfaf44b16",
+          "nominal_time": 20.0,
+          "actual_time": 20.0,
+          "rows": 512
+        },
+        {
+          "file": "static_bp/profile_30.csv.gz",
+          "sha256": "accd4424f8b327833e48a0e04c2817fcc3139477fa0cff0a4c69b9bd03d3c08e",
+          "source_csv_sha256": "aefb80cf4248dac956c0c4902f09690efc6f82a477852976ea4769284009483c",
+          "nominal_time": 30.0,
+          "actual_time": 30.0,
+          "rows": 512
+        },
+        {
+          "file": "static_bp/profile_50.csv.gz",
+          "sha256": "6443bd3e33123542119d1f0361b934d95f33bb0cea7ab58651ab4520565b2ee2",
+          "source_csv_sha256": "088fa3d8d8c95edff919ce4032059f856ebc2ce1674939d5ce780efd7e4d6afd",
+          "nominal_time": 50.0,
+          "actual_time": 50.0,
+          "rows": 512
+        },
+        {
+          "file": "static_bp/profile_100.csv.gz",
+          "sha256": "b06bd363d7f8f995751673830b4e582eab7124f68391b56c65066cb99a0525fd",
+          "source_csv_sha256": "34b05d75adc1727ee3e922323d4d6ac9d7e28160540ef32baca442d4aea3af16",
+          "nominal_time": 100.0,
+          "actual_time": 100.0,
+          "rows": 512
+        },
+        {
+          "file": "static_bp/profile_800.csv.gz",
+          "sha256": "2d82af89dd910ad7f8d82d3dc3ed40f6eb2607eff1084857a52eda9964bd2b54",
+          "source_csv_sha256": "9f9b1d9f4ea67fabe5729d0478ac4b9fd4f5942d1df4f8aa98d4eae646e978a4",
+          "nominal_time": 800.0,
+          "actual_time": 800.0,
+          "rows": 512
+        },
+        {
+          "file": "static_bp/profile_5254.csv.gz",
+          "sha256": "76fab531d8caacafcd0fc9af8aab4ca5d8100f9ca7e61d1b15a47dce79c81efc",
+          "source_csv_sha256": "ab07dd2ba7d72d900317572bbe57706b7059a9529d8c069aea24384c6d90c877",
+          "nominal_time": 5254.0,
+          "actual_time": 5254.0,
+          "rows": 512
+        }
+      ],
+      "accepted_native_sha256": "2037334a346933552147fe8160edf36ce63a7d1ee0fdea495c4f2fdd9200c2cf",
+      "accepted_native_time": 5254.067378775472
+    },
+    "expanding_bp": {
+      "label": "BP, expanding",
+      "profile_times": [
+        0.0,
+        10.0,
+        20.0,
+        26.0,
+        50.0,
+        100.0,
+        800.0,
+        7326.0
+      ],
+      "profiles": [
+        {
+          "file": "expanding_bp/profile_0.csv.gz",
+          "sha256": "1083739cc237307084413bce52c377aac3ff1248975875ad8deb8a6ebd9c13b0",
+          "source_csv_sha256": "c3b5d662e11bb91d86995fe0059d524ab519186b47dd60473a87ce3d53689714",
+          "nominal_time": 0.0,
+          "actual_time": 0.0,
+          "rows": 512
+        },
+        {
+          "file": "expanding_bp/profile_10.csv.gz",
+          "sha256": "cd27fef2322db5893c4a6a97bdac7e969b4b7e9d8245ae7f51875bc818d597ad",
+          "source_csv_sha256": "0369104a55e6bb7f7438f2c64b4a644b81ffb855117ab81bcf5b1b383ee67d29",
+          "nominal_time": 10.0,
+          "actual_time": 10.0,
+          "rows": 512
+        },
+        {
+          "file": "expanding_bp/profile_20.csv.gz",
+          "sha256": "a4b4a2b9e3661842789e6f43952df75520d24ac8892c21cc390f64ff35f281e3",
+          "source_csv_sha256": "264bdc10022e022806baa17c28b059b6bd721c5d773f95b900c587e00c940a0a",
+          "nominal_time": 20.0,
+          "actual_time": 20.0,
+          "rows": 512
+        },
+        {
+          "file": "expanding_bp/profile_26.csv.gz",
+          "sha256": "39eb2dc66a39bd704a13d0e686f3585e03ca1e6d2c7ba1b9818b14e72f4a910a",
+          "source_csv_sha256": "f225047fe42ab4432dea2b45fe2fafe8b79a0ebe76ca32fbb0ae64504dc1302f",
+          "nominal_time": 26.0,
+          "actual_time": 26.0,
+          "rows": 512
+        },
+        {
+          "file": "expanding_bp/profile_50.csv.gz",
+          "sha256": "248201fbbf2e3f514ca267923d74b82e59427847131c6a5a7a83beb50ac927d9",
+          "source_csv_sha256": "655dde1cb62fcef9e8ddf26ca5082c9973f457092a769e93f92afdf0cf7b7640",
+          "nominal_time": 50.0,
+          "actual_time": 50.0,
+          "rows": 512
+        },
+        {
+          "file": "expanding_bp/profile_100.csv.gz",
+          "sha256": "afb3188a5c79609206524e74b0c07e7007a3ee4cb191bdcb00369d9e0ffbedc2",
+          "source_csv_sha256": "3d503f90337414ad5f8ee5aba76e7220758fb297124f47e9397a11eb4eff759e",
+          "nominal_time": 100.0,
+          "actual_time": 100.0,
+          "rows": 512
+        },
+        {
+          "file": "expanding_bp/profile_800.csv.gz",
+          "sha256": "d30dd43d83d11323dacf82ac93d602ffe4f78732901fa69231d019a8c8bb3acc",
+          "source_csv_sha256": "d32c50d1b90b77613f599fd03648c2d19af45c200fab858aff1eb947b540ce30",
+          "nominal_time": 800.0,
+          "actual_time": 800.0,
+          "rows": 512
+        },
+        {
+          "file": "expanding_bp/profile_7326.csv.gz",
+          "sha256": "ec6b226eaf25e6b352e1a5c5f7aada9a2736790eaaa4297b1b5a2ede181073b6",
+          "source_csv_sha256": "e93515fbcada8fb42f29667619e29f5188be974d1073fcea14a9d327e7014670",
+          "nominal_time": 7326.0,
+          "actual_time": 7326.0,
+          "rows": 512
+        }
+      ],
+      "accepted_native_sha256": "0b8f0417eb1c5873164c5bac4abb12483663a092aaa57bb69d794c88150a9542",
+      "accepted_native_time": 7327.034336802388
+    }
+  },
+  "log_density_limits": [
+    -15,
+    1
+  ],
+  "log_radius_limits": [
+    -2.083925318456323,
+    4.084004369043677
+  ],
+  "signed_slope_limits": [
+    -10,
+    5
+  ],
+  "marker_count_scope": "Initial equal-mass realization. BP mergers change the number of objects while conserving mass."
+}

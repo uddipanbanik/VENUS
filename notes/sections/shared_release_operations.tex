@@ -1,0 +1,324 @@
+\appendix
+\section{Consolidated Release-Wide Operations Reference}
+\label{app:release-operations}
+
+This appendix follows a run from installation through solver selection,
+initial data, execution, output, and analysis. Use the derivations and module
+chapters for the equations and update sequence. The initial-condition, I/O,
+parallel, GPU, and visualization chapters supply the detailed operating
+instructions.
+
+\subsection{Installation and Toolchain Requirements}
+\label{sec:installation}
+
+VENUS builds in its source checkout using dependencies installed by the
+user. Keep the sibling
+\path{cpu} and \path{gpu} directories together: the GPU build consumes the
+CPU unequal-Plummer calibration table and its public field-clock headers
+from \path{cpu/include}.
+
+\subsubsection{CPU prerequisites}
+
+The CPU core requires a C++17 compiler and GNU-compatible \code{make}.
+The portable targets use \code{std::thread}; the performance targets require
+an OpenMP runtime.  MPI is optional and is required only for targets ending in
+\code{_mpi}.  Python~3.8 or newer is used by IC generators, analysis,
+and figures.
+The release Python requirements are NumPy, SciPy, Matplotlib, Pillow, ImageIO,
+pypdf (for vector-curve digitization).  A clean environment can
+be prepared with
+\par\noindent\begin{minipage}{\linewidth}
+\codesource{Release environment and CPU build verification}{\path{requirements.txt}, \path{Makefile}, and \path{cpu/Makefile}}{Creates the documented Python environment, builds the portable CPU task front ends, and exposes their help interfaces}
+\begin{lstlisting}[language=bash]
+cd VENUS
+python3 -m venv .venv
+. .venv/bin/activate
+python3 -m pip install -r requirements.txt
+make cpu
+\end{lstlisting}
+\end{minipage}
+On Apple Clang, use the serial targets unless an OpenMP runtime was installed
+explicitly.  On clusters, load a consistent compiler/MPI stack. The MPI wrapper and C++
+runtime must belong to compatible builds, because the wrapper links the
+executable to those libraries.
+
+\subsubsection{CUDA prerequisites}
+
+The GPU tree requires CMake~3.18 or newer, a CUDA toolkit, a host compiler
+supported by that toolkit, and Python~3.8 or newer for build-time generation of the
+subhalo table.  CUDA-aware MPI is not required by the correctness-first
+multi-GPU layer: marker migrations and radial moment reductions are host
+staged.  An MPI C++ development package is required when
+\code{VENUS_GPU_ENABLE_MPI=ON}.  Select the actual compute capability at
+configuration time; \code{80} is appropriate for NVIDIA A100 hardware:
+\par\noindent\begin{minipage}{\linewidth}
+\codesource{Single-GPU configure and build}{\path{gpu/CMakeLists.txt}}{Configures the CUDA architecture and CPU calibration-table dependency, then builds the GPU libraries and task executables}
+\begin{lstlisting}[language=bash]
+cmake -S gpu -B build/gpu \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_CUDA_ARCHITECTURES=80 \
+  -DVENUS_CPU_REFERENCE_INCLUDE="$PWD/cpu/include"
+cmake --build build/gpu -j 8
+\end{lstlisting}
+\end{minipage}
+The GPU build reads the CPU calibration table so both implementations use
+the same Plummer encounter data. Configuration therefore requires that table
+at its documented source location.
+
+\subsubsection{Release-wide targets}
+
+The root \path{Makefile} is an orchestration layer; CPU numerical flags remain
+in \path{cpu/Makefile} and GPU flags remain in \path{gpu/CMakeLists.txt}.
+\par\noindent\begin{minipage}{\linewidth}
+\codesource{Release-wide build and verification entry points}{\path{Makefile}}{Delegates each named command to the owning CPU, GPU or manual build system without changing its numerical contract}
+\begin{lstlisting}[language=bash]
+make help
+make cpu                 # serial reference executables
+make cpu-openmp          # OpenMP executables
+make cpu-mpi             # supported MPI executables
+make cpu-tools           # compile every maintained C++ runner/diagnostic
+make cpu-check-setup
+make gpu                 # configure and build CUDA tree
+make gpu-mpi             # configure/build the MPI CUDA variant
+make manual
+\end{lstlisting}
+\end{minipage}
+For a non-default compute capability, pass the override to the final target,
+for example \code{make gpu GPU_ARCH=90} or
+\code{make gpu-mpi GPU_ARCH=90}.  Each dependent target runs configuration;
+an architecture supplied only to an earlier standalone
+\code{gpu-configure} invocation is not retained as a Make variable by a later
+\code{make} process.
+Build directories and run output are not source.  They remain outside the
+implementation subtrees under \path{build/} and \path{output/}.
+
+\subsection{Choosing a Solver}
+\label{sec:solver-choice}
+
+Choose the physical equation first and the representation second:
+\begin{enumerate}
+\item Use grid Einstein--Vlasov when the relativistic metric and a resolved
+ phase-space distribution are essential.  Use the EV WPIC path only for its
+stated low- or high-compactness task; it has no collision operator.
+\item Use grid VP when a deterministic distribution, explicit phase-space
+flux, Hamiltonian interpolation, or conservative SLDG/canonical analysis is
+required.
+\item Use CPU WPIC when long characteristic orbits, adaptive field/collision
+events, positive unequal marker masses, or subhalo scattering/capture are the
+natural representation and marker-number convergence can be measured.
+\item Use CPU SphDSMC for the persistent-marker SIDM benchmark family and
+when direct spherical shell pairing, orbit retry, and mean-free-path control
+are desired.
+\item Use GPU WPIC when the supported Newtonian marker physics dominates the
+work and the documented restart, background, boundary, device, and MPI
+contracts match the calculation.  Do not select it for EV,
+SphDSMC, canonical-orbit, or grid semi-Lagrangian calculations.
+\end{enumerate}
+
+For collisional work, distinguish the physical targets.  Material SIDM treats
+markers as sampling an underlying dark-matter material and uses a microscopic
+cross section per mass.  The subhalo module treats each marker as a
+complete extended Plummer object; it uses calibrated scattering and capture
+cross sections, unequal object masses, internal energy, and merger
+compaction.  A constant material cross section, a velocity power law, a
+Yukawa/Born differential kernel, and a calibrated subhalo table are not
+interchangeable ways to set the same scalar parameter.
+
+\subsection{Configuration, Command Lines, and Reproducible Runs}
+\label{sec:configuration-shared}
+
+The CPU modular solver uses an INI-like file with command-line/environment
+overrides as described in the CPU configuration reference.  CPU WPIC runners
+also expose purpose-specific command-line controls.  The GPU task executables read a weighted-PIC restart and command-line
+options. To move a calculation between CPU and GPU, identify the same physical
+model, particle state, and numerical controls in their respective interfaces.
+
+Every run should preserve, next to its output:
+\begin{itemize}
+\item the exact input file or complete command line;
+\item source identity and dirty-tree status where available;
+\item executable/build identity, compiler, CUDA architecture, and loaded
+cluster modules;
+\item thread count, MPI rank count, and rank-to-GPU binding;
+\item RNG seed and persistent event epoch/counters;
+\item initial restart hash and final restart hash;
+\item a normal-completion, walltime-checkpoint, locality-stop, or other
+unambiguous terminal-status record.
+\end{itemize}
+Start a fresh run in an empty output directory. Continue from an atomic
+checkpoint using a distinct continuation directory or the selected runner's
+documented resume mechanism. This keeps the input checkpoint and earlier
+output available when comparing the two segments.
+
+\subsubsection{Parameter changes that alter the physical problem}
+
+Grid bounds, background expansion, Poisson source convention, cross-section
+law, object-size/mass relation, inner/outer boundary conditions, and capture
+enablement define the physical model.  Time tolerances, mesh counts, marker
+counts, cloud order, collision cell occupancy, majorant safety, and output
+cadence define a discretization or algorithmic realization.  Record both, but
+do not present agreement after changing the first group as a resolution test.
+
+\subsection{Initial Conditions and CPU--GPU Handoff}
+\label{sec:initial-data-shared}
+
+Grid EV/VP/BP runs accept analytic distributions or the documented
+\code{EVICRWL1} binary format.  Specialized Python generators construct
+Eddington-inverted halo equilibria, infalling shells, Frank cell-average
+states, and persistent SphDSMC marker populations.  Each generator states its
+mass normalization and radial/velocity/angular-momentum convention; a binary
+reader must verify dimensions, monotonic grids, finiteness, and exact payload
+length before allocating the evolution state.
+
+WPIC and SphDSMC initial states are not interchangeable.  A WPIC marker owns
+represented mass and orbit coordinates; a SphDSMC marker additionally
+participates in its solver's persistent collision-shell and restart contract.
+For the GPU, generate or import a supported CPU WPIC checkpoint, validate it
+with the CPU inspector, and then read it through the versioned GPU restart
+loader.  The GPU does not contain an independent equilibrium sampler in this
+release.  This prevents nominally identical CPU/GPU comparisons from starting
+from different Monte Carlo populations.
+
+For any sampled IC, archive the seed, marker count, sampling proposal, weight
+rule, rejected-sample count, normalization correction, and binned residual
+against the target density/velocity moments.  Successful generation establishes a readable sampled state. Equilibrium
+requires a collisionless evolution check of density, velocity moments, and
+conserved quantities.
+
+\subsection{Output and Restart Contract}
+\label{sec:io-shared}
+
+CPU grid solvers write the CSV profile/history, phase projections, metadata,
+and restart products detailed in the CPU I/O section.  Marker runners add
+effective marker number, collision histories, pair/capture ledgers, locality,
+and event-clock fields.  GPU output names are listed in the GPU chapter.  Code
+that consumes output must locate columns by header name rather than by an
+unversioned numeric position.
+
+The minimum interpretation rules are:
+\begin{itemize}
+\item \code{time} is physical solver time; a file index is not a time.
+\item Density is a physical volume density under the solver's mass and radial
+normalization; deposited shell mass is not density until divided by volume.
+\item Radial and tangential second moments must be combined according to the
+header and coordinate convention; \(L^2/r^2\) supplies tangential speed.
+\item An integrated collision age and a minimum local collision time answer
+different questions and must not share a plot label.
+\item Escaped, hidden/delayed, captured, internal, and active masses remain
+separate ledger terms.  Closing a total by silently renormalizing active mass
+destroys the diagnostic.
+\end{itemize}
+
+A restart preserves the state required for the next numerical update.
+It must retain the population/distribution, mesh contract, time and step,
+field and collision event ages, random epoch/counters, delayed-boundary state,
+internal energy, unique/source IDs, and every model option whose omission
+would change subsequent evolution.  Readers check magic, version, endian
+sentinel, counts, finite fields, enumeration ranges, monotonic grids, and
+trailing/truncated bytes.  Restart equivalence compares an uninterrupted run
+against a checkpoint/resume run at a common endpoint.
+
+\subsection{Plotting, Analysis, and GIF Construction}
+\label{sec:plotting-shared}
+
+The maintained catalogue is \path{notes/SCRIPT_REFERENCE.md}.  Plotting
+follows a four-stage contract:
+\begin{enumerate}
+\item discover inputs from one explicit run root and reject mixed schemas;
+\item read header-named columns, validate finiteness/monotonic radius, and
+associate every curve with physical time;
+\item compute derived density slopes, dispersions, core measures, or
+collision coverage under one documented smoothing and radial mask;
+\item write the figure/GIF plus sidecars recording source count, selected
+times, last rendered curve, normalization, command/provenance, and completion.
+\end{enumerate}
+
+Representative commands are:
+\par\noindent\begin{minipage}{\linewidth}
+\codesource{EV and SIDM analysis and visualization tools}{\path{cpu/tools/plot_einstein_vlasov_outputs.py}, \path{cpu/tools/render_density_slope_sigma2_gif.py}, \path{cpu/tools/summarize_venus_collision_history.py}, and \path{gpu/scripts/render_venus_gpu_density_slope_gif.py}}{Plots Einstein--Vlasov output, renders spherical evolution, summarizes collision histories, and renders the GPU density/slope sequence}
+\begin{lstlisting}[language=bash]
+python3 cpu/tools/plot_einstein_vlasov_outputs.py \
+  --input-dir output/cpu/ev-run --output-dir output/cpu/ev-run/figures
+python3 cpu/tools/render_density_slope_sigma2_gif.py \
+  --input-dir output/cpu/run --output output/cpu/run/evolution.gif
+python3 cpu/tools/summarize_venus_collision_history.py \
+  output/cpu/run/collision_history.csv
+python3 gpu/scripts/render_venus_gpu_density_slope_gif.py --help
+\end{lstlisting}
+\end{minipage}
+The GPU front end accepts explicit collisionless/collisional run directories,
+output directory, output name, and profile-selection controls.  Use each
+script's \code{--help}; the exact option names are authoritative.
+GIF frames are temporary derived products.  They use an explicit work
+directory or the operating-system temporary directory, are deleted only after
+a successful assembly, and never rely on a hard-coded user's
+\path{/private/tmp}.  Animation timing must come from the frame-time sidecar or
+physical-time selection, not from lexicographic filename spacing.
+
+\subsection{Parallel Execution and Accelerator Semantics}
+\label{sec:parallel-shared}
+
+OpenMP and MPI change ownership of work, not the continuum equation.  The CPU
+thread wrapper assigns independent output cells or shells to workers and uses
+thread-local reductions.  Supported grid EV/VP MPI builds decompose the
+angular-momentum axis into contiguous slabs and perform the global moment
+reductions required by the metric/Poisson solve.  Collision paths that lack
+distributed ownership reject a multi-rank launch before evolution; silently
+running an independent collision system on every rank is forbidden.
+
+The GPU assigns markers or radial cells to CUDA threads and collision shells
+to blocks.  Atomic moment deposition combines concurrent contributions while preserving
+the represented sums to floating-point tolerance. The order of additions can
+vary, which changes their last binary digits.  Multi-GPU VP reduces
+small radial moment arrays globally while each rank retains local markers.
+The supported subhalo path migrates complete physical collision cells so a
+cell is owned by one rank.  Global RNG coordinates use seed, epoch, physical
+cell, substep, trial, and draw dimension rather than local thread identity.
+
+For performance reports, include initialization and I/O policy, marker/cell
+counts, steps or physical interval, collision strength, accepted/proposed
+events, hardware model, rank/GPU mapping, thread/block configuration, and
+separate kernel/transfer/output timings.  A faster run with fewer collision
+proposals or a different timestep is not a speedup measurement of the same
+problem.
+
+\subsection{Failure Modes and Safe Diagnosis}
+\label{sec:failure-modes-shared}
+
+Common fail-closed conditions and their interpretation are:
+\begin{itemize}
+\item occupied phase space reaches a grid boundary: enlarge or redesign the
+IC/domain and repeat a resolution study; do not mask the diagnostic;
+\item compactness gap or metric floor is crossed: preserve the last valid
+state and interpret only under the EV stopping contract;
+\item collision probability/majorant exceeds its bound: reduce the collision
+substep or fix the majorant; clipping an invalid probability biases rates;
+\item \(\Delta r/\lambda_{\rm mfp}>1\): refine physical collision cells and
+marker sampling; decreasing output cadence is irrelevant;
+\item positivity or conservation residual exceeds tolerance: isolate
+transport, field, and collision operators before interpreting a quantitative
+run;
+\item MPI rank count is unsupported: use one rank plus threads, or the
+explicitly supported MPI module;
+\item CUDA reports no device: submit through the GPU scheduler partition; a
+successful host compile is not a device test;
+\item restart reading fails: retain both files and diagnose header/state
+differences; never repair a binary checkpoint by editing bytes;
+\item plotter reports missing/mixed columns: point it at one compatible run
+and use the renderer for that named-column schema; do not fill absent physical
+quantities with zeros.
+\end{itemize}
+
+\section{Numerical Verification}
+\label{app:developer-verification}
+
+Implementation verification covers structural interfaces, parsers, restarts,
+invariants and CPU--GPU comparisons. Developer regression suites are
+maintained separately from the distribution. The distributed build targets
+compile the production solvers and analysis tools.
+
+A scientific calculation also requires the problem-specific convergence
+programme described in Section~\ref{sec:failure-modes-shared}. Report the
+spatial, velocity, angular-momentum, marker-number, timestep, collision-shell,
+box-size and seed comparisons that determine the accuracy of its physical
+observables.

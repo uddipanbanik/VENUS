@@ -1,0 +1,119 @@
+{
+  "schema": "VENUS_GAUSSIAN_MOVIE_CACHE_1",
+  "derivative": "Centered quadratic fit to log10density in21adjacent native radial cells. The full window has positive density.",
+  "effective_count": "Squared deposited mass divided by the sum of squared deposited marker contributions. Heavy curves require at least32.",
+  "cases": [
+    {
+      "case": "gaussian_static_vp",
+      "cache": "../completed_vp/gaussian_static_vp.npz",
+      "cache_sha256": "f7210ee60367e2c595051bd89d2db71dfb7339c40802657e4cfa71e9c85aff37",
+      "frame_ledger": "../completed_vp/gaussian_static_vp_sources.json",
+      "frame_ledger_sha256": "3f6fa941f4004e241f8f173b3d5b572633f67dfb86fc6e0d4917d4073d9bdc9b",
+      "native_frames": 5004,
+      "physical_time": [
+        0,
+        10000
+      ],
+      "actual_time_spacing": "Nominal2-unit profile cadence plus actual restart endpoints",
+      "positive_density_samples": 2325304,
+      "finite_centered_slopes": 2157062,
+      "distinct_native_radius_grids": 1,
+      "model": "VP",
+      "encounter_strength": 0,
+      "background": "static",
+      "final_native_sha256": "2044ba99a5870a638dc8d4afb5650f5fa90ff5a2a13eb10347e95525c0c2aff7",
+      "density_scope": "Complete active population on the native radial mesh.",
+      "native_rows": 512,
+      "first_time": 0.0,
+      "last_time": 10000.0,
+      "scenario_id": "narrow_gaussian_shell_vp",
+      "derivative_source": {
+        "path": "movies/scripts/reduce_gaussian_vp_cache.py",
+        "sha256": "678195c46d83054f982344184f08f4c67826babe5631eaaaae5b63a3f4c7d14f",
+        "scope": "Same 21-cell positive-window quadratic derivative; all valid saved columns solved together."
+      }
+    },
+    {
+      "case": "gaussian_expanding_vp",
+      "cache": "../completed_vp/gaussian_expanding_vp.npz",
+      "cache_sha256": "d5af1207ad7da381ea0b373691dc226a4df57fa0f22c80b12714001bc99a9ea3",
+      "frame_ledger": "../completed_vp/gaussian_expanding_vp_sources.json",
+      "frame_ledger_sha256": "bb7f5ae2fbdbbc8a4107121f0fb7cd658d38f33aeabf88b3cbc4b3a02b561493",
+      "native_frames": 5002,
+      "physical_time": [
+        0,
+        10000
+      ],
+      "actual_time_spacing": "Nominal2-unit profile cadence plus actual restart endpoints",
+      "positive_density_samples": 2230560,
+      "finite_centered_slopes": 2066285,
+      "distinct_native_radius_grids": 1,
+      "model": "VP",
+      "encounter_strength": 0,
+      "background": "expanding",
+      "final_native_sha256": "f07d552726c35869a881bb0fe97b94a48038fb5458ec89267f27dbbda1593c8a",
+      "density_scope": "Complete active population on the native radial mesh.",
+      "native_rows": 512,
+      "first_time": 0.0,
+      "last_time": 10000.0,
+      "scenario_id": "narrow_gaussian_shell_vp",
+      "derivative_source": {
+        "path": "movies/scripts/reduce_gaussian_vp_cache.py",
+        "sha256": "678195c46d83054f982344184f08f4c67826babe5631eaaaae5b63a3f4c7d14f",
+        "scope": "Same 21-cell positive-window quadratic derivative; all valid saved columns solved together."
+      }
+    },
+    {
+      "case": "gaussian_static_bp",
+      "cache": "gaussian_static_bp.npz",
+      "cache_sha256": "c8f6842c547f858dca5cb112ce48410e32994c198218055d302858f59e6e25fc",
+      "frame_ledger": "gaussian_static_bp_sources.json",
+      "frame_ledger_sha256": "84ee48a4fd15474a1ca832bef3193c065d6a5bc8f9610b4dab15d0f8213de2a9",
+      "native_frames": 2631,
+      "physical_time": [
+        0,
+        5254.0
+      ],
+      "model": "BP",
+      "background": "static",
+      "encounter_strength": 0.1,
+      "native_rows": 512,
+      "final_native_sha256": "2037334a346933552147fe8160edf36ce63a7d1ee0fdea495c4f2fdd9200c2cf",
+      "accepted_native_time": 5254.067378775472,
+      "last_actual_profile_time": 5254.0,
+      "accepted_native_after_last_profile": 0.06737877547220705,
+      "maximum_native_gap": 2.0000000000000444,
+      "missing_nominal_times": [],
+      "derivative_source": {
+        "path": "movies/scripts/reduce_gaussian_vp_cache.py",
+        "sha256": "678195c46d83054f982344184f08f4c67826babe5631eaaaae5b63a3f4c7d14f"
+      }
+    },
+    {
+      "case": "gaussian_expanding_bp",
+      "cache": "gaussian_expanding_bp.npz",
+      "cache_sha256": "5114a35d07ac122ad901ba98410de9c75b57141a6879bbc52a6a0bf7a3b66d6e",
+      "frame_ledger": "gaussian_expanding_bp_sources.json",
+      "frame_ledger_sha256": "cc97570241c382d171c23885de1a0b7c52844bc944905cfdab21f9d298874441",
+      "native_frames": 3670,
+      "physical_time": [
+        0,
+        7326.0
+      ],
+      "model": "BP",
+      "background": "expanding",
+      "encounter_strength": 0.1,
+      "native_rows": 512,
+      "final_native_sha256": "0b8f0417eb1c5873164c5bac4abb12483663a092aaa57bb69d794c88150a9542",
+      "accepted_native_time": 7327.034336802388,
+      "last_actual_profile_time": 7326.0,
+      "accepted_native_after_last_profile": 1.0343368023877701,
+      "maximum_native_gap": 2.0000000000000444,
+      "missing_nominal_times": [],
+      "derivative_source": {
+        "path": "movies/scripts/reduce_gaussian_vp_cache.py",
+        "sha256": "678195c46d83054f982344184f08f4c67826babe5631eaaaae5b63a3f4c7d14f"
+      }
+    }
+  ]
+}

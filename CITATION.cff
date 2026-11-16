@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+message: "Please cite this software when using VENUS."
+type: software
+title: "Vlasov–Einstein NUmerical Solver (VENUS)"
+version: 1.0.0
+license: BSD-3-Clause
+authors:
+  - given-names: Uddipan
+    family-names: Banik
+  - given-names: Frank C.
+    family-names: van den Bosch
+  - given-names: Sachiet
+    family-names: Kapur
+abstract: >-
+  VENUS evolves distributions of collisionless and weakly collisional matter
+  under spherical symmetry. It includes Einstein–Vlasov evolution in
+  Schwarzschild and ingoing Eddington–Finkelstein coordinates, Newtonian
+  Vlasov–Poisson and Boltzmann–Poisson evolution, weighted particle-in-cell
+  methods, grid methods, and spherical direct simulation Monte Carlo.
+keywords:
+  - Einstein–Vlasov
+  - Vlasov–Poisson
+  - Boltzmann–Poisson
+  - dark matter halos
+  - black holes

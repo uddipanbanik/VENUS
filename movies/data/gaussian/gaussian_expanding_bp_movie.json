@@ -1,0 +1,70 @@
+{
+  "case": "gaussian_expanding_bp",
+  "initial_condition_scope": "Existing truncated control: density on 7<r<13, velocity samples below3 Gaussian scales. No tail extension.",
+  "model": "BP",
+  "physical_time": [
+    0,
+    7326.0
+  ],
+  "native_distinct_frames": 3664,
+  "encoded_frames": 3664,
+  "fps": 48,
+  "duration_seconds": 76.33333333333333,
+  "pixel_size": [
+    1920,
+    864
+  ],
+  "axes": {
+    "log10_radius": [
+      -2.083925318456323,
+      4.084004369043677
+    ],
+    "log10_density": [
+      -15.0,
+      1.0
+    ],
+    "signed_slope": [
+      -10.0,
+      5.0
+    ]
+  },
+  "positive_density_samples": 1668194,
+  "finite_centered_slopes": 1528458,
+  "sampling": "Every positive density bin and finite centered21-cell logarithmic slope. Heavy segments have effective marker count at least 32. All density bins in each slope window are positive.",
+  "time_scope": "Constant-rate physical clock. Every plotted profile is an actual saved state. Each slot uses the latest preceding profile; the final actual accepted profile has one final slot. No density interpolation or extended final hold.",
+  "physical_step": 2.0,
+  "physical_units_per_playback_second": 96.0,
+  "last_physical_interval": 2.0,
+  "final_slot_is_shorter_than_nominal_physical_step": false,
+  "final_slot_scope": "A final off-grid accepted profile occupies one frame. Its actual final physical interval can be shorter than the nominal playback step; this one bounded endpoint slot retains the final data.",
+  "maximum_native_gap": 2.0000000000000444,
+  "maximum_saved_state_lag": 4.440892098500626e-14,
+  "source_native_states": 3670,
+  "displayed_distinct_states": 3664,
+  "off_grid_source_states_omitted_from_display": 6,
+  "cache_sha256": "5114a35d07ac122ad901ba98410de9c75b57141a6879bbc52a6a0bf7a3b66d6e",
+  "source_ledger_sha256": "cc97570241c382d171c23885de1a0b7c52844bc944905cfdab21f9d298874441",
+  "frame_ledger_sha256": "54cfb870b50b0743fd1c921b807d4a59f916d4df656b0df1d7e1466bef4d009b",
+  "renderer_sha256": "4837fcfbc0e067ad02c199560fec16bc7e02c55c6fa535272bdacd4b8254f2f4",
+  "artifacts": {
+    "gaussian_expanding_bp.mp4": {
+      "sha256": "2dd07c33c91905bb60e4b30d96736b2d72676472b284a23061e80c11cb3bacd6",
+      "bytes": 12312263
+    }
+  },
+  "render_seconds": 20.12969245808199,
+  "ordinate_display": "Density outside [10^-15,10^1] and slopes outside [-10,5] lie outside the visible ordinates. All source values and masks are retained.",
+  "slope_reference_guides": {
+    "values": [
+      -3.0,
+      -1.5,
+      -1.0
+    ],
+    "line_style": "dashed",
+    "numeric_labels": "One point above each line. Right-aligned at x=.97 for -3/-1 and x=.90 for -1.5 to separate labels."
+  },
+  "outside_visible_ordinates": {
+    "positive_density_samples": 30609,
+    "finite_slope_samples": 10599
+  }
+}

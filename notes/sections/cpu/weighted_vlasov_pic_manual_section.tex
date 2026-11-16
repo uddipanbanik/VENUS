@@ -1,0 +1,2834 @@
+\subsection{Weighted Particle--Mesh Boltzmann--Poisson Module}
+\label{sec:weighted-vlasov-pic}
+
+\noindent\textbf{Maturity and validation.}
+The task-specific weighted particle-in-cell (WPIC) runners are supported
+production implementations, but that status is not a blanket validation of a
+new physical regime.  Every scientific run still needs marker-count, radial-
+mesh, timestep, collision-cadence, collision-locality, and random-realization
+convergence.  Constant-cross-section material self-interacting-dark-matter
+(SIDM) runs have the strongest benchmark path.  Velocity-dependent SIDM,
+unequal-weight adaptation, and subhalo capture remain research
+extensions until the problem-specific long-time and population-control tests
+described below have passed.
+
+\begin{figure}[htbp]
+\centering
+\textbf{Physics flow: weighted particle--mesh module}
+\par\smallskip
+\begin{tikzpicture}[node distance=0.22cm]
+\node[physicsflow] (wp1) {Sample persistent weighted markers from the initial spherical phase-space distribution};
+\node[physicsflow,below=of wp1] (wp2) {Deposit every active marker's represented mass onto the radial gravity mesh};
+\node[physicsflow,below=of wp2] (wp3) {Solve the spherical Poisson equation to obtain the gravitational field};
+\node[physicsflow,below=of wp3] (wp4) {Apply a half gravitational kick and move the markers along their collisionless trajectories};
+\node[physicsflow,below=of wp4] (wp5) {Deposit the moved markers, recompute the endpoint field, and apply the second half kick};
+\node[physicsflow,below=of wp5] (wp6) {When a collision event is due, group nearby active markers and sample the physical encounter rate};
+\node[physicsflow,below=of wp6] (wp7) {Scatter two complete objects elastically, or merge a captured pair into one complete remnant};
+\node[physicsflow,below=of wp7] (wp8) {Update escaped, delayed, and internal-energy state; reconstruct profiles, write diagnostics or a restart, and continue};
+\draw[physicsarrow] (wp1) -- (wp2);
+\draw[physicsarrow] (wp2) -- (wp3);
+\draw[physicsarrow] (wp3) -- (wp4);
+\draw[physicsarrow] (wp4) -- (wp5);
+\draw[physicsarrow] (wp5) -- (wp6);
+\draw[physicsarrow] (wp6) -- (wp7);
+\draw[physicsarrow] (wp7) -- (wp8);
+\end{tikzpicture}
+\end{figure}
+
+\subsubsection{Purpose and state variables}
+\label{sec:wpic-continuum}
+
+The weighted particle--mesh module represents Vlasov--Poisson and
+Boltzmann--Poisson evolution with moving phase-space markers.  Let
+\(f(t,r,w,\eta)\) be the mass distribution function, \(r\) physical radius,
+\(w\) radial peculiar velocity, and \(\eta=L^2/2\), where \(L\) is the
+magnitude of specific angular momentum.  Integrating over the spatial angles
+and the tangential velocity azimuth gives
+\[
+ \dd M=8\pi^2 f\,\dd r\,\dd w\,\dd\eta,
+ \qquad \rho(t,r)=\frac{2\pi}{r^2}\int f\,\dd w\,\dd\eta .
+                                                               \tag{PIC0a}
+\]
+Thus \(f\) has units of mass per spatial volume per velocity volume.  With
+Hubble rate \(H(t)\), the Boltzmann--Poisson equations are
+\[
+ \partial_t f+(Hr+w)\partial_r f+
+ \left(\frac{2\eta}{r^3}-\Phi_r-Hw\right)\partial_w f=C[f],
+                                                               \tag{PIC0b}
+\]
+\[
+ \frac1{r^2}\partial_r(r^2\Phi_r)=4\pi G\rho_{\rm src},
+ \qquad \Phi_r=\frac{\partial\Phi}{\partial r}.          \tag{PIC0c}
+\]
+Here \(G\) is Newton's constant and \(\Phi\) is the peculiar gravitational
+potential.  Static isolated calculations set \(H=0\) and use the full halo
+density as \(\rho_{\rm src}\).  In an expanding total-density calculation,
+\(\rho_{\rm src}=\rho-\bar\rho\), where \(\bar\rho\) is the homogeneous
+background density; an already background-subtracted input enters directly.
+An imposed central mass and the unresolved interior mass enter through the
+inner enclosed-mass boundary condition.  The expanding background and its
+exact orbital update are derived in Section~\ref{sec:wpic-expanding-kdk}.
+
+The Vlasov--Poisson equations follow by setting \(C[f]=0\).  In that limit
+\(f\) remains constant along the characteristics of (PIC0b).  The particle
+method follows those trajectories and deposits their positive masses to
+solve (PIC0c).  Local collision sampling supplies \(C[f]\) when encounters
+are enabled.  The subhalo operator also evolves each object's mass
+and internal energy, so its state includes those additional properties.
+
+The code samples each occupied part of the distribution with many markers.
+In the source, \code{WeightedPICMarker} is the record that stores one marker's
+complete persistent physical and bookkeeping state:
+\[
+ (m_p,r_p,w_p,\eta_p,E_{{\rm int},p},
+   \sigma_{{\rm int},p},I_p,s_p),
+ \qquad \eta_p=\frac{L_p^2}{2},
+\]
+where \(m_p\) is represented mass, \(r_p\) is areal radius, \(w_p\) is radial
+velocity, \(L_p\) is angular-momentum magnitude, and
+\(\eta_p=L_p^2/2\) is the angular-momentum coordinate used by the solver.
+Furthermore, \(E_{{\rm int},p}\) is unresolved internal energy,
+\(\sigma_{{\rm int},p}\) is its one-dimensional internal velocity dispersion,
+\(I_p\) is a persistent integer identifier, and \(s_p\) records whether the
+marker is active, delayed inside the unresolved central region, or escaped.
+A collisionless orbit update changes \(r_p\) and \(w_p\) while
+keeping \(m_p\), \(\eta_p\), \(E_{{\rm int},p}\), and
+\(\sigma_{{\rm int},p}\) fixed.  Elastic collisions change \(w_p\) and
+\(\eta_p\), but leave both complete marker masses unchanged.  In the Plummer
+subhalo operator, capture replaces two whole objects by one remnant of mass
+\(m_i+m_j\) and increases its \(E_{\rm int}\).  Both the material SIDM
+operator and the Plummer encounter operator accept unequal positive marker
+masses.  The field solve uses those same masses on the radial mesh, so the
+calculation alternates between continuous marker orbits and mesh-based
+gravity without reverting to an equal-mass approximation.
+
+This chapter is restricted to the Newtonian Vlasov--Poisson and
+Boltzmann--Poisson WPIC code.  The separate Einstein--Vlasov WPIC
+implementation is documented in
+Section~\ref{sec:weighted-einstein-vlasov-pic}; it is collisionless and is not
+a substitute for the Newtonian collision paths described here.
+
+This representation is useful when a phase-space cell contains a sharp orbit
+boundary.  Several markers can occupy different positions inside that cell
+and follow their individual characteristics.  Orbit integration and field
+deposition are implemented in \path{cpu/include/ev/weighted_vlasov_pic.hpp}.
+Local elastic scattering is in
+\path{cpu/include/ev/weighted_vlasov_pic_collisions.hpp}.  The conservative bridge
+back to cell-average \(f(r,w,\eta)\) is in
+\path{cpu/include/ev/weighted_vlasov_pic_phase_remap.hpp}.  The two-clock event
+controller is in
+\path{cpu/include/ev/weighted_vlasov_pic_event_scheduler.hpp}.  The complete
+transport--collision--reconstruction event is assembled in
+\path{cpu/include/ev/weighted_pic_boltzmann_event.hpp}.
+Unequal-mass elastic scattering and inelastic capture for resolved Plummer
+subhalo encounters are in
+\path{cpu/include/ev/weighted_vlasov_pic_subhalo_collisions.hpp}.
+
+\subsubsection{Step 1: turn cell mass into marker mass}
+
+The spherical phase-space measure is
+\[
+ \dd\Gamma=8\pi^2\,\dd r\,\dd w\,\dd\eta.
+\]
+Therefore a cell average \(f_{ijk}\) contains the physical mass
+\[
+ M_{ijk}=8\pi^2f_{ijk}\Delta r_i\Delta w_j\Delta\eta_k. \tag{PIC1}
+\]
+VENUS first constructs every \(M_{ijk}\) and its cumulative sum.  A set of
+evenly spaced mass strata selects source cells from that cumulative sum.  This
+gives approximately equal marker masses while retaining the exact total:
+\[
+ \sum_p m_p=\sum_{ijk}M_{ijk}.                            \tag{PIC2}
+\]
+The phase-grid initializer chooses a common marker mass from the nearest floating-point values
+around the exact quotient.  The same selected mass is assigned to every
+marker.  Equation (PIC2) is then satisfied to floating-point accuracy while
+an initially quiet equal-mass sample is obtained.  Equality is an initializer
+choice, not a collision restriction: restart or adaptive marker populations
+may contain unequal positive masses.
+
+Let \(N_{\rm occupied}\) be the number of source phase-space cells with
+positive represented mass, \(N_{\rm per\ cell}\) the requested nominal number
+of markers for each such cell, and \(N_{\rm budget}\) the global upper limit on
+the total marker count.  The nominal marker count is
+\[
+ N_p=\min(N_{\rm occupied}N_{\rm per\ cell},N_{\rm budget}). \tag{PIC3}
+\]
+The defaults are 32 markers per occupied cell and a global limit of one
+million.  Selecting cells through mass strata lets a very small tail remain in
+the represented total without assigning one compulsory marker to every tiny
+tail cell.
+
+The central source code is:
+\codesource{WPIC marker initializer}
+{\path{cpu/include/ev/weighted_vlasov_pic.hpp}}
+{Converts positive phase-space cell masses into a deterministic weighted-marker
+ realization with the same represented total mass}
+\begin{lstlisting}[language=C++]
+cell_mass = 8.0 * PI * PI * f[q]
+          * dr[i] * dw[j] * deta[k];
+
+selected = systematic_sources(cells, marker_count,
+                              total_mass, offset);
+marker.mass = total_mass / marker_count;
+\end{lstlisting}
+
+
+\paragraph{Analytic radial halo initialization.}
+The power-law halo task constructs its particles directly in
+\code{initialize_markers} in \path{cpu/src/drivers/expanding_wpic.cpp}.
+It assigns a specified number of quiet velocity pairs to each occupied
+radial source cell. If cell $j$ contains mass $\Delta M_j$ and is sampled
+by $N_j$ markers, each marker in that cell has mass
+\begin{equation}
+ m_p=\frac{\Delta M_j}{N_j}.
+ \label{eq:analytic-radial-marker-mass}
+\end{equation}
+The uniform central source is sampled by the same rule. A common final
+normalization factor makes the represented resolved mass equal to its
+specified total. The radial cell masses differ, so a fixed marker count
+per radial cell produces unequal masses across the halo. Optional angular importance strata divide
+each source mass among the selected angular intervals before assigning
+its quiet pairs. The literal assignment is
+\codesource{Masses in the analytic radial halo sampler}
+{\path{cpu/src/drivers/expanding_wpic.cpp}, \code{initialize_markers}, lines 1027--1032}
+{Divides the source-shell mass in an angular stratum among its two markers per quiet pair}
+\begin{lstlisting}[language=C++]
+                const double marker_mass =
+                    shell_mass * represented_mass_fraction
+                    / static_cast<double>(2 * stratum_pairs);
+\end{lstlisting}
+Here \code{represented_mass_fraction} is the fraction of the source-shell
+mass assigned to the stratum, and \code{stratum_pairs} is its number of
+quiet pairs. The ordinary sampler has one angular stratum with fraction
+one. In collisionless evolution, these masses are quadrature weights
+for the gravitational source. In the subhalo encounter model,
+each is also the physical mass of one subhalo and enters its pair cross
+section. Increasing the number of such markers at fixed source mass
+therefore changes the physical subhalo population. Its mass distribution
+must be specified along with the halo density and velocity distribution.
+
+\subsubsection{Step 2: choose positions inside each source cell}
+
+For a piecewise-constant cell, VENUS uses shifted low-discrepancy coordinates
+in \(r,w,\eta\).  They spread the markers across the cell more evenly than
+independent random draws.  The shift is generated from the marker identifier,
+source-cell identifier, seed, and coordinate number.  Repeating a run with the
+same seed therefore produces the same markers.
+
+An analytic equilibrium supplies more information than a cell average.  In
+that case the density-aware initializer proposes continuous points inside the
+cell and accepts them with probability
+\[
+ P_{\rm accept}=\frac{f(r,w,\eta)}{f_{\rm bound}},        \tag{PIC4}
+\]
+where \(f_{\rm bound}\) is a verified upper bound for that cell.  A uniform
+number \(z\) in \((0,1)\) is drawn from the counter-based sequence, and the
+point is accepted when
+\[
+ z f_{\rm bound}\leq f(r,w,\eta).                        \tag{PIC5}
+\]
+Equations (PIC4)--(PIC5) sample the continuous distribution inside a cell.
+They are especially important when the energy support cuts through an
+\(\eta\) cell.
+
+For a distribution symmetric in radial velocity, markers are emitted in
+adjacent pairs with
+\[
+ (m,r,w,\eta),\qquad(m,r,-w,\eta).                       \tag{PIC6}
+\]
+Their initial radial momentum cancels exactly.  The code checks the cell
+masses and velocity faces before enabling this quiet pairing.
+
+\subsubsection{Step 3: deposit marker mass on the spherical mesh}
+
+Gravity needs a radial density.  Define the volume coordinate
+\[
+ q=\frac{r^3}{3},\qquad
+ \Delta V_i=4\pi(q_{i+1/2}-q_{i-1/2}).                  \tag{PIC7}
+\]
+Between neighboring shell centers \(q_i\leq q_p\leq q_{i+1}\), cloud-in-cell
+deposition uses
+\[
+ a_{pi}=\frac{q_{i+1}-q_p}{q_{i+1}-q_i},\qquad
+ a_{p,i+1}=1-a_{pi}.                                    \tag{PIC8}
+\]
+The two weights are nonnegative and add to one.  Near a physical boundary,
+the in-domain weights are normalized again so that their sum remains one.
+
+The expanding origin-parity path needs one additional construction.  Its
+markers remain active while crossing the unresolved physical region
+\(0\leq r_p<r_{\min}\), rather than reflecting at the innermost field face
+\(r_{\min}\).  Define
+\[
+ q_f=\frac{r_{\min}^3}{3},\qquad
+ \Delta q_0=2(q_0-q_f),\qquad
+ W_q=\min(\Delta q_0,q_f),                               \tag{PIC8a}
+\]
+where \(q_f\) is the volume coordinate of the inner face, \(q_0\) is the
+center of the first resolved shell, \(\Delta q_0\) is that shell's width in
+\(q\), and \(W_q\) is the inner handoff width.  The minimum with \(q_f\)
+keeps the handoff inside the physical range \(q\geq0\).  For a marker with
+\(q_p=r_p^3/3<q_f\), VENUS forms
+\[
+ s_p=\operatorname{clip}\!\left[
+       \frac{q_p-(q_f-W_q)}{W_q},0,1\right],
+ \qquad f_p=s_p^2(3-2s_p),                               \tag{PIC8b}
+\]
+where \(\operatorname{clip}(x,0,1)\) limits \(x\) to the closed interval
+\([0,1]\), \(s_p\) is the dimensionless position through the handoff, and
+\(f_p\) is the fraction of marker \(p\)'s cloud assigned to the resolved
+mesh.  The ordinary normalized CIC or TSC face stencil
+\(a^{\rm face}_{pi}\), evaluated at \(r_{\min}\), is frozen below the face
+and partitioned as
+\[
+ \widetilde a_{pi}=f_p a^{\rm face}_{pi},\qquad
+ h_p=1-f_p,\qquad
+ \sum_i\widetilde a_{pi}+h_p=1.                          \tag{PIC8c}
+\]
+Here \(\widetilde a_{pi}\) is the weight delivered to resolved shell \(i\)
+and \(h_p\) is the complementary weight delivered to the unresolved inner
+gravity carrier.  For \(q_p\geq q_f\), the ordinary position-dependent
+stencil is used and \(h_p=0\); for \(q_p\leq q_f-W_q\), \(f_p=0\) and the
+whole marker is carried inside.  Because \(f_p\) and its first derivative
+match continuously at both ends, a marker crossing \(r_{\min}\) changes the
+resolved and central source smoothly.
+
+VENUS deposits extensive quantities first:
+\[
+ \begin{aligned}
+ M_i&=\sum_p \widetilde a_{pi}m_p,&
+ P_{r,i}&=\sum_p \widetilde a_{pi}m_pw_p,\\
+ R_{2,i}&=\sum_p \widetilde a_{pi}m_pw_p^2,&
+ T_{2,i}&=\sum_p \widetilde a_{pi}m_p\frac{2\eta_p}{r_p^2}.
+ \end{aligned}                                           \tag{PIC9}
+\]
+Here \(i\) labels a resolved radial shell and the sum over \(p\) runs over
+active markers.  Thus \(M_i\) is deposited represented mass,
+\(P_{r,i}\) is deposited radial momentum, \(R_{2,i}\) is the mass-weighted
+radial second moment (the deposited sum of \(w_p^2\)), and \(T_{2,i}\) is the
+mass-weighted tangential second moment (the deposited sum of the squared
+tangential speed \(2\eta_p/r_p^2\)).
+In an ordinary reflecting calculation,
+\(\widetilde a_{pi}=a_{pi}\).  In the origin-parity handoff it has the
+meaning in equation (PIC8c).
+It then divides by \(\Delta V_i\) to form physical shell averages.  Since
+\(\sum_i\widetilde a_{pi}+h_p=1\), summing the deposited shell masses and
+the unresolved carrier mass gives
+\[
+ \sum_i M_i+M_{\rm hid}
+ =\sum_p m_p,\qquad M_{\rm hid}=\sum_p h_pm_p.           \tag{PIC10}
+\]
+Thus each marker contributes exactly \(f_pm_p\) to the boundary cloud and
+\((1-f_p)m_p\) to the inner carrier: no represented mass is created or
+lost.  The carrier is a mass-only unresolved source for gravity; for markers
+that are wholly resolved, the usual partition-of-unity proof also applies to
+every raw moment in equation (PIC9).  The Poisson solve includes
+\(M_{\rm hid}\) as central enclosed mass. Equations (PIC8a)--(PIC8c)
+transfer the represented mass continuously between the boundary cloud and
+the unresolved central source as the marker crosses \(r_{\min}\).
+The marker retains its physical mass and phase-space coordinates.
+
+The current Poisson routine represents shell mass as
+\(4\pi r_i^2\rho_i\Delta r_i\).  The adapter therefore passes
+\[
+ \rho_i^{\rm field}=\frac{M_i}{4\pi r_i^2\Delta r_i}.   \tag{PIC11}
+\]
+Equation (PIC11) makes the mass seen by the Poisson solver exactly equal to
+the shell mass \(M_i\); the same field solve adds \(M_{\rm hid}\) separately
+as the unresolved central source, so its total represented source remains the
+right-hand side of equation (PIC10).
+
+Below the first physical mesh face, \(r_f=r_{\min}\), the Poisson solver
+continues the unresolved source as a uniform sphere. Let \(M_f\) be the
+enclosed source mass at that face, \(M_c\) a prescribed central point mass,
+and \(\Phi_f=\Phi(r_f)\). For expanding \code{total_density} input,
+\(M_f=M_c+M_{\rm hid}-4\pi\bar\rho r_f^3/3\), where
+\(\bar\rho\) is the homogeneous background density. With
+\code{density_contrast} input, the represented mass is already the
+source contrast and \(M_f=M_c+M_{\rm hid}\). The continuation is
+\[
+ \Phi_r(r)=\frac{GM_c}{r^2}
+          +\frac{G(M_f-M_c)}{r_f^3}r,\qquad 0<r<r_f,       \tag{PIC11a}
+\]
+\[
+ \Phi(r)=\Phi_f+GM_c\left(\frac{1}{r_f}-\frac{1}{r}\right)
+       +\frac{G(M_f-M_c)}{2r_f^3}(r^2-r_f^2).             \tag{PIC11b}
+\]
+Integrating the uniform density gives an enclosed mass proportional to
+\(r^3\), which produces the linear force in (PIC11a). Integrating that
+force from \(r_f\) gives (PIC11b). Both quantities join the resolved field
+continuously at the face. An empty central cavity with \(M_f=M_c=0\)
+therefore has zero force even when the first resolved shell contains matter.
+The code samples the face mass and potential before applying this continuation:
+\codesource{Gravitational field inside the first mesh face}
+{\path{cpu/include/ev/vlasov_poisson.hpp}; \path{gpu/src/wpic_vlasov_poisson.cu}}
+{Continue the enclosed source as a uniform central sphere, separating a prescribed point mass}
+\begin{lstlisting}[language=C++]
+const double r0 = face_resolved ? field.radial_edge.front() : r.front();
+const double phi0 = face_resolved ? field.phi_edge.front() : field.phi.front();
+const double face_force = face_resolved
+    ? p.vp_gravity * field.source_mass_edge.front() / (r0 * r0)
+    : field.phi_r.front();
+\end{lstlisting}
+The unresolved sphere supplies a force approximation inside \(r_f\).
+Scientific profiles at nearby radii require comparison with a smaller
+\(r_f\) and sufficient radial and particle resolution.
+
+\subsubsection{Step 4: solve gravity and move the markers}
+
+The deposited mass is sent through the ordinary spherical Poisson solver.
+Write
+\[
+ g(t,r)=-\partial_r\Phi(t,r),
+\]
+where \(\Phi\) is the Newtonian gravitational potential and \(g\) is the
+signed radial gravitational acceleration.  For positive enclosed mass,
+\(g<0\), so gravity points inward.  Each active marker then follows
+\[
+ \dot r_p=w_p,\qquad
+ \dot w_p=\frac{2\eta_p}{r_p^3}+g(t,r_p)
+          =\frac{2\eta_p}{r_p^3}-\Phi_r(t,r_p).          \tag{PIC12}
+\]
+The library exposes both a generic frozen-field orbit adapter and a
+self-consistent endpoint-field KDK update.  The generic adapter calls the same
+VENUS characteristic machinery used by the grid solver, including ordinary
+integration and selective Levi--Civita retry.  It is used by the frozen-field
+event module.
+
+The current static/expanding production runner uses a self-consistent KDK
+step:
+\begin{enumerate}
+\item deposit markers at \(t^n\) and solve \(\Phi^n\);
+\item apply one half gravitational kick and an exact central-force drift;
+\item deposit the drifted markers at \(t^{n+1}\) and solve \(\Phi^{n+1}\);
+\item apply the endpoint half kick.
+\end{enumerate}
+The drift formula and expanding variables are derived in
+Section~\ref{sec:wpic-expanding-kdk}.
+
+Marker states distinguish active, delayed-inner, and escaped mass.  A restart
+stores every marker, its state, weight, \(\eta\), persistent identifier,
+unresolved internal energy, delayed-boundary data, both random samplers, both
+elapsed event-clock ages, time, and step. The self-consistent KDK path
+reconstructs its radial field from the stored markers. The static Boltzmann
+event path also stores the field held between potential updates.
+
+\subsubsection{Step 5: form local collision shells}
+
+Elastic SIDM scattering is local in position.  At the start of a collision
+interval, VENUS sorts the active markers by radius and divides the sorted list
+into shells.  The nominal shell contains 4096 markers, following the SphDSMC
+construction used for the Frank benchmark.  The two shell faces are placed
+halfway in the volume coordinate \(q=r^3/3\) between the last marker on one
+side and the first marker on the other side.  This gives
+\[
+ V_s=\frac{4\pi}{3}\left(r_{s,+}^3-r_{s,-}^3\right),
+ \qquad
+ n_s=\frac{N_s}{V_s},\qquad
+ n_{{\rm partner},s}=\frac{N_s-1}{V_s},\qquad
+ \rho_s=\frac{\sum_{i\in s}m_i}{V_s}.                   \tag{PIC13}
+\]
+Here \(N_s\) is the number of complete markers in shell \(s\), \(m_i\) is the
+represented mass of marker \(i\), \(n_s\) is the marker number density, and
+\(\rho_s\) is mass density.  A chosen marker cannot collide with itself, so
+its finite-shell density of available partners is
+\(n_{{\rm partner},s}=(N_s-1)/V_s\).  The familiar continuum replacement
+\(n_{{\rm partner},s}\simeq n_s\) has relative error \(1/N_s\).  Define the
+shell's mass-weighted mean radial velocity and one-dimensional orbital
+velocity dispersion by
+\[
+ M_s=\sum_{i\in s}m_i,\qquad
+ \overline w_s=\frac{1}{M_s}\sum_{i\in s}m_iw_i,        \tag{PIC14a}
+\]
+\[
+ \sigma_{v,s}^{\,2}=\frac{1}{3M_s}
+ \sum_{i\in s}m_i\left[
+   (w_i-\overline w_s)^2+\frac{2\eta_i}{r_i^2}
+ \right].                                               \tag{PIC14b}
+\]
+The symbols \(r_i,w_i,\eta_i\) are marker radius, radial velocity, and half
+the squared angular momentum.  Therefore \(2\eta_i/r_i^2\) is the squared
+tangential speed.  The factor \(1/3\) converts the total three-dimensional
+random kinetic variance into a one-dimensional dispersion.
+
+For a sampled unordered pair \(i,j\), let
+\(u_{ij}=|\bm v_i-\bm v_j|\) be relative speed and
+\(\Sigma_{ij}(u_{ij})\) its physical pair area.  The tangential directions
+are not stored in spherical phase space, so VENUS samples their relative
+azimuth deterministically.  It then evaluates the collision-rate-weighted
+mean free path directly from the evolving distribution:
+\[
+ \boxed{\displaystyle
+ \lambda_s=
+ \frac{\langle u_{ij}\rangle_s}
+ {n_{{\rm partner},s}\left\langle
+ u_{ij}\Sigma_{ij}(u_{ij})\right\rangle_s}}.             \tag{PIC14c}
+\]
+Angle brackets denote an average over unordered marker pairs and relative
+tangential azimuth.  All pairs are used when the shell contains at most 512
+unordered pairs; otherwise 512 deterministic pair samples are used.  For a material cross section per
+mass \(s(u)=\sigma(u)/m\),
+\[
+ \Sigma_{ij}(u)=\frac{m_i+m_j}{2}s(u).
+\]
+For \(N_s\) equal masses and constant \(s\), equation (PIC14c) gives
+\[
+ \lambda_s=\frac{N_s}{N_s-1}\frac{1}{\rho_s s}.
+\]
+It approaches Frank and Tokayer's continuum result
+\(\lambda_s=1/(\rho_s s)\) as \(N_s\) grows.  Retaining the finite-\(N_s\)
+factor makes the locality diagnostic exactly consistent with the
+unordered-pair trial law in equation (PIC17), including in a sparse shell.
+For a velocity-dependent interaction, \(\sigma_{v,s}\) describes how broad
+the evolving velocity distribution is, while equation (PIC14c) uses the full
+sampled distribution rather than replacing it by one guessed RMS speed.  This
+distinction matters when a low-speed tail has a much larger cross section.
+
+If the shell width exceeds \(\lambda_s\), the shell is divided into two
+equal-population children.  The criterion is applied recursively to each child.  Refinement
+continues down to the configured minimum population.  The history output
+records
+\[
+ \max_s \frac{r_{s,+}-r_{s,-}}{\lambda_s}.               \tag{PIC15}
+\]
+A value below one verifies that an accepted event joins markers within one
+mean free path.  A production run can request a hard stop when equation
+(PIC15) reaches one.
+
+The source code implements this construction directly:
+\codesource{WPIC adaptive collision-shell builder}
+{\path{cpu/include/ev/weighted_vlasov_pic_collisions.hpp}}
+{Measures the velocity-averaged mean free path and recursively divides a
+ radial shell when its width is not local}
+\begin{lstlisting}[language=C++]
+const auto mfp = velocity_averaged_mean_free_path(
+    markers, radius_order, begin, end, shell.volume,
+    parameters, collision_options);
+shell.mean_free_path = mfp.mean_free_path;
+shell.orbital_velocity_dispersion =
+    mfp.orbital_velocity_dispersion;
+
+if (shell_width > shell.mean_free_path
+    && shell_count >= 2 * minimum_shell_markers) {
+    build_shell(left_half);
+    build_shell(right_half);
+}
+\end{lstlisting}
+
+\subsubsection{Step 6: choose the collision pairs}
+
+Every pair of markers in one shell is physically eligible.  VENUS samples the
+realized events with Bird's no-time-counter method.  Define
+\[
+ {\cal K}_{ij}(u)=u\Sigma_{ij}(u),
+ \qquad {\cal K}_{\max}\geq
+ \max_{a,b\in s}{\cal K}_{ab}(|\bm v_a-\bm v_b|).       \tag{PIC16}
+\]
+The symbol \({\cal K}_{ij}\) is the pair collision kernel: relative speed
+times physical pair area.  It has dimensions of volume per time.
+A Poisson process is a random event-counting model with independent waiting
+intervals: for a constant rate \(\nu\), the chance of no event during
+\(\Delta t\) is \(e^{-\nu\Delta t}\), and the waiting time to the next event
+has an exponential distribution.  This statistical use of ``Poisson'' is
+different from the Poisson field equation used for gravity.  The trial-event
+clock is such a process with rate
+\[
+ \nu_{\rm trial}=\frac{N_s-1}{2}\,n_s{\cal K}_{\max}.    \tag{PIC17}
+\]
+If \(z_1\) is uniform on \((0,1)\), the time to the next trial is
+\[
+ \delta t_{\rm trial}=-\frac{\ln z_1}{\nu_{\rm trial}}. \tag{PIC18}
+\]
+For that trial, two distinct marker indices are drawn uniformly from the
+shell.  With \(u=|\bm v_a-\bm v_b|\), a second uniform number \(z_2\) accepts
+the pair when
+\[
+ z_2 < \frac{{\cal K}_{ab}(u)}{{\cal K}_{\max}}.         \tag{PIC19}
+\]
+Equations (PIC17)--(PIC19) make the accepted-pair rate proportional to
+\(f(\bm v_a)f(\bm v_b)u\Sigma_{ab}(u)\).  The calculation visits the realized
+trials and scales as \(N_p\log N_p+N_{\rm trial}\), including the radial sort.
+
+The corresponding code is:
+\codesource{WPIC no-time-counter collision sampler}
+{\path{cpu/include/ev/weighted_vlasov_pic_collisions.hpp}}
+{Draws trial times and distinct local marker pairs, then accepts each pair
+ against the verified relative-speed--cross-section majorant}
+\begin{lstlisting}[language=C++]
+clock += -std::log(rng.uniform_open()) / trial_rate;
+ia = rng.uniform_index(shell_count);
+ib = distinct_uniform_index(shell_count, ia);
+
+u_sigma = relative_speed * pair_total_cross_section(
+    relative_speed, first_mass, second_mass, ...);
+if (rng.uniform_open() * majorant_u_sigma < u_sigma) {
+    scatter_pair(ia, ib);
+}
+\end{lstlisting}
+
+Active markers may have unequal represented masses.  Each accepted elastic
+event acts on the two complete masses in their mass-weighted centre-of-mass
+frame.  Neither marker is split and both masses remain unchanged.
+
+\subsubsection{Step 7: draw the outgoing direction}
+
+A reduced spherical marker stores \(w=v_r\) and \(\eta=L^2/2\).  At its
+current radius, its tangential speed is
+\[
+ v_t=\frac{\sqrt{2\eta}}{r}.                            \tag{PIC20}
+\]
+Spherical symmetry makes the tangential azimuth uniformly distributed.
+VENUS draws an azimuth \(\alpha\) and lifts the marker to
+\[
+ \bm v=(w,v_t\cos\alpha,v_t\sin\alpha).                \tag{PIC21}
+\]
+
+At the exact coordinate origin, a finite spherical distribution has
+\(\eta=0\). The stored \(|w|\) is the speed, and its Cartesian direction
+is sampled isotropically. After scattering, the full outgoing speed is
+stored with zero angular momentum, so the complete kinetic energy is
+retained. The Cartesian pair update still conserves its vector momentum.
+The mean projection along any reference axis is zero and its second moment
+is \(w^2/3\). Shell dispersions, mean-free-path estimates, and collision
+clocks use this same isotropic distribution. A positive radius whose square
+underflows cannot represent a newly generated transverse energy in
+\(\eta=r^2v_t^2/2\); the material operator rejects that state before any
+collision is applied.
+For an accepted pair, define
+\[
+ M_{12}=m_1+m_2,\qquad
+ \bm V=\frac{m_1\bm v_1+m_2\bm v_2}{M_{12}},
+ \qquad \bm u=\bm v_1-\bm v_2.                         \tag{PIC22}
+\]
+Here \(m_1,m_2\) are the complete marker masses, \(M_{12}\) is their sum,
+\(\bm V\) is their centre-of-mass velocity, and \(u=|\bm u|\).
+
+The differential cross section selects the direction of \(\bm u'\).  Write
+\(\mu=\cos\theta\), where \(\theta\) is measured from \(\bm u\), and let
+\(\psi\) be the azimuth around \(\bm u\).  For isotropic scattering, two
+uniform numbers \(z_3,z_4\) give
+\[
+ \mu=2z_3-1,
+ \qquad \psi=2\pi z_4.                                 \tag{PIC23}
+\]
+
+For the Yukawa--Born kernel, the numerical parameters \(m_\chi\) and
+\(m_\phi\) set the speed scale \(m_\phi/m_\chi\), and
+\(u=|\bm u|\) is the pair's relative speed defined in equation (PIC22).
+Section~\ref{sec:yukawa-material-units} derives the amplitude and speed
+conversion from physical particle masses and coupling to material-SIDM code
+units.
+With the abbreviations \(a=m_\phi^2\) and
+\(b=m_\chi^2u^2/2\),
+\[
+ \frac{\dd\sigma}{\dd\Omega}\propto
+ \frac{1}{[a+b(1-\mu)]^2},
+ \quad a=m_\phi^2,
+ \quad b=\frac{m_\chi^2u^2}{2}.                       \tag{PIC24}
+\]
+VENUS integrates this expression analytically.  A uniform \(z_3\) samples
+the probability above the selected cosine.  With
+\(y=(m_\chi u/m_\phi)^2\), the stable inverse is
+\[
+ \mu=1-\frac{2z_3}{1+y(1-z_3)}.                         \tag{PIC25}
+\]
+It approaches the uniform cosine \(1-2z_3\) as \(y\to0\).  At large
+\(y\), the implementation divides numerator and denominator by \(y\),
+keeping the arithmetic bounded.  The same inverse is used by material WPIC
+and SphDSMC.
+\codesource{Yukawa scattering angle}
+{\path{cpu/include/ev/finite_angle_boltzmann.hpp}}
+{Actual branches of \code{bp_fa_yukawa_born_mu_from_unit}; \code{z} is the
+ sampled probability and \code{y} is the squared relative speed ratio}
+\begin{lstlisting}[language=C++]
+if (y <= 1.0) {
+    one_minus_mu = 2.0 * z / (1.0 + y * (1.0 - z));
+} else {
+    const double inverse_y = 1.0 / y;
+    one_minus_mu = 2.0 * z * inverse_y / (inverse_y + (1.0 - z));
+}
+\end{lstlisting}
+Equation (PIC25) draws more small-angle events when the differential cross
+section is forward peaked.  The azimuth remains \(\psi=2\pi z_4\).
+
+An orthonormal basis \((\widehat{\bm u},\bm e_1,\bm e_2)\) then gives
+\[
+ \widehat{\bm u}'=
+ \mu\widehat{\bm u}
+ +\sqrt{1-\mu^2}\left(\cos\psi\,\bm e_1
+ +\sin\psi\,\bm e_2\right).                           \tag{PIC26}
+\]
+The outgoing velocities are
+\[
+ \bm v_1'=\bm V+\frac{m_2}{M_{12}}u\widehat{\bm u}',
+ \qquad
+ \bm v_2'=\bm V-\frac{m_1}{M_{12}}u\widehat{\bm u}'.  \tag{PIC27}
+\]
+Thus each accepted event preserves all three components of pair momentum and
+the pair kinetic energy.  The reduced marker variables are updated with
+\[
+ w_p'=v_{p,r}',
+ \qquad
+ \eta_p'=\frac{r_p^2}{2}\left[(v_{p,y}')^2+(v_{p,z}')^2\right]. \tag{PIC28}
+\]
+Equation (PIC28) is the angular-momentum redistribution.  Each collision can
+move both markers to new values of \(L=\sqrt{2\eta}\).
+
+The main source lines are:
+\codesource{WPIC finite-angle elastic scatter}
+{\path{cpu/include/ev/weighted_vlasov_pic_collisions.hpp}}
+{Samples the outgoing relative direction, applies the unequal-mass
+ centre-of-mass map, and returns the updated spherical marker variables}
+\begin{lstlisting}[language=C++]
+const double total_mass = first_mass + second_mass;
+const BPFAVec3 centre = bp_fa_scale(
+    bp_fa_add(
+        bp_fa_scale(v1, first_mass),
+        bp_fa_scale(v2, second_mass)),
+    1.0 / total_mass);
+const double mu = sample_scatter_mu(u, p, options, rng);
+const double psi = 2.0 * PI * rng.uniform_open();
+const BPFAVec3 relative_after =
+    bp_fa_scale(
+        scattered_relative_direction(relative, mu, psi), u);
+
+out1 = bp_fa_add(
+    centre,
+    bp_fa_scale(relative_after, second_mass / total_mass));
+out2 = bp_fa_sub(
+    centre,
+    bp_fa_scale(relative_after, first_mass / total_mass));
+marker.eta = 0.5 * r * r * (out.y * out.y + out.z * out.z);
+\end{lstlisting}
+
+\subsubsection{Step 8: schedule orbital motion, field refreshes, and collisions}
+
+The frozen-field event library keeps separate gravitational-field and
+collision clocks.  The first clock measures the elapsed time since the field
+was refreshed.  In \path{weighted_pic_boltzmann_potential_timescale}, its
+deadline uses the represented-mass-weighted root-mean-square field and rate:
+\[
+ T_\Phi=\eta_\Phi\min\left[
+ \left(\frac{\sum_i\omega_i\Phi_i^2}
+             {\sum_i\omega_i\dot\Phi_i^2}\right)^{1/2},
+ \left(\frac{\sum_i\omega_i g_i^2}
+             {\sum_i\omega_i\dot g_i^2}\right)^{1/2}
+ \right].                                             \tag{PIC29}
+\]
+Here \(M_i\geq0\) is deposited shell mass,
+\(\omega_i=M_i/\sum_jM_j\), \(g=-\Phi_r\) is the radial acceleration defined
+in (PIC12), and a dot denotes the physical-time derivative calculated from
+the current moments by \code{vp_potential_time_derivative}.  The source is
+\path{cpu/include/ev/weighted_pic_boltzmann_event.hpp}, lines 145--203.
+Each channel contributes only when both of its mean squares exceed
+\((4096\epsilon_{\rm mach})^2\); otherwise its time is infinite, where
+\(\epsilon_{\rm mach}\) is double-precision machine roundoff.  Zero represented
+mass and the helper's expanding-background branch also return infinity.
+The standalone static/expanding KDK drivers instead use the successive-field
+maximum-norm clock in (PIC39a)--(PIC39c).
+The second clock measures the elapsed time since the last collision update.
+Its deadline is
+ \[
+ T_{\rm coll}=\eta_{\rm coll}\min_r
+ \left[n_{\rm partner}(r)\left\langle
+ u\Sigma_{ij}(u)\right\rangle_r\right]^{-1}.          \tag{PIC30}
+\]
+Here \(\eta_\Phi\) and \(\eta_{\rm coll}\) are accuracy parameters no larger
+than one, and \(n_{\rm partner}(r)=(N_s-1)/V_s\) is the finite-shell partner
+density at the shell containing \(r\).  The averages in equation (PIC30) are
+measured from the current markers in the local collision shells.  The default
+pilot uses 128 uniformly chosen pairs per shell.  For each pair it draws the
+unresolved tangential azimuths and evaluates \(u\Sigma_{ij}(u)\) with the
+actual two masses.  If the sample mean is \(\overline{\cal K}_s\)
+and its standard error is \(e_s\), the scheduling rate uses
+\[
+ {\cal K}_{s,\rm schedule}=
+ \min({\cal K}_{s,\max},\overline{\cal K}_s+4e_s).      \tag{PIC30a}
+\]
+The four-error buffer makes an accidentally long collision interval unlikely.
+The exact majorant \({\cal K}_{s,\max}\) from equation (PIC16) still controls every
+internal NTC substep.  Thus the outer clock follows the physical mean rate,
+while the event generator retains its strict upper bound.
+
+Let \(A_\Phi\) and \(A_{\rm coll}\) be the two elapsed clock ages.  The next
+frozen-field orbit interval is
+\[
+ \Delta t=\min\left(T_\Phi-A_\Phi,
+                    T_{\rm coll}-A_{\rm coll},
+                    \Delta t_{\rm orbit,max}\right).  \tag{PIC31}
+\]
+The orbit integrator may take many internal steps during \(\Delta t\).  These
+internal steps only move the markers.  The endpoint distribution is
+reconstructed after a scheduled event.  This arrangement permits accurate
+pericentre integration, including Levi--Civita retries, while keeping the
+number of phase-space remaps small.
+
+The finite cap \(\Delta t_{\rm orbit,max}\) is also a clock-probe interval.
+If the cap arrives before either physical deadline, VENUS deposits only the
+radial mass and velocity moments needed to remeasure \(T_\Phi\) and
+\(T_{\rm coll}\).  It keeps the current gravitational field and does not
+construct the full phase-space array at this probe.  If a newly measured
+deadline is already shorter than its accumulated age, the corresponding
+event is carried out immediately.  This catches a rapid departure from an
+initial equilibrium without introducing an extra remap at every orbit step.
+
+At the end of the interval, VENUS carries out the event whose deadline has
+arrived:
+\begin{enumerate}
+\item If the collision deadline arrives first, move the markers through the
+frozen potential, apply the local NTC collisions from Steps 5--7, and then
+reconstruct the endpoint distribution.
+\item If the potential deadline arrives first, move the markers, reconstruct
+the endpoint distribution, deposit its mass, and solve for the new potential.
+The collision age is retained, so the pending collision deadline continues
+to approach.
+\item If both deadlines arrive together and \(T_{\rm coll}<T_\Phi\), use the
+collision-first order in item 1.
+\item If both deadlines arrive together and \(T_\Phi\leq T_{\rm coll}\),
+reconstruct and refresh the field first, and then apply the collision update.
+\end{enumerate}
+
+Only the clock associated with a completed event is reset.  For example, a
+field refresh leaves \(A_{\rm coll}\) unchanged.  Several field refreshes can
+therefore occur during one collision interval, and several collision updates
+can occur during one field-refresh interval.  After each reconstruction,
+VENUS measures the current timescales again and plans the next event with the
+remaining clock ages.
+
+The integrated state keeps both continuous markers and a reconstructed
+phase-space snapshot.  The snapshot contains a cell-average grid and, when
+needed, a short list of continuous carrier markers described in Step 9.  A
+Boolean flag records whether this combined snapshot describes the current
+markers.  A collision-first event ends with reconstruction, so the flag is
+true.  At a coincident potential-first event, VENUS reconstructs the snapshot,
+solves for the field, and then scatters the markers.  The local collision does
+not change any marker radius or the radial mass profile, so the new field is
+still valid.  The velocity-space snapshot is marked stale and is rebuilt only
+when phase-space output or the next grid synchronization requires it.  This
+uses one velocity reconstruction at that endpoint.
+
+The source expresses this rule directly:
+\codesource{WPIC two-clock event scheduler}
+{\path{cpu/include/ev/weighted_vlasov_pic_event_scheduler.hpp}}
+{Chooses the next orbit interval and orders coincident field-refresh and
+ collision events without resetting the other physical clock}
+\begin{lstlisting}[language=C++]
+WeightedPICEventPlan event = plan_weighted_pic_event(
+    clock, t_phi, t_collision,
+    eta_phi, eta_collision, orbit_cap);
+
+execute_weighted_pic_event(
+    event,
+    [&] { advance_markers_in_frozen_field(event.orbit_interval); },
+    [&] { reconstruct_endpoint_distribution(); },
+    [&] { apply_local_ntc_collisions(collision_age); });
+commit_weighted_pic_event(clock, event);
+\end{lstlisting}
+
+The production wrapper calls the same operations through one function:
+\codesource{WPIC Boltzmann event wrapper}
+{\path{cpu/include/ev/weighted_pic_boltzmann_event.hpp}}
+{Assembles transport, deposition, collision sampling, phase-space
+ reconstruction, and event diagnostics into one accepted update}
+\begin{lstlisting}[language=C++]
+WeightedPICBoltzmannEventDiagnostics diagnostic =
+    advance_weighted_pic_boltzmann_event(
+        state, field_grid, phase_geometry, parameters,
+        orbit_plan, event_options, collision_options,
+        remaining_run_time);
+\end{lstlisting}
+The returned diagnostic states the selected ordering, the number of NTC
+trials and accepted pairs, whether reconstruction occurred before or after
+collision, and the marker mass before and after the event.
+
+The collision sampler state and both clock ages belong in a restart.  This
+preserves the physical time remaining to each event after a continuation.
+
+\subsubsection{\texorpdfstring{Step 9: reconstruct cell-average \(f(r,w,\eta)\)}
+{Step 9: reconstruct cell-average f(r,w,eta)}}
+
+The marker ensemble is itself a sampled distribution function.  Gravity needs
+the radial deposition in equations (PIC7)--(PIC11).  A phase-space snapshot is
+reconstructed at a scheduled endpoint, an output, or a restart conversion.
+The event order in Step 8 determines whether that endpoint reconstruction is
+performed before or after the NTC collision update.
+
+VENUS first places each active marker in one radial cell, then groups markers
+with exactly the same stored mass.  ``Exactly'' here means literal equality
+of the stored floating-point mass, not membership in a tolerance bin; the
+remap never combines two unequal packet masses into one projection pair.
+Within each numerical projection group it sorts by kinetic energy evaluated
+at the cell center.  The lowest and highest remaining energies form a pair;
+marker IDs break exact ties.  Pairing across the occupied energy range gives
+the nonnegative projection a broad moment interval while each member still
+uses velocity cells near its own continuous velocity.  This grouping is only
+a reconstruction device: the physical NTC collision sampler remains free to
+pair different masses.  For group mass \(m_g\), one continuous marker pair
+has target radial momentum and kinetic energy
+\[
+ P_*=m_g(w_1+w_2),
+ \qquad
+ K_*=m_g\left[\frac{w_1^2+w_2^2}{2}
+ +\frac{\eta_1+\eta_2}{r_i^2}\right].                 \tag{PIC32}
+\]
+The remap finds nonnegative weights \(a_\ell\) on nearby pairs of velocity
+cells such that
+\[
+ \sum_\ell a_\ell=1,
+ \quad
+ \sum_\ell a_\ell(w_{\ell1}+w_{\ell2})=P_*/m_g,
+ \quad
+ \sum_\ell a_\ell(E_{\ell1}+E_{\ell2})=K_*/m_g.       \tag{PIC33}
+\]
+It deposits \(m_ga_\ell\) into each member of pair \(\ell\).  An odd marker,
+including a marker whose mass is unique in that radial cell, is paired with
+an identical copy and each copy receives half the ordinary pair weight.  This
+does not split or add a persistent marker; it is only a two-point
+representation used while depositing one unchanged mass \(m_i\).  Thus a
+discrete unequal-weight hierarchy can form ordinary equal-mass projection
+groups, whereas a realistic continuously varying mass spectrum may leave
+almost every group as a singleton.  The latter case is algebraically valid
+but can be expensive and noisy; record the duplicated-singleton fraction,
+projection cost, and carrier fraction, and refine both the velocity grid and
+marker population before interpreting it.  The reconstructed
+cell average is
+\[
+ f_{ijk}=\frac{M_{ijk}}{
+ 8\pi^2\Delta r_i\Delta w_j\Delta\eta_k}.             \tag{PIC34}
+\]
+Equations (PIC33)--(PIC34) preserve active marker mass, radial momentum, and
+kinetic energy while keeping every cell mass nonnegative.  Hidden-inner and
+escaped marker masses remain separate ledger entries.  A marker pair outside
+the velocity domain stops the remap and reports whether the \(w\) or \(L\)
+extent must be enlarged.
+
+A continuous velocity can also lie inside the grid faces while its exact
+moments lie outside the set formed by the nearby cell centers.  For example,
+consider a marker with \(w=0\) and \(\eta=0\) on a cell-average grid whose
+first \(\eta\) center is positive.  The marker belongs to the grid domain, but
+every nonnegative combination of cell-center packets has positive kinetic
+energy.  Placing the marker in the first cell would therefore add kinetic
+energy.
+
+VENUS searches a bounded neighborhood of velocity cells for the nonnegative
+weights in equation (PIC33).  The option
+\code{maximum_candidate_radius} limits this neighborhood, so the cost of one
+difficult pair stays local.  If an in-domain pair still has no solution, the
+pair can remain in continuous form as a reconstruction carrier.  Its marker
+indices are stored in \code{carrier_marker_indices}.  The reconstructed state
+then obeys
+\[
+ M_{\rm active}=\sum_{ijk}M_{ijk}+M_{\rm carrier},       \tag{PIC34a}
+\]
+and the two other budgets obey
+\[
+ \begin{aligned}
+ P_{r,\rm active}&=P_{r,\rm grid}+P_{r,\rm carrier},\\
+ K_{\rm active}&=K_{\rm grid}+K_{\rm carrier}.
+ \end{aligned}                                          \tag{PIC34b}
+\]
+The carrier markers remain in the main marker ensemble.  Orbit motion,
+radial gravity deposition, and NTC pair selection continue to include them.
+The carrier list records the small part of the endpoint distribution that the
+current velocity-cell centers cannot represent with exact moments.
+
+The option \code{maximum_carrier_mass_fraction} is a hard cumulative upper
+bound on \(M_{\rm carrier}/M_{\rm active}\).  Before retaining any unresolved
+pair, VENUS adds that pair's full represented mass to the carrier mass already
+accepted in the same remap and checks the resulting fraction.  The remap stops
+rather than silently crossing the cap.  Its default value is zero, so the
+first unresolved projection is reported immediately.  A diagnostic run may
+set a small positive bound and measure how this fraction changes as marker
+count and velocity resolution increase.  A production convergence sequence
+requires the fraction to decrease under refinement.  A velocity outside the
+grid faces always stops the remap, regardless of the carrier bound.
+
+The bridge is called with:
+\codesource{WPIC conservative phase-space remap}
+{\path{cpu/include/ev/weighted_vlasov_pic_phase_remap.hpp}}
+{Projects continuous weighted markers onto cell averages while reporting any
+ unresolved carrier mass and moment-closure residuals}
+\begin{lstlisting}[language=C++]
+WeightedPICPhaseRemapOptions remap_options;
+remap_options.maximum_candidate_radius = 8;
+remap_options.maximum_carrier_mass_fraction = 0.01;
+
+WeightedPICPhaseRemapResult remap =
+    remap_weighted_vlasov_pic_to_phase_space(
+        markers, geometry, parameters, remap_options);
+
+double represented_mass = std::accumulate(
+    remap.cell_mass.begin(), remap.cell_mass.end(), 0.0);
+represented_mass += remap.diagnostics.carrier_mass;
+\end{lstlisting}
+
+The useful remap cadence follows the event intervals in equations
+(PIC29)--(PIC31), which are usually longer than an orbit-integrator substep.
+Characteristic motion accumulates continuously on the markers, and equation
+(PIC34) is evaluated once at a scheduled endpoint.  Convergence studies vary
+the marker count, both clock tolerances, \(r_{\min}\), and all three grid
+resolutions.
+An out-of-domain velocity is a hard domain error rather than an implicit
+boundary remap.  Equations (PIC34a)--(PIC34b) provide the mass, momentum, and
+kinetic-energy closure conditions for every reconstruction.
+
+\subsubsection{Initial conditions, provenance, and task interfaces}
+
+There are two fresh-data routes in this module, and they produce different
+objects.
+
+\noindent\textbf{Expanding Vlasov--Poisson and subhalo route.}
+The consuming task is \code{venus_cpu_subhalo_wpic}.  Its fail-closed frontend
+is \path{cpu/src/apps/subhalo/expanding_wpic.cpp}.  In the shared driver,
+\code{PowerLawInitialCondition} is the source class that evaluates the
+normalized, tapered power-law density selected by the cusp exponent
+\(\gamma\), and precomputes the shell and enclosed masses from which markers
+are sampled.  This class and the \code{initialize_markers} sampler in
+\path{cpu/src/drivers/expanding_wpic.cpp} create an in-memory
+\code{std::vector<WeightedPICMarker>}, meaning a resizable list of the marker
+records defined at the start of this chapter.  The first accepted state is
+persisted as \path{restart_state.bin} in the requested output directory.
+Before using it, verify the supported cusp exponent and cosmological
+convention, positive marker weights, represented mass, marker--mesh support,
+the reported initial density error, and an otherwise identical zero-collision
+control.  Then refine the marker loading and radial mesh.
+
+\noindent\textbf{Static material-SIDM route.}
+The consuming task is \code{venus_cpu_sidm_wpic_constant}, selected by
+\path{cpu/src/apps/sidm/wpic_constant.cpp} and implemented by
+\path{cpu/src/drivers/sidm_wpic.cpp}.  A compatible Frank marker population can
+be generated by
+\path{cpu/tools/generate_frank_core_spherical_dsmc_restart.py}; its output is a
+versioned \code{VENUSSPHDSMC1} persistent-marker restart.  The importer
+\code{import_weighted_pic_frank_restart} in
+\path{cpu/include/ev/weighted_pic_frank_restart_import.hpp} converts
+\((r,v_r,L,m,I)\) to WPIC markers \((r,w,\eta,m,I)\), after which the runner
+writes its own \path{restart_state.bin}.  Validate the restart magic and
+version, unique identifiers, positive individual masses, represented mass,
+radial support, initial equilibrium drift, shell locality, and collision rate.
+An unequal-mass input must be imported in full; a marker-limited import is only
+an equal-mass diagnostic and is not a convergence datum.
+
+\noindent\textbf{Runnable expanding WPIC example.}
+The WPIC task executables use command-line controls rather than the generic
+\path{params.ini}.  This self-contained example enables both elastic subhalo
+scattering and inelastic capture:
+\codesource{\code{venus_cpu_subhalo_wpic}}
+{\path{cpu/src/apps/subhalo/expanding_wpic.cpp};
+ \path{cpu/src/drivers/expanding_wpic.cpp}}
+{Selects the expanding subhalo task and owns its command-line setup,
+ marker initialization, evolution, and output}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+cd VENUS/cpu
+make venus_cpu_subhalo_wpic
+make venus_cpu_vlasov_poisson_wpic_expanding
+
+./venus_cpu_subhalo_wpic \
+  --gamma 0.5 \
+  --end-time 0.2 \
+  --maximum-timestep 0.01 \
+  --particles-per-radial-cell 512 \
+  --subhalo-collision-strength 0.1 \
+  --subhalo-velocity-scale 0.1 \
+  --subhalo-plummer-area-per-mass 1 \
+  --subhalo-low-speed-regularization 0.05 \
+  --subhalo-collision-interval 0.01 \
+  --subhalo-collision-timescale-fraction 0.1 \
+  --subhalo-collision-cfl 0.2 \
+  --subhalo-collision-maximum-substeps 256 \
+  --threads 8 \
+  --output-directory output/wpic_subhalo_example
+\end{lstlisting}
+For every strength, cusp, mesh, and marker loading, inspect the evolving
+locality diagnostic before interpreting the profiles.  Set
+\code{--subhalo-collision-strength 0} only in the compatibility driver for an
+otherwise identical collisionless Vlasov--Poisson control; the task-specific
+\code{venus_cpu_subhalo_wpic} frontend requires positive collision strength.
+The static elastic SIDM runner can start from a generated equal-mass Frank
+marker sample, while its importer and collision core also preserve unequal
+masses stored by version-4/5 SphDSMC restarts; the runnable import is in
+Section~\ref{sec:wpic-material-sidm-run}.  The value 256 in this short example
+is only the administrative internal-loop guard.  High-rate unequal-mass
+production uses 16384; the collision CFL still selects every physical NTC
+substep.
+
+\subsubsection{Running the integrated material-SIDM core case}
+\label{sec:wpic-material-sidm-run}
+
+The task-specific executable is
+\code{venus_cpu_sidm_wpic_constant}.  It keeps the
+markers, field, two clocks, collision sampler, and reconstructed snapshot in
+one integrated event state.  Every step calls the high-level event advance
+function shown in Step 8, so transport, collision sampling, reconstruction,
+and conservation accounting share one event order.
+
+The following commands generate a compatible equal-mass Frank marker object,
+import all of its markers, and advance a short constant-cross-section
+interval.  A gridded \code{EVLOGRST1} file is not accepted by
+\code{--frank-restart}; that option requires the persistent-marker
+\code{VENUSSPHDSMC1} format.
+\codesource{\path{generate_frank_core_spherical_dsmc_restart.py} and
+ \code{venus_cpu_sidm_wpic_constant}}
+{\path{cpu/tools/generate_frank_core_spherical_dsmc_restart.py};
+ \path{cpu/src/apps/sidm/wpic_constant.cpp};
+ \path{cpu/src/drivers/sidm_wpic.cpp}}
+{Generates the versioned Frank marker population, imports it into the
+ constant-cross-section material-SIDM WPIC task, and advances the coupled
+ field--collision state}
+\begin{lstlisting}
+python tools/generate_frank_core_spherical_dsmc_restart.py \
+  --output output/frank_sphdsmc_50000.restart.bin \
+  --particles 50000 --seed 5489 --radial-sampling stratified
+
+make venus_cpu_sidm_wpic_constant
+./venus_cpu_sidm_wpic_constant \
+  --frank-restart output/frank_sphdsmc_50000.restart.bin \
+  --output-directory output/sidm_wpic_constant \
+  --end-time 0.0033 \
+  --maximum-timestep 0.001 \
+  --potential-event-eta 1.0 \
+  --collision-event-eta 0.01 \
+  --radial-cells 64 \
+  --radial-velocity-cells 32 \
+  --eta-cells 96 \
+  --eta-grid-power 8 \
+  --radial-velocity-maximum 5 \
+  --angular-momentum-maximum 400 \
+  --sidm-cross-section constant \
+  --sidm-sigma0 20.106192982974676 \
+  --collision-strength 1 \
+  --collision-cfl 0.2 \
+  --collision-maximum-substeps 65536 \
+  --collision-adaptive-shell-timestep \
+  --collision-adaptive-maximum-interval 0.02 \
+  --remap-candidate-radius 8 \
+  --maximum-carrier-mass-fraction 0.01 \
+  --threads 32
+\end{lstlisting}
+The optional \code{--marker-limit} performs a deterministic radial subsample
+of the supplied equal-mass realization, then rescales it to
+the full input mass.  This option is intended only for inexpensive inspection;
+omitting it imports every marker with its
+stored mass unchanged.  A limited import of an unequal-mass restart is
+rejected because number-ranked subsampling could bias its phase-space mass
+profile; import all such markers.  The limited run's core-density diagnostic
+is not quantitatively comparable with the full import or with a different
+marker limit.  The core is defined by the innermost
+\(\max[250,\operatorname{round}(2.5\times10^{-4}N_{\rm selected})]\)
+selected markers.  Changing \(N_{\rm selected}\), while rescaling each
+selected marker to represent the full mass, changes the enclosed mass and
+radius that define ``core.''  Consequently \code{core_density},
+\code{core_sigma_r2}, and \code{core_radius} from a marker-limited history
+cannot be used as a physical convergence comparison.
+
+The radial profiles use the conservative deposition in equations
+(PIC7)--(PIC11) directly.  Every scheduled phase-space reconstruction is
+recorded in
+\path{operator_mass_budget.csv}.  Its columns include the event order, marker
+mass before and after, gridded mass, carrier mass, radial-momentum error,
+kinetic-energy error, and maximum pair-projection error.  A final output
+synchronization has event order \(-1\).
+
+The restart stores the continuous markers, collision random-number state,
+both event-clock ages, the frozen Poisson field, and the two current timescale
+estimates. A continuation starts with \code{--pic-restart}. Restoring the
+saved field preserves the potential interval already in progress. The next
+collision or potential event then occurs at the same time as in uninterrupted
+evolution.
+\codesource{Static SIDM event continuation}
+{\path{cpu/src/drivers/sidm_wpic.cpp};
+ \path{cpu/include/ev/weighted_pic_boltzmann_event.hpp}}
+{Retain the frozen field and the current physical event deadlines}
+\begin{lstlisting}[language=C++]
+state.field = checkpoint.frozen_field;
+state.potential_timescale = checkpoint.potential_timescale_estimate;
+state.collision_timescale = checkpoint.collision_timescale_estimate;
+\end{lstlisting}
+The saved control record authenticates the mesh, force and collision laws,
+orbit tolerances, event controls, and thread count. End time and output
+cadence may change on continuation. For a deliberate mesh or numerical-control change,
+\code{--refresh-restart-field} recomputes the field and its timescales and
+starts a new potential interval. It retains the collision age accumulated
+since the last collision, so the physical gravity and collision laws retain
+their saved values. The driver records this choice in
+\path{restart_import.txt}. Legacy versions 1--6 contain particle initial data;
+their import reconstructs the field and timescales and reports that operation.
+
+Continuing in an existing output directory checks every saved history and
+profile time against the selected checkpoint before opening output files.
+If a saved diagnostic is later than that checkpoint, use a separate output
+directory for the continuation. This preserves the original trajectory and
+keeps each recorded history in time order. The expanding WPIC driver applies
+the same check to its energy, virial, and collision histories.
+
+\paragraph{Particle export and numerical-sample refinement.}
+The inspection tool has an explicit conversion command,
+\par\noindent\begin{minipage}{\linewidth}
+\codesource{Export particle initial data}
+{\path{cpu/tools/inspect_weighted_pic_restart.cpp}}
+{Preserve the particle state and initialize a fresh field schedule}
+\begin{lstlisting}[language=bash]
+inspect_weighted_pic_restart INPUT --export-particles OUTPUT
+\end{lstlisting}
+\end{minipage}\par
+It preserves particle masses, coordinates, internal state, identifiers,
+random counters, time, and step. Its version-6 output initializes a new field
+and event schedule at that physical time, with zero event ages and fresh
+timescale estimates. This supplies particle initial data for a receiving
+CPU or GPU task. Export requires a completed collision interval,
+\code{collision_event_age=0}, and a distinct output file.
+
+The refinement command divides each numerical marker into equal-mass
+samples at the same phase-space point:
+\codesource{Refine the numerical particle sampling}
+{\path{cpu/tools/refine_weighted_pic_restart.cpp}}
+{Split numerical weights while preserving the represented distribution}
+\begin{lstlisting}[language=bash]
+refine_weighted_pic_restart INPUT OUTPUT FACTOR --reinitialize-field
+\end{lstlisting}
+The factor is an integer from 2 through 16. Refinement preserves the
+mass-weighted spatial and velocity moments and assigns distinct identifiers
+to the additional samples. It requires zero internal energy, zero internal
+velocity dispersion, and a completed collision interval. These conditions
+support collisionless or material-SIDM sampling studies. A subhalo
+marker represents a physical object whose mass enters its encounter law;
+such an object's mass distribution must be specified physically. A
+frozen-field input requires the explicit \code{--reinitialize-field} option.
+The output is version-6 particle initialization with the frozen field and
+timescale estimates cleared and the potential-event age reset.
+
+\paragraph{CPU material-SIDM local shell clocks.}
+Let
+\[
+ \nu_s=n_{{\rm partner},s}
+       \max_{i,j\in s}[u\Sigma_{ij}(u)]
+\]
+be the conservative NTC exposure rate in collision shell (s).  Reference
+mode uses the fastest shell for every shell,
+\[
+ \delta t_{\rm fixed}=\min\left(
+ \Delta t_{\rm op}-t,
+ \frac{C_{\rm coll}}{\max_s\nu_s}\right).             \tag{PIC34c}
+\]
+With \code{--collision-adaptive-shell-timestep}, every shell has an
+independent elapsed time \(t_s\) and instead takes
+\[
+ \delta t_s=\min\left(
+ \Delta t_{\rm op}-t_s,
+ \frac{C_{\rm coll}}{\nu_s}\right).                    \tag{PIC34d}
+\]
+The shells are disjoint and marker radii do not move inside the split
+collision operator.  Threads therefore advance different shells concurrently
+without changing their event rates.  After each local elastic update VENUS
+refreshes the shell velocity moments and safe \(u\Sigma\) majorant; shell
+faces, volume, density, and radial membership are reused.  The implementation
+is structurally
+\codesource{WPIC adaptive local shell clocks}
+{\path{cpu/include/ev/weighted_vlasov_pic_collisions.hpp};
+ \path{cpu/src/drivers/sidm_wpic.cpp}}
+{Advances disjoint constant-cross-section shells with their own conservative
+ collision exposure while retaining one synchronized outer event}
+\begin{lstlisting}[language=C++]
+for (shell : collision_shells) {
+  while (shell.elapsed < operator_interval) {
+    rate = shell.partner_density * shell.majorant_u_sigma;
+    dt_shell = min(operator_interval - shell.elapsed,
+                   collision_cfl / rate);
+    apply_shell_ntc(shell, dt_shell, shell.local_substep);
+    refresh_shell_velocity_majorant(shell);
+  }
+}
+\end{lstlisting}
+\code{--collision-adaptive-maximum-interval} caps the synchronized outer
+collision batch; it is not a second local CFL.  In this CPU release the
+reusable-shell path is deliberately restricted to constant cross section,
+equal marker masses within each shell, and \(0<C_{\rm coll}\le1\).  The
+velocity-dependent and unequal-mass material paths retain equation (PIC34c).
+The reported \code{substeps} is the largest local count and
+\code{shell_visits} is the sum over shells.  Omitting the flag retains the
+mesh-wide reference schedule.
+
+\subsubsection{Static and expanding self-consistent KDK}
+\label{sec:wpic-expanding-kdk}
+
+The expanding runner stores physical radius \(r=a(t)x\) and physical peculiar
+radial velocity \(u\), where \(a(t)\) is the cosmological scale factor and
+\(x\) is comoving radius.  The canonical radial momentum is
+\[
+ p=a u.
+\]
+For a power-law background
+\[
+ a(t)=a_0\left(\frac{\tau}{\tau_0}\right)^\alpha,
+ \qquad \tau=t+t_{\rm off},
+\]
+\(\alpha\) is the expansion exponent and \(t_{\rm off}\) is the configured
+time offset.  During a force-free drift the useful interval is
+\[
+ s(t_0,t_1)=\int_{t_0}^{t_1}\frac{\dd t}{a(t)^2}.
+\]
+Let \(\tau_0=t_0+t_{\rm off}\), \(\tau_1=t_1+t_{\rm off}\), and
+\(\beta=1-2\alpha\).  The exact integral is
+\[
+ s=\frac{\tau_0}{a(t_0)^2}
+ \begin{cases}
+  \displaystyle
+  \frac{\exp\!\left[\beta\ln(\tau_1/\tau_0)\right]-1}{\beta},
+  &\beta\ne0,\\[8pt]
+  \ln(\tau_1/\tau_0),&\beta=0.
+ \end{cases}
+\]
+The code evaluates the numerator with \code{expm1} to avoid cancellation when
+\(|\beta\ln(\tau_1/\tau_0)|\ll1\).
+
+At fixed specific angular momentum \(L\), the exact free central drift in
+canonical comoving variables is
+\[
+ x_1^2=(x_0+s p_0)^2+
+       \left(\frac{sL}{x_0}\right)^2,
+\]
+\[
+ p_1=\frac{p_0(x_0+s p_0)
+ +(L/x_0)(sL/x_0)}{x_1}.
+\]
+These equations are the radial projection of a straight Cartesian comoving
+trajectory and therefore resolve the centrifugal turning point without
+integrating the singular-looking term \(L^2/r^3\) explicitly.  The physical
+endpoint variables are
+\[
+ r_1=a(t_1)x_1,\qquad u_1=\frac{p_1}{a(t_1)}.
+\]
+
+With peculiar potential \(\Phi\), the canonical force is
+\[
+ F_p=-a\Phi_r.
+\]
+The self-consistent KDK sequence is
+\[
+ p_{1/2}=a_0u_0+\frac{\Delta t}{2}F_p(t_0),
+\]
+followed by the exact drift above, endpoint deposition and Poisson solve, then
+\[
+ p_1\leftarrow p_1+\frac{\Delta t}{2}F_p(t_1),
+ \qquad u_1=p_1/a_1.
+\]
+In a static universe \(a=1\) and \(s=\Delta t\), so the same formulas reduce
+to an exact free central drift between ordinary gravitational half kicks.
+
+The grid boundaries remain at fixed physical radii. A reflecting wall at
+\(R\) reverses the physical radial velocity at its crossing time
+\(t_{\rm hit}\). In this subsection's peculiar-velocity notation,
+\(u_{\rm out}=-u_{\rm in}-2H(t_{\rm hit})R\). The tangential velocity
+\(L/R\) remains unchanged, so the collision conserves kinetic energy at
+the wall. The orbit then follows the free drift for the remaining interval.
+
+To locate every crossing, introduce the dimensionless drift coordinate
+\(h=a(t_0)^2s/\tau_0\). The radius during the free drift is
+\[
+ r(h)=\frac{a(t)}{a(t_0)}
+ \left[(r_0+\tau_0u_0h)^2+
+       \left(\frac{\tau_0Lh}{r_0}\right)^2\right]^{1/2}. \tag{PIC34h}
+\]
+The relation between \(h\) and time follows from the integral for \(s\)
+above. Differentiating (PIC34h) shows that its radial turning points satisfy
+\[
+ \begin{split}
+ 0={}&(1-\alpha)\tau_0^2
+       \left[u_0^2+(L/r_0)^2\right]h^2\\
+ &+\left[\tau_0r_0u_0+
+        \tau_0^2\left[u_0^2+(L/r_0)^2\right]\right]h
+   +\alpha r_0^2+\tau_0r_0u_0 .
+ \end{split}
+ \tag{PIC34i}
+\]
+The at most two roots divide the drift into intervals over which radius
+changes in one direction. Bisection on each interval finds the first
+intersection with either wall. This also detects an inward crossing followed
+by an outward crossing during one step. After reflection the search repeats
+over the remaining time; exceeding 64 impacts raises an error.
+\codesource{Specular reflection during the free angular drift}
+{\path{cpu/include/ev/central_drift.hpp}}
+{Locate each impact, reverse its physical normal velocity, and continue the unused interval}
+\begin{lstlisting}[language=C++]
+const State impact = at_h(r, w, L, tau, alpha, hit_h);
+const double elapsed = tau * std::expm1(log_time_ratio(hit_h, alpha));
+tau += elapsed;
+r = wall;
+w = -impact.w - 2.0 * alpha * wall / tau;
+\end{lstlisting}
+The shared CPU/CUDA helper accepts signed intervals, so the same collision
+rule applies when tracing a characteristic backward. Static tests conserve
+kinetic energy and recover the initial orbit under time reversal. Expanding
+tests agree with an independent integration of the physical radial equations.
+At the true origin, radial motion continues through the parity map, while
+nonzero angular momentum is retained by the free central drift.
+
+
+The public implementation is deliberately split:
+\codesource{WPIC self-consistent kick--drift--kick step}
+{\path{cpu/include/ev/weighted_vlasov_pic.hpp}}
+{Uses the old field for the first half kick, solves gravity from the endpoint
+ deposition, and uses that new field for the second half kick}
+\begin{lstlisting}[language=C++]
+begin_weighted_pic_self_consistent_kdk_parallel(
+    markers, time, dt, q_grid, r_grid, field_n, p, threads);
+
+endpoint = deposit_weighted_vlasov_pic_parallel(...);
+field_np1 = solve_weighted_pic_poisson_field(...);
+
+finish_weighted_pic_self_consistent_kdk_parallel(
+    markers, time + dt, dt, q_grid, r_grid,
+    field_np1, p, threads);
+\end{lstlisting}
+This makes the endpoint field solve visible and prevents an accidental use of
+the old field in the second kick.  The current path requires KDK, active
+markers, a reflecting outer boundary, and reflecting or origin-parity central
+handling.  The generic delayed-return callback is available in the WPIC
+library, but the public self-consistent adapter does not invent a first
+crossing time for a delayed marker.
+
+\subsubsection{Elastic material and gravitational kernels in WPIC}
+
+The collision module accepts unequal positive marker masses and has two
+physics selections:
+\begin{itemize}
+\item \code{venus_cross_section}: the constant, power-law, or Born-Yukawa
+material cross sections also used by the VENUS Boltzmann and SphDSMC modules;
+\item \code{gravitational_plummer}: a physical two-body deflection in a
+Plummer-softened gravitational potential.
+\end{itemize}
+For the first selection, the configured law is
+\[
+ s(u)=\frac{\sigma(u)}{m},
+\]
+and the physical pair cross section and kernel are
+\[
+ \Sigma_{ij}(u)=\frac{m_i+m_j}{2}s(u),\qquad
+ K_{ij}(u)=u\Sigma_{ij}(u).                               \tag{PIC26a}
+\]
+Here \(u\) is relative speed and \(m_i,m_j\) are the two complete partner
+masses.  Constant and power-law kernels use isotropic
+outgoing directions.  The Born-Yukawa kernel uses the forward-peaked inverse
+cumulative distribution in equations (PIC24)--(PIC25).  The legacy scalar
+\code{softened_gravity} transfer-cross-section fit is not accepted as a
+differential scattering law in this module; a gravitational encounter must
+use the explicit Plummer branch.
+
+Shells are radius sorted with marker identifier as a stable tie breaker.
+Their mass density is \(\sum_i m_i/V_s\), their number density is \(N_s/V_s\),
+and their locality diagnostic uses the evolving pair-rate average in equation
+(PIC14c), including both unequal partner masses and the actual
+velocity-dependent cross section.  The larger NTC pair-kernel
+\emph{majorant} is only a rejection-sampling bound: it controls how many trial
+pairs are proposed and must not be substituted for a physical mean free path.
+Distinct shells are processed independently, and thread results are reduced
+in deterministic shell order.
+
+\subsubsection{Elastic gravitational scattering by a softened Plummer pair}
+\label{sec:wpic-plummer-scattering}
+
+Let \(m_i,m_j\) be the two body masses, \(\epsilon_{ij}\) the pair softening
+length, \(R\) their separation, \(b\) the
+impact parameter at infinity, and \(u\) the relative speed at infinity.  The
+relative potential per unit reduced mass is
+\[
+ \phi_{ij}(R)=-\frac{G(m_i+m_j)}
+ {\sqrt{R^2+\epsilon_{ij}^2}}.
+\]
+The relative acceleration is
+\[
+ \ddot{\bm R}
+ =-\frac{G(m_i+m_j)\bm R}
+ {(R^2+\epsilon_{ij}^2)^{3/2}}.
+\]
+Conservation of relative energy and angular momentum gives the radial
+function
+\[
+ F(R)=1-\frac{b^2}{R^2}
+ +\frac{2G(m_i+m_j)}
+ {u^2\sqrt{R^2+\epsilon_{ij}^2}}.
+\]
+The positive turning radius \(R_0\) satisfies \(F(R_0)=0\).  VENUS brackets
+this root and finds it by bisection.  The deflection angle is
+\[
+ \Theta(b,u)
+ =\left|2b\int_{R_0}^{\infty}
+ \frac{\dd R}{R^2\sqrt{F(R)}}-\pi\right|.
+\]
+The change of variable \(R_0/R=1-z^2\) removes the square-root endpoint
+singularity.  Adaptive Simpson quadrature in extended precision evaluates the
+regularized integral to the configured deflection tolerance.  Recursion is
+bounded by \path{gravitational_deflection_max_depth}; the corresponding
+accuracy key in the collision options is
+\path{gravitational_deflection_tolerance}.
+
+Impact parameters are uniform in incident area:
+\[
+ b=\sqrt{b_{\min}^2+z(b_{\max}^2-b_{\min}^2)},
+ \qquad 0<z<1.
+\]
+The configured \((b_{\min},b_{\max},\epsilon)\) refer to a body of reference
+mass \(m_{\rm ref}\).  VENUS scales all encounter lengths by
+\[
+ \ell_{ij}=\sqrt{\frac{m_i+m_j}{2m_{\rm ref}}},
+\]
+so \(b_{ij}=\ell_{ij}b\), \(\epsilon_{ij}=\ell_{ij}\epsilon\), and the
+physical pair aperture is
+\[
+ \Sigma_{{\rm area},ij}
+ =A_{\rm grav}\frac{m_i+m_j}{2m_{\rm ref}}\,
+ \pi(b_{\max}^2-b_{\min}^2).
+\]
+where \(A_{\rm grav}\) is the configured strength.  A finite \(b_{\max}\) is
+required: gravity has a long-range weak-deflection tail, so the encounter
+operator is undefined until the resolved impact-parameter interval is stated.
+The sampled azimuth fixes the scattering plane and \(\Theta(b,u)\) rotates the
+relative velocity inside that plane.
+
+Two useful limits characterize the implementation.  As \(\epsilon/b\to0\), the
+Rutherford point-mass angle is recovered.  In the weak-impulse limit,
+\[
+ \Theta\simeq
+ \frac{2G(m_i+m_j)b}
+ {u^2(b^2+\epsilon_{ij}^2)}.
+\]
+The exact quadrature is retained because a softened core can have a
+non-monotone, or ``rainbow'', deflection function that is not represented by
+the weak-angle formula.
+
+\subsubsection{Resolved Plummer subhalo outcomes: scattering versus capture}
+\label{sec:wpic-subhalo-capture}
+
+The unequal-mass subhalo operator represents two mutually exclusive
+outcomes of one resolved Plummer encounter:
+\[
+ {\cal C}={\cal C}_{\rm scatt}+{\cal C}_{\rm cap}.
+\]
+Here \({\cal C}_{\rm scatt}\) is elastic unbound scattering and
+\({\cal C}_{\rm cap}\) is inelastic capture.  Let the two complete physical
+subhalos have masses \(M_i,M_j\), Plummer radii \(a_i,a_j\), internal
+velocity scales \(s_i,s_j\), relative velocity
+\(\bm u=\bm v_i-\bm v_j\), and mass-weighted centre velocity
+\[
+ \bm V=\frac{M_i\bm v_i+M_j\bm v_j}{M_i+M_j}.
+\]
+
+For a resolved unequal-mass encounter with pericentre \(r_p\), compute the
+internal response of the two objects separately and set
+\[
+ M_{\rm t}=M_i+M_j,\qquad
+ \mu_{ij}=\frac{M_iM_j}{M_{\rm t}},\qquad
+ \Delta E_{\rm int}=\Delta E_i+\Delta E_j.
+\]
+Capture occurs when this internal heating exceeds the
+centre-of-mass-frame relative kinetic energy at infinity:
+\[
+ \Delta E_{\rm int}(u,r_p)\ge\frac12\mu_{ij}u^2.
+\]
+For \(M_i=M_j=M\), the right-hand side reduces to \(Mu^2/4\).
+If \(b_\infty\) is the incident impact parameter, the focused capture area per
+logarithmic pericentre interval is
+\[
+ \frac{\dd\Sigma_{\rm cap}}{\dd\ln r_p}
+ =\pi r_p\frac{\dd b_\infty^2}{\dd r_p}
+ H\!\left(\Delta E_{\rm int}-\frac12\mu_{ij}u^2\right),
+\]
+where \(H\) is the Heaviside step function, equal to one when its argument is
+positive and zero when negative.  Gravitational focusing supplies
+\[
+ \frac{\dd b_\infty^2}{\dd r_p}
+ =2r_p\left[
+ 1-\frac{2\phi_{12}(r_p)+r_p\phi'_{12}(r_p)}{u^2}
+ \right].
+\]
+Here \(\phi_{12}\) is the relative two-subhalo potential per unit reduced mass
+and a prime denotes differentiation with respect to \(r_p\).
+
+The complementary unbound region contributes a momentum-transfer rather than
+raw geometric cross section:
+\[
+ \Sigma_{{\rm T},{\rm unb}}
+ =\int_0^{a_i+a_j}(1-\cos\Theta)
+ \frac{\dd\Sigma_{\rm unb}}{\dd\ln r_p}\,\dd\ln r_p .
+\]
+The factor \(1-\cos\Theta\) weights a weak forward deflection less than a large
+momentum-changing deflection.  Capture and scattering are therefore an
+exclusive partition of the same focused calculation; they are not two
+independently normalized fitting functions.
+
+The table is calibrated by following a stationary harmonic-core ensemble in
+the full spatial Plummer force of the other object; the two core responses
+are evaluated separately.  Each independently sampled orbit geometry is
+represented at four harmonic phases.  In addition, the exact first variation
+of the discrete orbit map is propagated along the unperturbed trajectory.
+Its energy contribution is reversible work, linear in the perturber force,
+whose continuum phase average is zero.  Subtracting this finite-sample term
+prevents it from overwhelming the physical quadratic heating at very small
+mass ratio while retaining the nonlinear response.  The encounter table
+stores the raw energy, the subtracted linear term, and
+\(\max(\Delta E_{\rm raw}-\Delta E_{\rm linear},0)\) separately.  The maximum
+with zero means that residual numerical cooling is treated as an unresolved
+zero, not as negative irreversible heating.  The encounter-table loader
+checks this identity in every speed--pericentre cell.  Nested particle-number
+refinement is required so that this non-negative projection cannot create a
+spurious capture channel.  The focused-orbit and first-variation construction
+above is the derivation used by VENUS; the table definitions, identities,
+and interpolation rules below form its complete release interface.
+
+The equal-mass curve is only the \(q=1\) boundary of the physical kernel.
+For two homologous Plummer objects define
+\[
+ q=\frac{\min(M_i,M_j)}{\max(M_i,M_j)},\qquad
+ a_*=\frac{a_i+a_j}{2},\qquad
+ x=\frac{u}{s_{ij}}.
+\]
+The calibrated source table contains 72 common speed nodes at every mass-ratio
+node and stores
+\[
+ S_{\rm cap}(x;q)=\frac{\Sigma_{\rm cap}}{\pi a_*^2},
+ \qquad
+ S_{\rm scatt}(x;q)=
+ \frac{\Sigma_{{\rm T},{\rm unb}}}{\pi a_*^2}.
+\]
+The accepted mass-ratio grid is
+\[
+ q=(10^{-6},10^{-5},10^{-4},10^{-3},3\times10^{-3},
+ 10^{-2},3\times10^{-2},0.1,0.2,0.5,1).
+\]
+The final nonzero capture node is \(x=0.796\) at equal mass,
+\(0.502\) at \(q=10^{-2}\), \(0.240\) at \(q=10^{-3}\), and
+\(0.087\) at \(q=10^{-4}\).  No capture occurs at any stored speed
+\(x\ge0.05\) for \(q=10^{-5}\) or \(10^{-6}\).  These are calibrated
+thresholds, not an assumption that formal zero-speed capture vanishes.
+The equal-mass capture and transport curves recover the established
+calculation to 0.74 per cent and 5.96 per cent in the accepted integrated
+log-speed metric.  Nested 4096-versus-8192-particle comparisons pass at
+\(q=10^{-2},3\times10^{-3},10^{-3},10^{-4}\); the largest accepted
+integrated difference is 18.4 per cent and the largest capture-cutoff shift
+is \(|\Delta\ln x|=0.0923\), both below the declared 0.25 limits.
+Positive neighbouring values are interpolated logarithmically in speed and
+mass ratio; an interval touching a physical zero uses a non-negative linear
+transition.  The ordering with \(q\le1\) makes exchange symmetry explicit.
+Define the geometric Plummer area per unit mass and the independent
+dimensionless collision strength by
+\[
+ A_{\rm P}\equiv\frac{\pi a^2}{M},
+ \qquad S\equiv\code{subhalo_collision_strength}.
+\]
+The equal-mass channel cross sections per unit mass are the special case
+\[
+ \frac{\Sigma_j}{M}
+ =S A_{\rm P}S_j(x;1),
+ \qquad j\in\{\mathrm{cap},\mathrm{scatt}\}.
+\]
+The runner sets \(A_{\rm P}\) with
+\code{subhalo_plummer_area_per_mass}; changing \(S\) multiplies both outcome
+channels without changing the homologous subhalo radii.
+
+The analytic limiting behavior is
+\[
+ S_{\rm cap}(x;q)\simeq\frac{C_{\rm cap}(q)}{x^2}
+ \quad\text{when all direct passages capture},
+\qquad
+ S_{\rm scatt}(x;q)\simeq\frac{C_{\rm T}(q)}{x^4}
+ \quad\text{at high }x.
+\]
+For \(q=1\), \(C_{\rm cap}\simeq52.8\) and
+\(C_{\rm T}\simeq168\).  Both coefficients are fixed by the encounter
+calculation rather than tuned independently.  The capture cutoff is strongly
+mass-ratio dependent: its impulsive small-\(q\) scale decreases as
+\(x_{\rm cap,max}\propto q^{1/4}\).  Thus a low-mass object must not inherit
+the equal-mass capture curve.
+
+The calibrated domain begins at \(x=0.05\).  The value configured by
+\path{subhalo_low_speed_regularization} must be at least this large.  Below
+that floor VENUS holds both channel areas at their floor values; this prevents
+an unresolved focusing divergence from controlling the Monte--Carlo rate.
+At large speed capture is zero and transport scattering uses its asymptotic
+\(x^{-4}\) continuation.  Ratios below the smallest calibrated \(q\) use the
+verified extreme-mass-ratio row, where fixed nonzero \(x\) capture has
+approached zero.
+
+\subsubsection{Unequal masses: physical pair area and whole-object outcomes}
+
+Every marker in this encounter operator is one complete unresolved subhalo.
+It is not divided into a colliding packet and an uncollided remainder.  Let
+the two masses be \(M_i\) and \(M_j\).  The configured Plummer
+area-per-mass \(A_{\rm P}\) implies homologous individual radii
+\[
+ a_i=\sqrt{\frac{A_{\rm P}M_i}{\pi}},\qquad
+ a_j=\sqrt{\frac{A_{\rm P}M_j}{\pi}}.
+\]
+The physical area scale used by both outcome channels is
+\[
+ A_{ij}=\frac{A_{\rm P}}{4}
+        \left(\sqrt{M_i}+\sqrt{M_j}\right)^2.              \tag{PIC31a}
+\]
+It is symmetric under \(i\leftrightarrow j\) and becomes \(A_{\rm P}M\)
+for two equal masses \(M\).  The pair velocity scale is
+\[
+ s_{ij}^2=
+ \frac{\sqrt{M_i}\,s_i^2+\sqrt{M_j}\,s_j^2}
+      {\sqrt{M_i}+\sqrt{M_j}},                            \tag{PIC31b}
+\]
+where \(s_i\) and \(s_j\) are the stored internal dispersions.  Hence
+\[
+ \Sigma_{{\rm scatt},ij}=S A_{ij}S_{\rm scatt}(u/s_{ij};q_{ij}),
+ \qquad
+ \Sigma_{{\rm cap},ij}=S A_{ij}S_{\rm cap}(u/s_{ij};q_{ij}),     \tag{PIC31c}
+\]
+This recovers the equal-mass boundary at \(q_{ij}=1\), but retains the
+separately derived unequal-mass response.
+For arbitrary evolved internal dispersions, its unregularized asymptotes are
+\[
+ \Sigma_{\rm scatt}\simeq
+ C_{\rm T}(q_{ij})\,S A_{ij}s_{ij}^{4}u^{-4},
+ \qquad
+ \Sigma_{\rm cap}\simeq
+ C_{\rm cap}(q_{ij})\,S A_{ij}s_{ij}^{2}u^{-2}.          \tag{PIC31ca}
+\]
+The mass-only statements
+\(\Sigma_{\rm scatt}\propto(M_i+M_j)^2u^{-4}\) and
+\(\Sigma_{\rm cap}\propto(M_i+M_j)(a_i+a_j)u^{-2}\) follow only while the
+objects remain a homologous virial family with
+\(s_i^2=C_{\rm vir}\sqrt{M_i}\), where the common constant \(C_{\rm vir}\)
+sets the mass--dispersion relation.  Capture heating evolves \(s_i\)
+independently, so equation (PIC31ca), not the conditional mass-only scaling,
+is the general law used after mergers.
+
+There is an important structural qualification.  The calibrated
+\(S_X(x;q)\) rows describe unheated equilibrium Plummer objects with
+\(a\propto\sqrt M\).  After capture, VENUS inserts the evolved \(s_i\) in
+equation (PIC31b) but retains the homologous radius law.  This is a stated
+post-merger closure.  A completely first-principles heated-remnant table would
+also require the two dimensionless virial-state parameters
+\(\chi_i=s_i^2a_i/(GM_i)\), or an explicit radius-expansion/disruption model.
+
+For collision-cell volume \(V_c\), define
+\[
+ K_{ij}=u\left(\Sigma_{{\rm scatt},ij}
+                    +\Sigma_{{\rm cap},ij}\right).
+\]
+VENUS does not apply one worst-case cell bound to every pair.  First define
+the two generated dimensionless table bounds
+\[
+ D=D_{\rm scatt}+D_{\rm cap},\qquad
+ D_X\ge\max_{\substack{x\ge0\\0<q\le1}}xS_X(x;q).         \tag{PIC31d}
+\]
+The generator evaluates a conservative endpoint bound for every interpolation
+interval, so \(D\) also covers values between stored nodes.
+Because the positive weighted root-mean-square in equation (PIC31b) obeys
+\(s_{ij}\le\max(s_i,s_j)\), every physical kernel has the rigorous
+pair-specific upper bound
+\[
+ B_{ij}=
+ \frac{S A_{\rm P}D}{4}\,
+ \max(s_i,s_j)
+ \left(\sqrt{M_i}+\sqrt{M_j}\right)^2
+ \ge K_{ij},                                               \tag{PIC31e}
+\]
+where \(S\) is \code{subhalo_collision_strength}.  If
+\(B_c=\sum_{i<j}B_{ij}\), the no-time-counter step draws an unordered pair
+with probability \(q_{ij}=B_{ij}/B_c\), and proposes
+\[
+ \mathbb E[N_{\rm trial}]=\frac{B_c\,\delta t}{V_c},
+ \qquad
+ P_{{\rm accept},ij}=\frac{K_{ij}}{B_{ij}}.                \tag{PIC31f}
+\]
+Thus the expected accepted rate of that particular pair is exactly
+\[
+ \frac{B_c\delta t}{V_c}\,
+ \frac{B_{ij}}{B_c}\,\frac{K_{ij}}{B_{ij}}
+ =\frac{K_{ij}\delta t}{V_c}.
+\]
+The proposal therefore changes only efficiency, not collision physics.
+It avoids making every small, cold pair inherit the largest mass and largest
+internal dispersion in the cell.  The density implicit in this
+physical-object rate is number density, not mass density.  After acceptance,
+the capture probability is
+\[
+ P_{\rm cap}
+ =\frac{\Sigma_{{\rm cap},ij}}
+ {\Sigma_{{\rm scatt},ij}+\Sigma_{{\rm cap},ij}}.         \tag{PIC31g}
+\]
+Each input marker can participate in at most one accepted event per internal
+substep.
+
+\paragraph{Elastic scattering.}
+Define
+\[
+ M_{ij}=M_i+M_j,\qquad
+ \mu_{ij}=\frac{M_iM_j}{M_{ij}},\qquad
+ \bm V=\frac{M_i\bm v_i+M_j\bm v_j}{M_{ij}}.              \tag{PIC32P}
+\]
+For sampled outgoing relative direction \(\widehat{\bm n}\),
+\[
+ \bm v_i'=\bm V+\frac{M_j}{M_{ij}}u\widehat{\bm n},
+ \qquad
+ \bm v_j'=\bm V-\frac{M_i}{M_{ij}}u\widehat{\bm n}.       \tag{PIC33P}
+\]
+Both complete masses and both internal energies are unchanged.  This map
+conserves \(M_i\bm v_i+M_j\bm v_j\) and mass-weighted kinetic energy.  It
+creates neither a child marker nor a heavy remainder.
+
+\paragraph{Inelastic capture.}
+Capture creates exactly one remnant:
+\[
+ M'=M_i+M_j,\qquad \bm v'=\bm V,\qquad
+ r'=\frac{M_ir_i+M_jr_j}{M_i+M_j}.                        \tag{PIC34P}
+\]
+The kinetic energy of the relative motion in the pair centre-of-mass frame is
+\[
+ \Delta K_{\rm rel}=\frac12\mu_{ij}u^2,                   \tag{PIC35P}
+\]
+and becomes internal energy,
+\[
+ E_{\rm int}'=E_{{\rm int},i}+E_{{\rm int},j}
+              +\frac12\mu_{ij}u^2,\qquad
+ s'^2=\frac{2E_{\rm int}'}{3M_{ij}}
+ =\frac{M_i s_i^2+M_j s_j^2}{M_{ij}}
+  +\frac{\mu_{ij}u^2}{3M_{ij}}.                          \tag{PIC36}
+\]
+The last positive term is the increase relative to the mass-weighted
+progenitor variance.  Therefore capture always heats the remnant relative to
+the no-relative-motion mixture, but \(s'\) need not exceed the hotter of
+\(s_i\) and \(s_j\).
+The second marker is removed during deterministic compaction.  There is no
+remainder and therefore no repeated remnant splitting.  Mass, vector
+momentum, and centre-of-mass kinetic plus internal energy close to roundoff.
+The pair residual does not include gravitational potential energy: replacing
+two nearby radii by the mass-weighted radius in equation (PIC34P) can change
+the self-consistent potential after redeposition.  That change appears in the
+full-system energy history and must converge away with collision-cell
+locality and radial resolution.
+
+The source-level structure is:
+\codesource{WPIC subhalo collision operator}
+{\path{cpu/include/ev/weighted_vlasov_pic_subhalo_collisions.hpp}}
+{Applies the pair-specific majorant and then either scatters two complete
+ Plummer objects or replaces a captured pair by one energy-carrying remnant}
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\scriptsize]
+const double M = first.mass + second.mass;
+const double mu = first.mass * second.mass / M;
+const Vec3 V = (first.mass * v1 + second.mass * v2) / M;
+const double kernel = u * (sigma_scatt + sigma_capture);
+const double pair_bound =
+    pair_u_sigma_majorant(first, second, options);
+
+if (uniform() < kernel / pair_bound) {
+  if (uniform() < sigma_capture / (sigma_scatt + sigma_capture)) {
+    first.mass = M;
+    first.velocity = V;
+    first.internal_energy =
+        Eint_first + Eint_second + 0.5 * mu * u * u;
+    first.internal_velocity_dispersion =
+        sqrt(2 * first.internal_energy / (3 * first.mass));
+    remove(second);
+  } else {
+    first.velocity  = V + (second.mass / M) * u_after;
+    second.velocity = V - (first.mass  / M) * u_after;
+  }
+}
+\end{lstlisting}
+Cells are independent.  Counter-based random numbers are indexed by epoch,
+cell, substep, trial, and random dimension, so thread scheduling cannot
+change the physical random stream.
+
+\paragraph{Encounters at the coordinate origin.}
+Rotational symmetry makes the velocity distribution at \(r=0\) isotropic.
+Every finite velocity there has zero angular momentum.  The reduced marker
+therefore stores the full speed as \(w\), with \(\eta=0\).  This convention
+also gives the outgoing radial speed when the orbit leaves the origin.
+For an encounter, VENUS samples an isotropic Cartesian direction at that
+speed.  The pair rate and its accepted outcome use the same sampled vectors.
+Scattering and capture conserve momentum in this temporary Cartesian frame.
+The outgoing speed is then stored in the marker, preserving its full kinetic
+energy:
+\codesource{Storing a subhalo velocity at the origin}
+{\path{cpu/include/ev/weighted_vlasov_pic_subhalo_collisions.hpp}}
+{Stores the magnitude of the Cartesian velocity and zero angular momentum
+ at the coordinate origin}
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\scriptsize]
+marker.w = std::hypot(velocity[0],
+                      std::hypot(velocity[1], velocity[2]));
+marker.eta = 0.0;
+\end{lstlisting}
+The collision-cell dispersion diagnostic uses the isotropic moments relative
+to any chosen reference axis at the origin:
+\[
+ \langle v_r\rangle=0,\qquad
+ \langle v_r^2\rangle=\frac{w^2}{3},\qquad
+ \langle v_t^2\rangle=\frac{2w^2}{3}. \tag{PIC36a}
+\]
+Here \(v_r\) is the component along that axis and \(v_t\) is the magnitude
+of the two perpendicular components.  The stored \(w\) at the origin is the
+speed of radial departure.  Positive-radius encounters retain the usual
+radial and tangential velocity components.  A marker at \(r=0\) with
+nonzero \(\eta\) is rejected because it has no finite Cartesian velocity.
+The CPU and GPU subhalo operators use this same origin convention.
+
+\subsubsection{Collision lanes, pair-majorant proposals, and adaptive time}
+
+A physical radial collision cell can be divided into
+\code{subhalo_collision_lanes} deterministic lanes.  Lane membership is an
+epoch-hashed stratification of the markers, not an additional radial
+coordinate.  Each lane is assigned volume \(V_c/n_{\rm lane}\); therefore
+summing its no-time-counter rates gives the original cell rate.  Lanes expose
+independent work and reduce the number of candidates in one very populous
+cell while preserving the physical collision volume.
+
+The option names \code{maximum_weight_rejection} and
+\code{maximum_weight_importance} remain readable for command-line and restart
+compatibility.  Both select the same exact pair-majorant proposal in
+equations (PIC31e)--(PIC31f).  The runner defaults to
+\code{maximum_weight_importance}.  The word ``importance'' means that pairs with a larger rigorous rate bound
+are proposed more frequently.  The physical marker masses retain their
+stored values throughout this proposal step.
+
+The proposal is constructed without storing all \(N_c(N_c-1)/2\) pairs.
+VENUS stably sorts an index array by increasing internal dispersion \(s_i\),
+using marker identifier to break ties.  The marker array itself is not
+reordered.  For a sorted pair \(i<j\), \(\max(s_i,s_j)=s_j\), and the total
+bound carried by upper partner \(j\) is
+\[
+ G_j=C s_j\sum_{i<j}
+ \left(M_i+2\sqrt{M_iM_j}+M_j\right),\qquad
+ C=\frac{S A_{\rm P}D}{4}.                                \tag{PIC31h}
+\]
+Prefix sums of \(M_i\) and \(\sqrt{M_i}\) evaluate every \(G_j\) in one pass.
+A cumulative sum of the \(G_j\) first selects \(j\).  Conditional on \(j\),
+the lower partner is drawn from three positive pieces proportional to
+\(M_i\), \(2\sqrt{M_j}\sqrt{M_i}\), and \(M_j\).  Prefix sums select the first
+two pieces; the last is uniform over \(i<j\).  Consequently the exact
+probability of selecting \((i,j)\) is \(B_{ij}/B_c\), while setup costs
+\(O(N_c\log N_c)\) for sorting and \(O(N_c)\) storage rather than
+\(O(N_c^2)\).
+
+The pair proposal and its majorant depend on marker mass and internal
+dispersion.  Elastic scattering changes neither quantity, so its exact
+proposal is reusable.  Capture changes both and marks only that radial cell
+dirty; VENUS removes the consumed object and rebuilds that cell before its
+next local substep.  Reusing a pre-capture bound could give an acceptance
+probability above one and bias the event rate.  The substep is controlled by
+the largest bound on the trial frequency
+of any one marker,
+\[
+ \nu_{B,k}=\frac{1}{V_c}\sum_{j\ne k}B_{kj},\qquad
+ \delta t\le
+ \frac{\code{subhalo_collision_cfl}}{\max_k\nu_{B,k}}.   \tag{PIC31i}
+\]
+This is the relevant clock because one marker is allowed at most one accepted
+event in a substep.  Prefix and suffix sums evaluate all \(\nu_{B,k}\) in
+linear time after sorting.  It is much tighter than multiplying a cell-wide
+worst-pair bound by the full population, while remaining conservative.
+
+Reference mode uses one collision clock for the entire radial mesh,
+\[
+ \delta t_{\rm fixed}=\min\left(
+ \Delta t_{\rm op}-t,
+ \frac{C_{\rm coll}}{\max_c\nu_{B,c}}\right).           \tag{PIC31i-a}
+\]
+With \code{--subhalo-adaptive-cell-timestep}, cell \(c\) owns \(t_c\) and
+uses
+\[
+ \delta t_c=\min\left(
+ \Delta t_{\rm op}-t_c,
+ \frac{C_{\rm coll}}{\nu_{B,c}}\right).                 \tag{PIC31i-b}
+\]
+Orbital drift is paused during the collision operator.  A captured remnant
+is placed at the mass-weighted average of the parent radii, so it remains in
+their radial cell.  Every cell therefore advances through the complete
+interval independently.  One worker carries out its successive local steps,
+rebuilding the proposal after a capture.  OpenMP or the portable thread
+backend distributes these cell tasks among workers.  The random key contains
+the interval epoch, cell index, local substep, and trial index, so scheduling
+preserves every draw.  Diagnostics accumulate in each cell and are then
+summed in increasing cell order.  \code{cell_visits} records the sum of local
+work; \code{substeps} records the maximum local count.
+
+The collision operator updates the in-memory state as it works.  If a call
+fails partway through, continuation must restore an accepted checkpoint.
+The driver propagates that failure before resetting event clocks or writing
+a checkpoint, preserving the accepted event ordering.
+
+\paragraph{What a low proposal acceptance means.}
+For a proposed pair, the physical rate kernel \(K_{ij}\) is accepted with
+\[
+ P_{{\rm acc},ij}=\frac{K_{ij}}{B_{ij}},\qquad
+ 0\leq P_{{\rm acc},ij}\leq 1 .                         \tag{PIC31j}
+\]
+Here \(B_{ij}\) is the rigorous pair majorant used to draw the proposal.  The
+accepted fraction of all proposals is therefore an efficiency diagnostic,
+not a new physical probability that must exceed an arbitrary percentage.  A
+broad unequal-mass or unequal-dispersion population can make \(B_{ij}\)
+deliberately conservative for many pairs and drive the aggregate acceptance
+below two percent without biasing the accepted event distribution.  Such a
+run is expensive, but it is physically valid provided the bound is never
+violated, both requested event channels are sampled, the pair invariants and
+capture-heating ledger close, the cadence comparison converges, and
+\(\Delta r/\lambda_{\rm mfp}<1\).  The runtime diagnostics consequently
+report low acceptance as a performance warning rather than rejecting an
+otherwise resolved calculation.
+
+\subsubsection{Unresolved origin cell and positive marker compression}
+
+Let \(r_{\min}\) be the first resolved radial mesh face.  The analytic
+power-law initializer does not continue its cusp to \(r=0\); it fills
+\(0\leq r<r_{\min}\) with a uniform origin core at
+\[
+ \rho_{\rm core}=\rho(r_{\min}),
+\]
+where \(\rho(r_{\min})\) is the density at that first resolved face.  Active
+markers in this interval contribute to the hidden-core Poisson mass ledger and
+remain physical collision partners.
+
+For collisions, let
+\[
+ I=\code{subhalo_inner_collision_cells}.
+\]
+VENUS divides the origin-core volume into \(I\) equal-volume physical shells.
+Their faces are
+\[
+ r_a=r_{\min}\left(\frac{a}{I}\right)^{1/3},
+ \qquad a=0,\ldots,I,                                    \tag{PIC31k}
+\]
+so every shell has volume \(4\pi r_{\min}^3/(3I)\).  The central shell is also
+the widest:
+\[
+ \Delta r_{\rm core,max}=r_1-r_0
+ =r_{\min}I^{-1/3}.                                     \tag{PIC31l}
+\]
+Equation (PIC31l) is a statement about the \emph{geometric width only}.
+Eight times as many physical inner cells halve that width, but they do not
+hold the mean free path fixed.  For the velocity-dependent capture kernel,
+each shell must recompute
+\(\lambda_{\rm mfp}=\langle u\rangle/
+[n_{\rm partner}\langle u\Sigma(u)\rangle]\) from its own marker
+distribution.  Resolving a colder central population can strengthen
+gravitational focusing and shorten \(\lambda_{\rm mfp}\) faster than
+\(\Delta r\) shrinks.  Increasing \(I\) therefore does \emph{not} guarantee a
+smaller \(\Delta r/\lambda_{\rm mfp}\).  In contrast, increasing
+\code{subhalo_collision_lanes} only supplies independent Monte--Carlo work
+inside each physical shell and does not change equation (PIC31l).
+
+The default \(I=1\) reproduces the Poisson solver's single uniform hidden-core
+control volume.  Choosing \(I>1\) changes the physical collision
+coarse-graining, so it requires a direct per-cell comparison of both
+\(\Delta r\) and the newly evaluated \(\lambda_{\rm mfp}\).  The accepted
+value must be frozen with \(r_{\min}\), the radial mesh, and the lane count in
+the immutable run contract.  It does not place a reflecting wall at
+\(r_{\min}\).
+
+\paragraph{Measured origin-core counterexample.}
+For the registered \(t=0\), \(\gamma_i=2\) diagnostic with
+\(N_r=256\), \(r_{\min}=0.1\), and 8192 initial markers per radial cell, the
+maximum locality ratios were
+\[
+\begin{array}{c|rrrr}
+ I & 1 & 2 & 8 & 64\\ \hline
+ \max_c(\Delta r_c/\lambda_{{\rm mfp},c}),\ S=1
+   &1.20889&1.42762&1.85613&1.96592\\
+ \max_c(\Delta r_c/\lambda_{{\rm mfp},c}),\ S=3
+   &3.62667&4.28286&5.56839&5.89776
+\end{array}                                               \tag{PIC31m}
+\]
+where \(S\) is the multiplicative encounter-strength parameter.  The
+strength-three values are exactly three times the strength-one values for
+this kernel and fixed initial state.  Physical cell zero is worst in every
+case.  Its lower resolved orbital speed increases the focused capture area,
+so its recomputed mean free path decreases more rapidly than the
+\(I^{-1/3}\) width.  None of these cases satisfies a unit locality bound.
+The lesson is general: select \(I\) from the measured
+\(\Delta r/\lambda_{\rm mfp}\), not from geometric width alone, and repeat
+that measurement as the distribution evolves.
+
+\paragraph{Why moving the origin inward is not a cure for a singular cusp.}
+A second registered \(t=0\) diagnostic held the exterior logarithmic spacing
+approximately fixed while moving \(r_{\min}\) inward.  For the same
+\(\gamma_i=2\) distribution and \(I=1\), it measured
+\[
+\begin{array}{c|rrr}
+r_{\min} & 0.05 & 0.02 & 0.01\\ \hline
+\max_c(\Delta r_c/\lambda_{{\rm mfp},c}),\ S=1
+  &2.4082&6.14296&12.4339\\
+\max_c(\Delta r_c/\lambda_{{\rm mfp},c}),\ S=3
+  &7.22458&18.4289&37.3018
+\end{array}                                               \tag{PIC31n}
+\]
+The strength-three row is again three times the strength-one row.  Over this
+range the hidden-cell mean free path falls approximately as
+\(\lambda_{\rm mfp}\propto r_{\min}^{\,2}\), whereas its width falls only as
+\(\Delta r\propto r_{\min}\).  Consequently
+\(\Delta r/\lambda_{\rm mfp}\propto r_{\min}^{-1}\): moving the numerical
+origin inward makes the locality error larger.  Increasing only \(N_r\) does
+not change the hidden-cell width, and increasing \(I\) already failed in
+equation (PIC31m).  Thus a collisional \(r^{-2}\) cusp continued formally to
+the origin has no converged hidden-cell limit for this focused encounter law.
+It requires a physically specified finite-density core, an inner boundary or
+sink, or another short-mean-free-path treatment.  VENUS therefore stops such
+a case instead of disguising the unresolved centre with more markers or a
+weaker locality threshold.
+
+Whole-object capture reduces the marker count by one; elastic scattering
+leaves it unchanged.  Optional
+population control calls the positive local quadrature reduction in
+\path{canonical_open_carrier_compression.hpp}.  Within local phase subcells it
+retains a subset of original phase-space points and solves for nonnegative
+weights that preserve the selected deposited moments.  For a marker in the
+origin handoff, the hidden-carrier contribution \(h_p\) and every resolved
+face-cloud contribution \(\widetilde a_{pi}\) in equation (PIC8c) are separate
+compression constraints.  Compression therefore cannot undo the smooth
+gravity-source handoff by changing the retained markers' distribution within
+that interval.  A reduction is rejected
+if its relative moment residual exceeds
+\code{subhalo_compression_tolerance} or if the fractional reduction is below
+\code{subhalo_compression_minimum_reduction_fraction}.  Each retained packet
+also preserves its specific internal energy \(E_{\rm int}/m\).
+
+Compression begins only when the total count reaches
+\code{subhalo_compression_trigger_markers}; the run may retain at least
+\code{subhalo_compression_minimum_markers}.  The source-cell preservation flag
+forbids a replacement packet from crossing its original phase-space source
+cell.  Compression is a controlled approximation to the sampled distribution,
+so its counts, residuals, timings, and compressed/uncompressed profile
+differences must be included in the physical convergence study.
+
+\subsubsection{Using unequal weights to overcome the SIDM marker barrier}
+\label{sec:wpic-unequal-sidm-path}
+
+Section~\ref{sec:sphdsmc-marker-scaling} shows why a globally equal marker
+mass becomes prohibitive during SIDM core collapse:
+\[
+ N_{\rm req}\propto
+ \frac{(k-1)^3}{k^2}
+ \left(\frac{\sigma}{m}\right)^3\rho_{\rm target}^2
+ \ \longrightarrow\
+ k\left(\frac{\sigma}{m}\right)^3\rho_{\rm target}^2
+ \quad(k\gg1).
+\]
+The WPIC state has the representation needed to avoid this global cost.
+Collisionless characteristics carry an individual numerical weight \(m_i\),
+and mass deposition sums those weights before solving the Poisson equation.
+The outer halo can therefore be represented by relatively heavy markers while
+the collapsing core is represented by much lighter markers.
+
+For a local core marker mass \(m_{\rm core}\), the central locality estimate is
+\[
+ \frac{\Delta r}{\lambda_{\rm mfp}}
+ \simeq
+ \frac{k-1}{k}\,
+ \frac{\sigma}{m}
+ \left(\frac{3k m_{\rm core}}{4\pi}\right)^{1/3}
+ \rho_{\rm core}^{2/3}.                                  \tag{PIC34cW}
+\]
+Here \(k\) is the local collision-cell population, so \((k-1)/k\) excludes
+the selected marker itself from its partner density.  It tends to unity in
+the continuum limit.
+To enforce a requested maximum ratio \(\chi_{\rm target}\), the core weight
+must satisfy
+\[
+ m_{\rm core}\lesssim
+ \frac{4\pi}{3k}\,
+ \left(\frac{k}{k-1}\right)^3
+ \frac{\chi_{\rm target}^3}
+ {(\sigma/m)^3\rho_{\rm target}^2}.                       \tag{PIC34dW}
+\]
+This is the unequal-weight form of the equal-mass requirement: it constrains
+the marker mass only where the density is high, rather than forcing every
+marker in the outer halo to have the same very small mass.
+
+Let a baseline calculation have \(N_0\) equal markers of mass \(m_0=M/N_0\).
+If the refined core needs \(m_{\rm core}=m_0/F\) and contains a fraction
+\(f_c=M_c/M\) of the represented mass, retaining the original outer
+resolution gives approximately
+\[
+ N_{\rm adaptive}
+ \simeq N_0\left[1+f_c(F-1)\right],                       \tag{PIC34e}
+\]
+whereas uniform refinement would require \(N_{\rm uniform}=FN_0\).
+Equation (PIC34e) quantifies the computational advantage: when only a small
+mass fraction requires the finest weight, adaptive marker counts can be far
+below the uniformly refined count \(FN_0\).  The refined region must include
+the transition zone through which collisions conduct heat, not only the
+instantaneous density core.  Use equations (S14c) and (PIC34dW) with the
+selected shell population \(k\), then recompute the locality ratio from the
+evolving velocity distribution throughout the calculation.
+
+\paragraph{Implemented unequal-mass operations.}
+The general \code{WeightedPICMarker} stores an independent represented mass,
+and the collisionless transport, field deposition, restart, and diagnostics
+preserve it.  The ordinary material-SIDM and gravitational WPIC kernels, the
+Frank/SphDSMC restart importer, and the invariant-preserving phase remap
+accept arbitrary positive unequal masses.  For a configured material law
+\(s(u)=\sigma(u)/m\), the physical symmetric pair area is
+\[
+ \boxed{\Sigma_{ij}(u)=\frac{m_i+m_j}{2}\,s(u)}.          \tag{PIC34f}
+\]
+For \(m_i=m_j=m_p\), number density
+\(n=\rho/m_p\) gives
+\(n\Sigma_{ij}=\rho s\) in the continuum limit, exactly the original
+resolution-independent collision frequency.  A finite \(N_s\)-object cell
+uses \(n_{\rm partner}=n(N_s-1)/N_s\), as in equation (PIC14c).  For unequal
+partners, the collision map uses
+\[
+ \bm V=\frac{m_i\bm v_i+m_j\bm v_j}{m_i+m_j},\qquad
+ \bm v_i'=\bm V+\frac{m_j}{m_i+m_j}\bm u',\qquad
+ \bm v_j'=\bm V-\frac{m_i}{m_i+m_j}\bm u'.                \tag{PIC34g}
+\]
+Both full masses remain unchanged.  The Plummer subhalo operator uses the
+whole-object scattering and capture rules in equations
+(PIC31a)--(PIC36).  Every collision path accepts positive unequal masses, and
+no accepted event creates a split remainder.
+
+\paragraph{Interpretation and adaptive-resolution requirements.}
+Equation (PIC34f) treats a marker mass as the mass of one complete
+coarse-grained collision partner.  This is the intended closure for the
+present unequal-mass code.  Arbitrarily changing marker weights is therefore
+not a neutral Monte-Carlo refinement: it changes the represented mass
+spectrum unless the initialization or resampling prescription is constructed
+to preserve the desired physical mixture.  A production adaptive SIDM
+calculation still requires:
+\begin{enumerate}
+\item monitor \(\Delta r/\lambda_{\rm mfp}\) and generate a lighter,
+      well-sampled core population before a collision region becomes nonlocal;
+\item place newly sampled core representatives at distinct local phase-space
+      points; exact duplicates conserve moments but do not improve spatial
+      sampling;
+\item build collision regions from their number density, pair cross sections,
+      represented mass, and geometry, and
+      require a sufficient weighted effective population
+      \[
+       N_{\rm eff}=
+       \frac{(\sum_i m_i)^2}{\sum_i m_i^2};
+      \]
+\item use conservative paired resampling to construct the intended mass
+      spectrum while preserving mass, momentum, and kinetic-energy moments;
+\item refine the radial gravity mesh with the marker distribution, because
+      light core markers cannot recover a core smaller than the Poisson-grid
+      resolution;
+\item compare adaptive-resampling sequences through the desired core-collapse
+      interval, including Maxwellian null behavior, event/remap conservation,
+      collision rates, locality, and gravothermal heat transport.
+\end{enumerate}
+Unequal weights remove the need to refine the entire halo uniformly.  They do
+not change the physical mean free path, prevent the core from entering the
+short-mean-free-path regime, or remove the shrinking collision and orbital
+timesteps at late collapse.
+
+\subsubsection{Subhalo collision diagnostics and locality}
+
+For this operator the fixed radial WPIC mesh cells are collision volumes.
+Before computing locality, VENUS reunites the parallel Monte-Carlo lanes that
+belong to one physical radial cell.  Lanes accelerate independent pair trials;
+they are not separate pieces of matter and therefore cannot alter a physical
+mean free path.  With
+\(\Sigma_{ij}=\Sigma_{{\rm scatt},ij}+\Sigma_{{\rm cap},ij}\), the code uses
+\[
+ \lambda_{{\rm mfp},c}=
+ \frac{\langle u_{ij}\rangle_c}
+ {n_{{\rm partner},c}
+  \langle u_{ij}\Sigma_{ij}(u_{ij})\rangle_c},\qquad
+ \sigma_{v,c}^{\,2}=\frac{1}{3M_c}\sum_{i\in c}m_i
+ \left[(w_i-\overline w_c)^2+\frac{2\eta_i}{r_i^2}\right].
+\]
+Here \(c\) labels a physical radial cell, \(N_c\) is its marker count,
+\(V_c\) is its volume,
+\(n_c=N_c/V_c\) is its object-density estimate,
+\(n_{{\rm partner},c}=(N_c-1)/V_c\) is the density of other objects available
+to one selected marker, \(M_c=\sum_i m_i\), and every other symbol has the
+same meaning as in equations (PIC14a)--(PIC14c).  Inner cells use 4096
+deterministic pair samples and other cells use 256, or all pairs if fewer
+exist.  The code reports
+\[
+ \frac{\Delta r_c}{\lambda_{{\rm mfp},c}}
+\]
+and compares it with \code{--subhalo-locality-maximum-ratio}.  A zero
+threshold leaves the quantity diagnostic-only.  A positive threshold causes
+an atomic checkpoint and status 98 at the first violation; production uses
+one, so that no accepted output silently enters
+\(\Delta r_c>\lambda_{{\rm mfp},c}\).  The violation is a resolution failure:
+the collision cell is wider than the estimated local mean free path.
+Decreasing a physical cell width, reducing the unresolved \(r_{\min}\)
+region, or changing the physical coarse-graining may help, but every candidate
+must be re-evaluated with the evolving velocity distribution.  More markers
+improve the statistical estimate but do not by themselves lengthen the
+physical mean free path; increasing \(I\) is not guaranteed to reduce the
+ratio, as equation (PIC31m) demonstrates.  A numerical cell face must never
+be treated as a physical boundary merely to bypass the stop.
+
+\paragraph{Does repeated capture itself cause the locality loss?}
+Capture can accelerate central contraction because relative orbital kinetic
+energy is transferred into the remnant's internal degrees of freedom rather
+than returned to the centre-of-mass orbit.  A denser centre then tends to
+increase \(n_{{\rm partner},c}\langle u\Sigma\rangle_c\) and shorten
+\(\lambda_{{\rm mfp},c}\).  It is not correct, however, to infer the mean free
+path from central mass density alone.  Each capture reduces the marker number
+\(N_c\) by one, increases a remnant mass and its pair area, changes the local
+relative-speed distribution, and adds the positive heating term in equation
+(PIC36) relative to the mass-weighted progenitor variance.  The remnant
+dispersion need not exceed that of the hotter progenitor.  These effects enter
+the numerator and denominator of the measured expression above with different
+signs.  VENUS therefore recomputes the pair average and the mass-weighted
+velocity dispersion from the evolving distribution after every collision
+application.  A rising central density is a physical explanation for why
+locality may become difficult; the actual failure is established only by the
+measured \(\Delta r_c/\lambda_{{\rm mfp},c}\), not by capture count or density
+alone.
+
+\path{collision_history.csv} records the summed number of substeps and trials
+since the preceding history write,
+accepted scattering and capture events, represented mass in each channel,
+removed markers (the spawned-marker column is zero), orbital and internal-energy changes, total
+internal energy, marker count, maximum marker-weight ratio, locality counts,
+the number of mean-free-path pair samples, the minimum collision,
+dynamical, and potential-change times, the minimum/maximum applied collision
+interval, the maximum interval divided by the physical clock measured just
+before application, the maximum interval divided by the clock reconstructed
+after the application, and the
+minimum/maximum evolving orbital velocity dispersion,
+minimum/maximum marker and pair internal dispersions, maximum pair momentum
+and total-energy residuals, and the compression counts, before/after marker
+populations, retained groups, maximum moment residual, and wall time.  These
+columns separate a physical transfer of orbital energy into internal energy
+from numerical nonconservation and expose every population-control event.
+The CSV convention uses \code{min_potential_change_time=0} to record
+\(t_\Phi=\infty\): the measured field change stayed below the finite-marker
+noise floor.  This stored zero therefore denotes an unresolved change rate
+and an infinite potential-change time.
+The two interval ratios are respectively
+\code{max_interval_over_selection_timescale} and
+\code{max_interval_over_retrospective_timescale}.  They are diagnostics,
+not conservation laws, but they have different acceptance meanings.  For a
+positive \code{--subhalo-collision-timescale-fraction}, the selection ratio is
+a hard pre-collision bound: the runner rolls back a provisional orbit step
+rather than apply a batch whose complete accumulated age exceeds the
+currently measured deadline.  The collision itself can nevertheless shorten
+the post-event clock by changing marker masses, pair areas, the velocity
+distribution, and the potential.  Consequently the retrospective ratio can
+transiently exceed the configured fraction.  That post-event excess requests
+a cadence-convergence check; it does not retroactively invalidate an
+otherwise time-ordered collision batch.
+
+The substep count is a history-window sum, not the maximum used by one
+application of the collision operator.  The per-application
+\code{subhalo_collision_maximum_substeps} guard is enforced inside the
+operator; reaching the next history record proves that none of the completed
+applications hit that guard.
+
+\subsubsection{Four separate timing controls}
+
+Four controls govern the calculation: the orbit step resolves trajectories,
+the interval between collision applications resolves transport--collision
+coupling, the internal collision substeps resolve event sampling, and a
+maximum-substep guard bounds the computational work.  The following
+definitions explain the physical timescales and how each control uses them.
+
+\paragraph{Physical collision time.}
+In physical radial cell \(c\), let
+\[
+ {\cal K}_c=\left\langle
+ u_{ij}\Sigma_{ij}(u_{ij})\right\rangle_c,
+ \qquad
+ \nu_{{\rm coll},c}=n_{{\rm partner},c}{\cal K}_c .
+\]
+Here \(u_{ij}=|\boldsymbol v_i-\boldsymbol v_j|\) is pair relative speed,
+\(\Sigma_{ij}=\Sigma_{{\rm scatt},ij}+\Sigma_{{\rm cap},ij}\) is the total
+unequal-mass pair area,
+\(n_{{\rm partner},c}=(N_c-1)/V_c\) is finite-cell partner density, and the
+angle brackets denote the evolving pair sample in that cell.  The mean
+waiting time for one selected object to encounter another and the mean free
+path are
+\[
+ t_{{\rm coll},c}=\frac{1}{\nu_{{\rm coll},c}}
+ =\frac{1}{n_{{\rm partner},c}\langle u\Sigma\rangle_c},
+ \qquad
+ \lambda_{{\rm mfp},c}
+ =t_{{\rm coll},c}\langle u\rangle_c .                 \tag{PIC37}
+\]
+Equation (PIC37) shows why the velocity dispersion cannot be omitted for a
+velocity-dependent cross section: the evolving distribution changes both
+\(\langle u\rangle\) and \(\langle u\Sigma(u)\rangle\).
+
+\paragraph{Dynamical time.}
+The physical enclosed marker mass is
+\[
+ M(<r_i)=M_{\rm hidden}+M_\bullet
+          +\sum_{j\leq i}M_{{\rm cell},j}.
+\]
+Here \(M_{\rm hidden}\) is active marker mass currently inside the first
+resolved radial face, \(M_\bullet\) is the configured central point mass, and
+\(M_{{\rm cell},j}\) is the deposited physical mass in radial cell \(j\).
+The expanding runner normally has \(M_\bullet=0\), but the shared field
+routine retains the term.
+The corresponding spherical gravitational frequency and time are
+\[
+ \Omega_{{\rm dyn},i}^2=\frac{G M(<r_i)}{r_i^3},
+ \qquad
+ t_{{\rm dyn},i}=\Omega_{{\rm dyn},i}^{-1}.             \tag{PIC38}
+\]
+VENUS uses the minimum positive \(t_{{\rm dyn},i}\) over represented cells.
+It uses total enclosed matter in equation (PIC38), not the density contrast
+used as the cosmological Poisson source.
+
+\paragraph{Potential-change time.}
+Let \(g=-\partial\Phi/\partial r\).  Successive self-consistent Poisson fields
+first give the dimensionless finite changes
+\[
+ \delta_\Phi=
+ \frac{\|\Phi^{n+1}-\Phi^n\|_\infty}
+      {\|\Phi\|_{\infty,*}},
+ \qquad
+ \delta_g=
+ \frac{\|g^{n+1}-g^n\|_\infty}
+      {\|g\|_{\infty,*}},                              \tag{PIC39a}
+\]
+where
+\[
+ \|\Phi\|_{\infty,*}=\max_i\max(|\Phi_i^n|,|\Phi_i^{n+1}|),
+ \qquad
+ \|g\|_{\infty,*}=\max_i\max(|g_i^n|,|g_i^{n+1}|),
+\]
+so the normalization does not vanish merely because one grid point crosses
+zero.
+
+A finite marker representation also produces a small deposition residual
+between nearly identical fields.  Let \(a_{pc}\) be the fraction of marker
+\(p\)'s mass deposited in mesh cell \(c\), \(m_p\) its represented mass, and
+\(M_c=\sum_p a_{pc}m_p\).  The global deposited effective marker number used
+by the clock is
+\[
+ N_{\rm eff}^{\rm glob}
+ =\frac{\left(\sum_c M_c\right)^2}
+        {\sum_c\sum_p(a_{pc}m_p)^2}.                   \tag{PIC39b}
+\]
+It decreases when a few unequal-mass markers dominate the field even if the
+raw marker count is large.  VENUS defines the resolved-change threshold
+\[
+ \delta_N=\max\left(4096\,\epsilon_{\rm mach},
+                    \frac{0.25}{\sqrt{N_{\rm eff}^{\rm glob}}}\right),
+\]
+where \(\epsilon_{\rm mach}\) is double-precision machine roundoff.  For
+\(X\in\{\Phi,g\}\), the measured change time is
+\[
+ t_X=
+ \begin{cases}
+ \displaystyle
+ \frac{\Delta t_{\rm evo}}
+      {\sqrt{\delta_X^2-\delta_N^2}},&
+             \delta_X>\delta_N,\\[6pt]
+ \infty,& \delta_X\leq\delta_N ,
+ \end{cases}
+ \qquad t_\Phi=\min(t_\Phi^{(\Phi)},t_\Phi^{(g)}).      \tag{PIC39c}
+\]
+The factor \(0.25\) is deliberately permissive: it is one quarter of the
+nominal \(N_{\rm eff}^{-1/2}\) sampling scale, so a marginally resolved change
+is more likely to shorten the cadence than to be hidden.  Sub-threshold
+changes are not converted into a derivative because dividing a deposition
+residual by a tiny output-cleanup step would manufacture
+\(t_\Phi\rightarrow0\).  This threshold distinguishes resolved field evolution from deposition noise.
+Its statistical calibration requires independent realizations.  Marker-number and quiet-start convergence should assess
+it; a future refinement may propagate cellwise deposited-mass variance
+through the Poisson solve.  Thus \(t_\Phi\) is measured from resolved evolution
+of the self-consistent field rather than assumed equal to \(t_{\rm dyn}\).
+
+\paragraph{How often the collision generator is applied.}
+Define
+\[
+ t_{\rm fast}=\begin{cases}
+ \min_c\left(t_{{\rm dyn},c},t_\Phi\right),
+ &\text{CPU adaptive collision cells},\\
+ \min_c\left(t_{{\rm coll},c},t_{{\rm dyn},c},t_\Phi\right),
+ &\text{mesh-wide reference and CUDA paths}.
+ \end{cases}
+\]
+The outer collision-operator interval is
+\[
+ \Delta t_{\rm op}=
+ \min\left(\Delta t_{\rm op,max},
+            \epsilon_{\rm op}t_{\rm fast}\right).       \tag{PIC40}
+\]
+\(\Delta t_{\rm op,max}\) is
+\code{--subhalo-collision-interval}, and
+\(\epsilon_{\rm op}\) is
+\code{--subhalo-collision-timescale-fraction}.  The baseline production
+template starts with \(\epsilon_{\rm op}=0.1\); a short run that fails the
+registered interval-halving comparison must use a smaller value, commonly
+0.05, and remains provisional until the next halving agrees within the
+profile tolerances.  In the mesh-wide reference and CUDA paths,
+\(t_{\rm coll}\) sets the outer deadline when it is shorter than both
+\(t_{\rm dyn}\) and \(t_\Phi\).  The CPU
+\code{--subhalo-adaptive-cell-timestep} path instead recomputes collision rates
+inside each cell and enforces its local collision CFL there; the outer
+operator interval is limited by the dynamical and potential-change clocks.
+The CPU selection and endpoint checks pass an infinite collision time in this
+mode (\path{cpu/src/drivers/expanding_wpic.cpp}, lines 2285--2313 and
+2686--2701).  CUDA retains the sampled collision time in its outer minimum
+(\path{gpu/src/wpic_production_driver.cu}, lines 1070--1083).
+A diagnostic pair scan estimates \(t_{\rm coll}\)
+before the first real event without changing markers or consuming the
+production random stream.  Version-6 restarts preserve the latest clock
+estimates.
+
+Where \(t_{\rm coll}\) enters equation (PIC40), its latest measured value is
+held between collision applications.  The evolving pair diagnostic refreshes
+it at each application.  The dynamical and noise-resolved potential-change
+clocks are re-evaluated at a provisional orbit endpoint, using the same
+branch of \(t_{\rm fast}\).  Outer-cadence refinement remains necessary for
+each path.
+
+An adaptive KDK step is transactional.  Before the step, VENUS saves every
+marker radius \(r_p\) and radial velocity \(w_p\).  It then performs the first
+kick and drift, deposits the provisional endpoint distribution, solves
+Poisson, and recomputes \(t_{\rm dyn}\) and \(t_\Phi\).  If
+\[
+ t_{\rm age}+\Delta t_{\rm evo}>
+ \min\!\left(\Delta t_{\rm op,max},
+             \epsilon_{\rm op}t_{\rm fast,end}\right), \tag{PIC40a}
+\]
+the endpoint is rejected: \(r_p,w_p\) are restored and a shorter orbit step
+is tried.  Here \(t_{\rm age}\) is physical time accumulated since the last
+collision-operator application.  A rejected probe advances neither physical
+time, accepted step number, collision age, nor the counter-based collision
+random stream.  Only after a probe satisfies equation (PIC40a) is the endpoint
+kick completed and the state committed.  A second hard check is made
+immediately before the collision generator is called.  Therefore
+\code{max_interval_over_selection_timescale} cannot exceed
+\(\epsilon_{\rm op}\), apart from the stated roundoff tolerance, in an
+adaptive accepted run.
+
+The endpoint comparison includes only a few units in the last represented
+place.  Let
+\[
+ D_{\rm end}=
+ \min\!\left(\Delta t_{\rm op,max},
+             \epsilon_{\rm op}t_{\rm fast,end}\right),
+ \qquad
+ \delta_D=64\epsilon_{\rm mach}
+ \max(1,|t_{\rm age}|,|D_{\rm end}|),                    \tag{PIC40b}
+\]
+where \(D_{\rm end}\) is the newly measured collision deadline and
+\(\epsilon_{\rm mach}\) is the machine relative spacing for the stored
+double-precision numbers.  A pre-step collision age is still timely only
+when
+\[
+ t_{\rm age}\leq D_{\rm end}+\delta_D.                   \tag{PIC40c}
+\]
+The smallest useful retry at coordinate time \(t\) is estimated as
+\[
+ \delta t_{\rm coord}=128\epsilon_{\rm mach}
+                       \max(1,|t|),                      \tag{PIC40d}
+\]
+where \(\delta t_{\rm coord}\) is the local resolution of the floating-point
+time coordinate.  If the provisional endpoint violates equation (PIC40a),
+VENUS first restores the saved pre-step marker coordinates.  It normally
+retries a shorter interval that remains inside \(D_{\rm end}\).  In the
+exceptional case
+\[
+ D_{\rm end}-t_{\rm age}\leq\delta t_{\rm coord}
+ \quad\hbox{and}\quad
+ t_{\rm age}\leq D_{\rm end}+\delta_D,                   \tag{PIC40e}
+\]
+no positive representable KDK step can reach the still-timely event
+reliably.  VENUS then applies the collision batch at the rolled-back pre-step
+state.  This is a coordinate-resolution-limited, infinitesimally early
+application, not permission to apply an overdue operator.
+
+The field or pair distribution produced by the collision itself can shorten
+the newly measured clock.  Hence
+\code{max_interval_over_retrospective_timescale} may exceed
+\(\epsilon_{\rm op}\); it records post-event physics rather than the deadline
+known before the batch.  If instead
+\(t_{\rm age}>D_{\rm end}+\delta_D\), the pre-step state is genuinely overdue:
+safe-early application is forbidden.  When rollback refinement reaches
+\(\delta t_{\rm coord}\) in that state, VENUS fails closed, checkpoints the
+pre-collision state without sampling the batch, and exits with status 97.
+The same fail-closed result is used if the finite rollback-probe guard is
+exhausted before any admissible ordering is established.  Such a checkpoint
+can already contain a
+collision-event age longer than the newly discovered deadline.  Merely
+restarting that same state with a smaller cadence fraction cannot restore the
+missing earlier operator application.  A valid recovery must begin from an
+earlier checkpoint whose saved age satisfies the new deadline (normally a
+collision boundary), or from a fresh run with the refined cadence.
+
+\paragraph{Ordinary evolution timestep.}
+Between collision deadlines, KDK Vlasov evolution has its own timestep.  In
+mesh cell \(i\), the implemented frequency estimate is
+\[
+ \Omega_{{\rm evo},i}^2=
+ \frac{|\Phi_r(r_i)|}{r_i}
+ +\frac{\langle v_t^2\rangle_i}{r_i^2}+H^2 ,
+\]
+where \(\langle v_t^2\rangle_i\) is the deposited tangential second moment
+and \(H\) is the expansion rate.  The minimum is taken only over represented
+cells satisfying
+\[
+ M_{{\rm cell},i}>10^{-12}M_{\rm mesh},
+\]
+where \(M_{\rm mesh}\) is the total mass deposited on the resolved mesh.
+This prevents an almost empty outer cell from setting the global orbit step.
+For a collisional run, therefore,
+\[
+ \Delta t_{\rm evo}=
+ \min\left[\Delta t_{\rm evo,max},
+ \min_i\frac{\epsilon_{\rm dyn}}{\Omega_{{\rm evo},i}},
+ \Delta t_{\rm next\ output},
+ \Delta t_{\rm next\ collision}\right].                \tag{PIC41}
+\]
+\code{--maximum-timestep} supplies \(\Delta t_{\rm evo,max}\), while
+\code{--dynamical-fraction} supplies \(\epsilon_{\rm dyn}\).  The last Vlasov
+step is shortened to land exactly on an output or collision deadline.  In an
+adaptive collisional run this is still only the proposed KDK interval; the
+endpoint audit in equation (PIC40a) may roll it back and shorten it again.
+For a collisionless WPIC run VENUS deliberately does not apply the cellwise
+dynamical limiter: it uses the fixed
+\(\Delta t_{\rm evo,max}\), shortened only to land on an output or the final
+time.  Fixed-step time-symmetric KDK gives bounded energy error in a static
+potential; a varying step would destroy that symmetry even when the force is
+constant in time.
+
+\paragraph{Internal collision CFL.}
+One application covering \(\Delta t_{\rm op}\) is further divided.  In
+reference mode, if \(\nu_{B,k}\) is the safe pair-majorant trial-frequency
+bound for marker \(k\), VENUS takes
+\[
+ \delta t_{\rm coll}=
+ \min\left(\Delta t_{\rm op}-t_{\rm elapsed},
+ \frac{\epsilon_{\rm coll}}{\max_k\nu_{B,k}}\right),    \tag{PIC42}
+\]
+where \(\epsilon_{\rm coll}\) is
+\code{--subhalo-collision-cfl}.  The majorant is rebuilt after capture changes
+the local population.  Adaptive-cell mode replaces the mesh maximum by the
+local equation (PIC31i-b).  The maximum-substep option is a safety guard, not a
+replacement for equations (PIC40)--(PIC42).
+
+\paragraph{Administrative maximum-substep guard.}
+\code{--subhalo-collision-maximum-substeps} limits only how many
+equation-(PIC42) substeps one operator application may execute before the
+runner deliberately aborts.  It neither chooses \(\delta t_{\rm coll}\) nor
+changes an NTC probability.  The executable default of 256 catches accidental
+runaway work in small runs.  Resolved high-rate unequal-mass evolution can
+legitimately require many more CFL-selected substeps; a practical initial
+guard is 16384.  An especially steep or strongly collisional interval can
+still exhaust 16384; retrying that same case with a larger guard, for example
+32768 or 65536, is legitimate
+when the collision CFL, locality, and invariants remain unchanged.  Raising
+the guard does not change physical accuracy or the collision sequence
+provided the lower value would otherwise only have stopped the same
+application.  It merely permits the CFL-controlled interval to finish.
+Conversely, hitting the guard produces an error rather than accepting a
+partially integrated collision interval.
+
+These intervals need not have a permanent ordering: a very dense cell can
+have \(\delta t_{\rm coll}<\Delta t_{\rm evo}\), while a weakly collisional
+halo can take many Vlasov steps before one outer application.  The outer
+frequency also requires empirical refinement.  If \({\cal V}\) denotes Vlasov
+flow and \({\cal C}\) the collision generator, sequential splitting obeys
+\[
+ e^{\Delta t{\cal C}}e^{\Delta t{\cal V}}
+ =e^{\Delta t({\cal V}+{\cal C})
+   +\frac12\Delta t^2[{\cal C},{\cal V}]
+   +O(\Delta t^3)} .                                   \tag{PIC43}
+\]
+The commutator \([{\cal C},{\cal V}]\) expresses that collision rates change
+as gravity moves the distribution.  The cadence test therefore repeats short runs with the same random seed and \(\Delta t_{\rm op,max}\) halved and compares density,
+logarithmic slope, capture and scattering counts, conservation, and
+\(\Delta r/\lambda_{\rm mfp}\).  Independent-seed ensembles must also be
+compared: the mean density and slope profiles from the two cadences should
+agree within their measured Monte--Carlo scatter.  Agreement indicates that
+the splitting term in equation (PIC43) is small; merely staying below the
+internal collision CFL is not sufficient.  Irrespective of either timing
+ratio, collision-cell locality and mass, momentum, and total-energy
+conservation remain hard acceptance gates.
+
+\paragraph{Cadence convergence requirements.}
+No outer collision cadence is a universal property of the physical model.
+For every marker loading, cusp, cross section, and radial mesh, perform a
+refinement with the same random seed of the pair
+\((\Delta t_{\rm op,max},\epsilon_{\rm op})\) before examining its result.
+Halving both is a conservative joint refinement; halving only one is
+informative only after the runtime diagnostics show that control is active.
+Require the intended bounds to be reached in practice, then compare density,
+logarithmic slope,
+scattering and capture counts, conservation ledgers, and
+\(\Delta r/\lambda_{\rm mfp}\).  Repeat the comparison over independent paired
+collision seeds so that a cadence effect can be distinguished from ordinary
+Monte--Carlo scatter.  Do not interpret a profile until the chosen differences
+are smaller than the scientific error budget.  The time ordering is invalid
+if any accepted pre-event interval violates
+\[
+  \code{max_interval_over_selection_timescale}
+  \leq \epsilon_{\rm op}(1+2\times10^{-12}).
+\]
+
+\subsubsection{Running expanding WPIC with scattering and capture}
+
+Build the dedicated expanding task frontend with:
+\codesource{\code{venus_cpu_subhalo_wpic}}
+{\path{cpu/src/apps/subhalo/expanding_wpic.cpp};
+ \path{cpu/Makefile}}
+{Builds the fail-closed expanding subhalo WPIC frontend}
+\begin{lstlisting}
+cd VENUS/cpu
+make venus_cpu_subhalo_wpic
+\end{lstlisting}
+A collisionless control uses the Vlasov--Poisson frontend with zero strength:
+\codesource{\code{venus_cpu_vlasov_poisson_wpic_expanding}}
+{\path{cpu/src/apps/vlasov_poisson/expanding_wpic.cpp};
+ \path{cpu/src/drivers/expanding_wpic.cpp}}
+{Runs the same expanding marker and gravity problem with the subhalo collision
+ strength set exactly to zero}
+\begin{lstlisting}
+./venus_cpu_vlasov_poisson_wpic_expanding \
+  --gamma 1.5 --end-time 2 \
+  --particles-per-radial-cell 2048 \
+  --subhalo-collision-strength 0 \
+  --threads 32 \
+  --output-directory output/wpic_gamma15_collisionless
+\end{lstlisting}
+The corresponding scattering/capture run uses the subhalo frontend with the same
+initial data and gravity settings, and enables the collision block:
+\codesource{\code{venus_cpu_subhalo_wpic}}
+{\path{cpu/src/apps/subhalo/expanding_wpic.cpp};
+ \path{cpu/src/drivers/expanding_wpic.cpp}}
+{Runs the paired collisional case with whole-object Plummer scattering and
+ capture enabled}
+\begin{lstlisting}
+./venus_cpu_subhalo_wpic \
+  --gamma 1.5 --end-time 2 \
+  --particles-per-radial-cell 2048 \
+  --subhalo-collision-strength 1 \
+  --subhalo-velocity-scale 0.1 \
+  --subhalo-plummer-area-per-mass 1 \
+  --subhalo-low-speed-regularization 0.05 \
+  --subhalo-collision-interval 1 \
+  --subhalo-collision-timescale-fraction 0.1 \
+  --subhalo-collision-cfl 0.2 \
+  --subhalo-collision-maximum-substeps 16384 \
+  --threads 32 \
+  --output-directory output/wpic_gamma15_subhalo
+\end{lstlisting}
+\code{--subhalo-collision-interval} is a ceiling on the physical time between
+operator applications.  With
+\code{--subhalo-collision-timescale-fraction 0.1}, the actual interval is
+normally shorter and is selected from the evolving physical clocks derived
+below.  It must still be refined until profiles, logarithmic slopes, and
+channel histories are insensitive to halving either the ceiling or the
+timescale fraction.  The NTC substeps control event probability inside one
+application; they do not remove the need to converge the outer interval.
+The value 16384 is an administrative production guard, not a timestep or an
+accuracy target.
+
+A restart continuation uses:
+\codesource{\code{venus_cpu_subhalo_wpic}}
+{\path{cpu/src/drivers/expanding_wpic.cpp}}
+{Restores the complete marker, collision-sampler, physical-clock, and radial-
+ mesh contract before continuing the expanding run}
+\begin{lstlisting}
+./venus_cpu_subhalo_wpic \
+  --gamma 1.5 --end-time 4 \
+  --restart output/wpic_gamma15_subhalo/restart_state.bin \
+  --subhalo-collision-strength 1 \
+  --subhalo-velocity-scale 0.1 \
+  --subhalo-plummer-area-per-mass 1 \
+  --subhalo-low-speed-regularization 0.05 \
+  --subhalo-collision-interval 1 \
+  --subhalo-collision-timescale-fraction 0.1 \
+  --subhalo-collision-cfl 0.2 \
+  --subhalo-collision-maximum-substeps 16384 \
+  --threads 32 \
+  --output-directory output/wpic_gamma15_subhalo
+\end{lstlisting}
+The current runner publishes \path{restart_state.bin} atomically.
+Collision settings must be kept physically consistent with the original run.
+
+\subsubsection{Weighted-PIC restart format and present limitations}
+
+Weighted-PIC checkpoints use magic \code{VENUSWVPIC1}. Format version 6
+stores marker mass and phase coordinates, state,
+boundary data, identifier, internal energy, internal velocity dispersion,
+initialization sampler, collision sampler, potential and collision ages,
+the most recent collision and potential-change timescale estimates, physical
+time, and step.  The writer uses a temporary file plus atomic rename and
+checks identifier uniqueness. The static Boltzmann event driver writes
+version 7, which adds the frozen Poisson field and its evolution-control
+record after the marker records. CPU readers accept versions 1--7; older
+versions initialize fields that did not exist to their documented defaults.
+Trailing bytes, short reads, invalid states, and duplicate identifiers are
+errors.
+
+Implementation boundaries of the WPIC modules are:
+\begin{itemize}
+\item adaptive core refinement and a physics-preserving resampling rule for a
+chosen unequal-mass spectrum remain to be implemented; although the phase
+remap accepts every positive marker mass, a nearly continuous mass spectrum
+usually takes the duplicated-singleton path and still requires the
+carrier/cost/refinement preflight described above before science use;
+\item the subhalo module uses complete unequal-mass objects and fixed radial
+mesh cells rather than adaptive mean-free-path shells;
+\item subhalo scattering uses the tabulated momentum-transfer area with an
+isotropic unresolved outgoing direction;
+\item capture heating is conserved, checkpointed, and changes the later
+internal velocity scale, but no Plummer-radius expansion/disruption law is
+implemented;
+\item collision lanes and the pair-majorant proposal require
+full-resolution equivalence comparisons before final science use; the two
+pair-proposal option names both select the same strict pair-bound
+importance sampler;
+\item optional positive compression preserves monitored moments but still
+requires compressed/uncompressed population-control convergence;
+\item the static event-coupled WPIC wrapper and the expanding subhalo runner
+are separate integration paths;
+\item locality, marker-weight ratio, collision-interval, radial resolution,
+and marker count all require convergence checks.
+\end{itemize}
+
+\subsubsection{Equilibrium properties and convergence criteria}
+
+For equal represented masses, a drifting Maxwellian with mean velocity
+\(\bm U\) and one-component velocity variance \(\sigma^2\) obeys
+\[
+ f_M(\bm v_1)f_M(\bm v_2)\propto
+ \exp\left[-\frac{|\bm v_1-\bm U|^2+|\bm v_2-\bm U|^2}
+ {2\sigma^2}\right]. \tag{PIC35M}
+\]
+Conservation of pair momentum and kinetic energy in equation (PIC27)
+preserves this exponent, so forward and reverse events balance.  For unequal
+object masses \(m_1,m_2\), the corresponding equilibrium product contains
+\[
+ \exp\left[-\frac{m_1|\bm v_1-\bm U|^2+
+                       m_2|\bm v_2-\bm U|^2}{2k_{\rm B}T}\right],
+\]
+where \(T\) is their common thermodynamic temperature and \(k_{\rm B}\) is
+Boltzmann's constant.  Each velocity variance is then \(k_{\rm B}T/m_i\).
+This equilibrium applies when the masses are those of the colliding objects.
+Using unequal marker weights to represent identical microscopic particles
+requires a separately justified sampling and collision rule.
+
+In the equal-mass test, the velocity-
+histogram residual should decrease as \(N_p^{-1/2}\), while a two-stream state
+should relax toward isotropy without violating pair momentum or kinetic
+energy.  For a constant cross section, compare the sampled event rate with
+the analytic Maxwellian rate and compare the sampled clock in equations
+(PIC30)--(PIC30a) with the collision time inferred from the same distribution.
+The NTC routine continues to subcycle with its strict pair majorant after an
+outer collision event begins.
+
+Particle deposition has sampling noise.  VENUS splits markers into two
+independent identifier batches, deposits each batch with the correct mass
+normalization, and records their differences in density, radial current,
+kinetic energy, and radial energy flux.  These differences provide a measured
+noise scale for the current marker set.
+
+Increase the marker count by factors of two and
+check density, radial current, velocity dispersion, energy drift, and radial
+energy flux.  Also refine the radial mesh, phase-space reconstruction mesh,
+ordinary timestep, potential and collision clocks, collision-shell
+population, and any population-control threshold.  Repeat stochastic
+comparisons with independent seeds and require deterministic resolution
+differences to be smaller than the measured Monte--Carlo envelope.  The
+heat-flux comparison is particularly important for gravothermal evolution
+because it is more sensitive to marker noise than density.  A
+zero-cross-section evolution with the same initial markers isolates
+collisionless deposition and force noise from physical collisional change.

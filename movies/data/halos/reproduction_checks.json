@@ -1,0 +1,466 @@
+{
+  "schema": "VENUS_movie_stream_checks_1",
+  "status": "PASS",
+  "scope": "Complete encoded streams, actual saved chronology, frame counts and source identities for the nineteen supplied movies.",
+  "temporal_sampling": "Gaussian movies advance by two physical time units per frame at 48 frames/s. Other movies retain their recorded physical clocks.",
+  "movies": [
+    {
+      "case": "black_hole_ef",
+      "movie_sha256": "6c76cc1722b6e4d401761fc4df10fa081492425379994719353b16c4ab551931",
+      "frame_ledger": "data/relativity/black_hole_ef_frames.json",
+      "frame_ledger_sha256": "2c9fe65a435f803cf74132fb98a042babf030d42a6d24462dd004e37959385da",
+      "physical_time": [
+        0.0,
+        32.49976078148166
+      ],
+      "first_next_native_time": 0.5000000000000003,
+      "native_saved_states": 228,
+      "encoded_frames": 251,
+      "fps": 10.0,
+      "duration_seconds": 25.1,
+      "first_state_encoded_frames": 1,
+      "chronological_native_times": true,
+      "full_stream_decode": "PASS"
+    },
+    {
+      "case": "black_hole_schwarzschild",
+      "movie_sha256": "c5e817b8a50345671929f58509b0fddd6b7295850f09473bb0c91667ed546ba3",
+      "frame_ledger": "data/relativity/black_hole_schwarzschild_frames.json",
+      "frame_ledger_sha256": "1a97b6c33687734c8d0994d0bcc8433adc6bb22f18d5fe0ff51788e367ba262f",
+      "physical_time": [
+        0.0,
+        160.0
+      ],
+      "first_next_native_time": 0.24000000000000019,
+      "native_saved_states": 281,
+      "encoded_frames": 304,
+      "fps": 10.0,
+      "duration_seconds": 30.4,
+      "first_state_encoded_frames": 1,
+      "chronological_native_times": true,
+      "full_stream_decode": "PASS"
+    },
+    {
+      "case": "cold_expanding_vp",
+      "movie_sha256": "247e01b290ead62479ea725071645c1be589c01699f0edb788ebbadca2441a58",
+      "frame_ledger": "data/cold_vp/cold_expanding_vp_frames.json",
+      "frame_ledger_sha256": "c781c547b75befebdc2117c4ce90fd84199fdfcf9bdf66a0146d310df95e3949",
+      "physical_time": [
+        0.0,
+        3000.0
+      ],
+      "first_next_native_time": 5.0,
+      "native_saved_states": 601,
+      "encoded_frames": 649,
+      "fps": 24.0,
+      "duration_seconds": 27.041666666666668,
+      "first_state_encoded_frames": 1,
+      "chronological_native_times": true,
+      "full_stream_decode": "PASS"
+    },
+    {
+      "case": "cold_static_vp",
+      "movie_sha256": "978be59ed530c3601404ed7b845dfbcdcc49bedfd33eabdda96d784a816158f6",
+      "frame_ledger": "data/cold_vp/cold_static_vp_frames.json",
+      "frame_ledger_sha256": "5ae369e8bc175805d58884ba98b5c9633506c327b6799621a0ca9abbda335e12",
+      "physical_time": [
+        0.0,
+        3000.0
+      ],
+      "first_next_native_time": 5.0,
+      "native_saved_states": 601,
+      "encoded_frames": 649,
+      "fps": 24.0,
+      "duration_seconds": 27.041666666666668,
+      "first_state_encoded_frames": 1,
+      "chronological_native_times": true,
+      "full_stream_decode": "PASS"
+    },
+    {
+      "case": "g03_bp",
+      "movie_sha256": "0e9a6099c105dbe1a7b5916634a4ab5a6f729b7e2f04d034247acbe7b742742c",
+      "frame_ledger": "data/halos/g03_bp_frames.json",
+      "frame_ledger_sha256": "7f1826a4f96d5766e8112979844009df2a3bc6623de47eadf76dd1b9040d4638",
+      "physical_time": [
+        0.0,
+        10000.0
+      ],
+      "first_next_native_time": 9.999999999999993,
+      "native_saved_states": 1002,
+      "encoded_frames": 1059,
+      "fps": 24.0,
+      "duration_seconds": 44.125,
+      "first_state_encoded_frames": 1,
+      "chronological_native_times": true,
+      "full_stream_decode": "PASS"
+    },
+    {
+      "case": "g05_bp",
+      "movie_sha256": "0e4837972adf44f6df2e5509bbbfb5779e84026567f971c0e41ed817162cfdfb",
+      "frame_ledger": "data/halos/g05_bp_frames.json",
+      "frame_ledger_sha256": "e72dd697a7c06e3f86b324fce602b8cecd768c38f68026f1dca3c71586dacb11",
+      "physical_time": [
+        0.0,
+        10000.0
+      ],
+      "first_next_native_time": 9.999999999999993,
+      "native_saved_states": 1001,
+      "encoded_frames": 1058,
+      "fps": 24.0,
+      "duration_seconds": 44.083333333333336,
+      "first_state_encoded_frames": 1,
+      "chronological_native_times": true,
+      "full_stream_decode": "PASS"
+    },
+    {
+      "case": "g05_vp",
+      "movie_sha256": "6daa074033dfac279a3b00429a5045ec4e169b80e38601e37b567f82369d0e65",
+      "frame_ledger_sha256": "d30b2ec462b175c7204ed4ff199d0c5338ece899dabba9d5289a50b56eaf7fe1",
+      "physical_time": [
+        0,
+        10000
+      ],
+      "first_next_native_time": 10.0,
+      "native_saved_states": 1001,
+      "encoded_frames": 1058,
+      "fps": 24,
+      "duration_seconds": 44.083333333333336,
+      "first_state_encoded_frames": 1,
+      "first_two_PTS_seconds": [
+        0.0,
+        0.0416667
+      ],
+      "chronological_native_times": true,
+      "full_stream_decode": "PASS",
+      "frame_ledger": "data/halos/g05_vp_frames.json"
+    },
+    {
+      "case": "g08_bp",
+      "movie_sha256": "43ab27456215078704dc00128c5ab01e49c656cf98c8ae74695f96e712eedf5f",
+      "frame_ledger": "data/halos/g08_bp_frames.json",
+      "frame_ledger_sha256": "67cd3a17b541e8146b15d7e4b968c6ce1d5a60d75aaf1848d3fbc4d4d4ebaa2d",
+      "physical_time": [
+        0.0,
+        10000.0
+      ],
+      "first_next_native_time": 10.0,
+      "native_saved_states": 1003,
+      "encoded_frames": 1060,
+      "fps": 24.0,
+      "duration_seconds": 44.166666666666664,
+      "first_state_encoded_frames": 1,
+      "chronological_native_times": true,
+      "full_stream_decode": "PASS"
+    },
+    {
+      "case": "g12_bp",
+      "movie_sha256": "299c05bd84afd3b8084e5361201bfcba1fd23701f712ab8e9be1cc9eec0df087",
+      "frame_ledger": "data/halos/g12_bp_frames.json",
+      "frame_ledger_sha256": "77a161933662477b19bf074d6751ea8e351d7d06594b92a64035f62b420f9445",
+      "physical_time": [
+        0.0,
+        10000.0
+      ],
+      "first_next_native_time": 10.0,
+      "native_saved_states": 1003,
+      "encoded_frames": 1060,
+      "fps": 24.0,
+      "duration_seconds": 44.166666666666664,
+      "first_state_encoded_frames": 1,
+      "chronological_native_times": true,
+      "full_stream_decode": "PASS"
+    },
+    {
+      "case": "g15_bp",
+      "movie_sha256": "58d1376c3e1baa160f4d62273f8ec368ad0a4bb8608d48e2dd8da2135d248694",
+      "frame_ledger": "data/halos/g15_bp_frames.json",
+      "frame_ledger_sha256": "324ed1a7d22261287ffef520a4b4537ba276cb0d0416d93c7498dd01536676f4",
+      "physical_time": [
+        0,
+        10000
+      ],
+      "first_next_native_time": 10.0,
+      "native_saved_states": 1002,
+      "encoded_frames": 1059,
+      "fps": 24,
+      "duration_seconds": 44.125,
+      "first_state_encoded_frames": 1,
+      "first_two_PTS_seconds": [
+        0,
+        0.0416667
+      ],
+      "chronological_native_times": true,
+      "full_stream_decode": "PASS"
+    },
+    {
+      "case": "g20_bp",
+      "movie_sha256": "13d57717a212815633039ffdc1d995fc046aa2b5eb5b1c1fb366bf549e1fc0f5",
+      "frame_ledger": "data/halos/g20_bp_frames.json",
+      "frame_ledger_sha256": "82f7a222b0906517390655067c2151171d0276e934cfda4fe753aea89526a1a9",
+      "physical_time": [
+        0.0,
+        10000.0
+      ],
+      "first_next_native_time": 10.0,
+      "native_saved_states": 1004,
+      "encoded_frames": 1022,
+      "fps": 8.0,
+      "duration_seconds": 127.75,
+      "first_state_encoded_frames": 1,
+      "chronological_native_times": true,
+      "full_stream_decode": "PASS"
+    },
+    {
+      "case": "halo_virialization",
+      "movie_sha256": "165e9bbdc29a19a771d2bed91b505d543ed8ea173608d4ca0ba34364a0be2959",
+      "frame_ledger": "data/halos/halo_virialization_frames.json",
+      "frame_ledger_sha256": "956db9694b1c2782151dcfa416608022e07251245b4eeafbcac8d5e9cbe5b196",
+      "physical_time": [
+        0,
+        10000
+      ],
+      "first_next_native_time": 9.999999999999993,
+      "native_saved_states": 1147,
+      "encoded_frames": 1204,
+      "fps": 24,
+      "duration_seconds": 50.166666666666664,
+      "first_state_encoded_frames": 1,
+      "chronological_native_times": true,
+      "full_stream_decode": "PASS",
+      "final_actual_time": 10000,
+      "final_hold_frames": 58,
+      "representative_encoded_frames": [
+        0,
+        1,
+        573,
+        1146,
+        1203
+      ]
+    },
+    {
+      "case": "sidm_cored",
+      "movie_sha256": "b56d89c2b49937e3e73a88032beebb82784f0cb36f9f59739ea8f7c6b9027002",
+      "frame_ledger": "data/sidm_cold/sidm_cored_frames.json",
+      "frame_ledger_sha256": "ebd7b246431aa25d851c4bc66135ce4f9a8e290665022a75357740b8901a9f91",
+      "physical_time": [
+        0.0,
+        68.41751326571196
+      ],
+      "first_next_native_time": 0.4485452533816453,
+      "native_saved_states": 242,
+      "encoded_frames": 266,
+      "fps": 12.0,
+      "duration_seconds": 22.166666666666668,
+      "first_state_encoded_frames": 1,
+      "chronological_native_times": true,
+      "full_stream_decode": "PASS"
+    },
+    {
+      "case": "sidm_nfw",
+      "movie_sha256": "1af08174c6c3bec5057ea6960429c635e7128b8f40864b2eb1243e2478a922e1",
+      "frame_ledger": "data/sidm_cold/sidm_nfw_frames.json",
+      "frame_ledger_sha256": "bd5bbba17fac2b911ce4f267b9d704304023e544b7d53e9cef2dc38f52551268",
+      "physical_time": [
+        0.0,
+        193.98405058811878
+      ],
+      "first_next_native_time": 1.591945887318852,
+      "native_saved_states": 243,
+      "encoded_frames": 267,
+      "fps": 12.0,
+      "duration_seconds": 22.25,
+      "first_state_encoded_frames": 1,
+      "chronological_native_times": true,
+      "full_stream_decode": "PASS"
+    },
+    {
+      "case": "gaussian_static_vp",
+      "movie_sha256": "a9ffa8e7839344aad6b5e9c07b7fdfa497dcf68c3203589fdb825aa56393eb98",
+      "frame_ledger": "data/completed_vp/gaussian_static_vp_frames.json",
+      "frame_ledger_sha256": "6ccab779873726cd8341f3345cd4c80503a6ed2a33d9dd38a86b5688435a06fa",
+      "physical_time": [
+        0,
+        10000
+      ],
+      "first_next_native_time": 2,
+      "native_saved_states": 5004,
+      "encoded_frames": 5001,
+      "fps": 48,
+      "duration_seconds": 104.1875,
+      "first_state_encoded_frames": 1,
+      "chronological_native_times": true,
+      "full_stream_decode": "PASS",
+      "final_actual_time": 10000,
+      "final_hold_frames": 0,
+      "representative_encoded_frames": [
+        0,
+        1,
+        15,
+        2500,
+        5000
+      ],
+      "slope_reference_guides": {
+        "values": [
+          -3.0,
+          -1.5,
+          -1.0
+        ],
+        "line_style": "dashed",
+        "numeric_labels": "Four points above each line. Right-aligned at x=.97 for -3/-1 and x=.90 for -1.5 to separate labels."
+      },
+      "displayed_distinct_states": 5001,
+      "renderer_sha256": "cfca0c44fb5691235c5dac9022004e7455b10ed209e68b047637b4967ff577f3",
+      "physical_units_per_playback_second": 96,
+      "physical_step": 2,
+      "time_scope": "Linear physical-time playback at 48 frames/s. One actual 2-unit profile per frame, from 0 through 10000, with no repeated opening or final hold."
+    },
+    {
+      "case": "gaussian_expanding_vp",
+      "movie_sha256": "521bdf495e4aaa974b755152165f2fd81bdd616aa9ddd32f4f28b782ad71130a",
+      "frame_ledger": "data/completed_vp/gaussian_expanding_vp_frames.json",
+      "frame_ledger_sha256": "5046d6523fa985ee3711096f3c362a2e8ca225fecd255244c539a456ed45522f",
+      "physical_time": [
+        0,
+        10000
+      ],
+      "first_next_native_time": 2,
+      "native_saved_states": 5002,
+      "encoded_frames": 5001,
+      "fps": 48,
+      "duration_seconds": 104.1875,
+      "first_state_encoded_frames": 1,
+      "chronological_native_times": true,
+      "full_stream_decode": "PASS",
+      "final_actual_time": 10000,
+      "final_hold_frames": 0,
+      "representative_encoded_frames": [
+        0,
+        1,
+        13,
+        2500,
+        5000
+      ],
+      "slope_reference_guides": {
+        "values": [
+          -3.0,
+          -1.5,
+          -1.0
+        ],
+        "line_style": "dashed",
+        "numeric_labels": "Four points above each line. Right-aligned at x=.97 for -3/-1 and x=.90 for -1.5 to separate labels."
+      },
+      "displayed_distinct_states": 5001,
+      "renderer_sha256": "cfca0c44fb5691235c5dac9022004e7455b10ed209e68b047637b4967ff577f3",
+      "physical_units_per_playback_second": 96,
+      "physical_step": 2,
+      "time_scope": "Linear physical-time playback at 48 frames/s. One actual 2-unit profile per frame, from 0 through 10000, with no repeated opening or final hold."
+    },
+    {
+      "case": "static_g05_vp",
+      "movie_sha256": "f4a2f7fa4f20e0899977bcd576e4e4df9171b9d0b12635409e1f95c127c6f492",
+      "physical_time": [
+        0,
+        10000
+      ],
+      "first_next_native_time": 10.0,
+      "native_saved_states": 1001,
+      "encoded_frames": 1058,
+      "fps": 24,
+      "duration_seconds": 44.083333333333336,
+      "first_state_encoded_frames": 1,
+      "first_two_PTS_seconds": [
+        0.0,
+        0.0416667
+      ],
+      "chronological_native_times": true,
+      "full_stream_decode": "PASS",
+      "portable_CLI_default_changes_preserve_full_MP4_bytes": true,
+      "frame_ledger_sha256": "6a57345fa1f1c42bd62e4579e26955084c89d8559729368bdd9c1254434d4685",
+      "frame_ledger": "data/completed_vp/static_g05_vp_frames.json"
+    },
+    {
+      "case": "gaussian_static_bp",
+      "movie": "gaussian_static_bp.mp4",
+      "physical_time": [
+        0,
+        5254.0
+      ],
+      "fps": 48,
+      "encoded_frames": 2628,
+      "duration_seconds": 54.75,
+      "model": "BP",
+      "native_saved_states": 2631,
+      "displayed_distinct_states": 2628,
+      "renderer_sha256": "cfca0c44fb5691235c5dac9022004e7455b10ed209e68b047637b4967ff577f3",
+      "frame_ledger_sha256": "9002029d4450e7778cc9d86969dfffe4d630010250bd1c6f09013f2468b04a17",
+      "physical_step": 2,
+      "physical_units_per_playback_second": 96,
+      "frame_ledger": "data/gaussian/gaussian_static_bp_frames.json",
+      "movie_sha256": "4abd93b7d736a0f5ccbc3593c3b4c1bc46ca4bfb54760fcd245342167a6fefd0",
+      "first_next_native_time": 2.0,
+      "first_state_encoded_frames": 1,
+      "chronological_native_times": true,
+      "full_stream_decode": "PASS",
+      "final_actual_time": 5254.0,
+      "final_hold_frames": 0,
+      "representative_encoded_frames": [
+        0,
+        1,
+        15,
+        1314,
+        2627
+      ],
+      "background": "static",
+      "encounter_strength": 0.1,
+      "last_profile_time": 5254.0,
+      "last_native_time": 5254.067378775472
+    },
+    {
+      "case": "gaussian_expanding_bp",
+      "movie": "gaussian_expanding_bp.mp4",
+      "physical_time": [
+        0,
+        7326.0
+      ],
+      "fps": 48,
+      "encoded_frames": 3664,
+      "duration_seconds": 76.33333333333333,
+      "model": "BP",
+      "native_saved_states": 3670,
+      "displayed_distinct_states": 3664,
+      "renderer_sha256": "cfca0c44fb5691235c5dac9022004e7455b10ed209e68b047637b4967ff577f3",
+      "frame_ledger_sha256": "54cfb870b50b0743fd1c921b807d4a59f916d4df656b0df1d7e1466bef4d009b",
+      "physical_step": 2,
+      "physical_units_per_playback_second": 96,
+      "frame_ledger": "data/gaussian/gaussian_expanding_bp_frames.json",
+      "movie_sha256": "2dd07c33c91905bb60e4b30d96736b2d72676472b284a23061e80c11cb3bacd6",
+      "first_next_native_time": 2.0,
+      "first_state_encoded_frames": 1,
+      "chronological_native_times": true,
+      "full_stream_decode": "PASS",
+      "final_actual_time": 7326.0,
+      "final_hold_frames": 0,
+      "representative_encoded_frames": [
+        0,
+        1,
+        13,
+        1832,
+        3663
+      ],
+      "background": "expanding",
+      "encounter_strength": 0.1,
+      "last_profile_time": 7326.0,
+      "last_native_time": 7327.034336802388
+    }
+  ],
+  "renderer_sha256": {
+    "scripts/render_halo_movies.py": "325e573a458b2fce7605e55c566b35b2a5d1bc229f7b3a7f780f0cef7debb876",
+    "scripts/render_relativistic_movies.py": "0cf1b8cc1f9f96abcca719db69de3edf4bf97c364dfb98c4f7ba50891b7bba58",
+    "scripts/render_sidm_cold_movies.py": "17ed1281bfdad2368f2d410d3858e5ee0c90308cd7df7bbb745f6e00ae2f0de0",
+    "scripts/render_virialization_movie.py": "b2d2eab0f4f1c617f1c9e2a16166f8c69ba0216743443371a270ffeb9299fee4",
+    "scripts/render_cold_vp_movies.py": "63d799df3f6a96c82a2ebbf9c0fc858cd6b9046b06a16ff4e19c22bc074add96",
+    "scripts/render_completed_vp_movies.py": "a1a5fe345db26e4b2e921203d67c64acb97c3b130a734d286f47d69cff88e7a5",
+    "scripts/render_gaussian_movies.py": "4837fcfbc0e067ad02c199560fec16bc7e02c55c6fa535272bdacd4b8254f2f4"
+  },
+  "temporal_color": "Evolving profiles use plasma_r, yellow at early times and dark blue at late times. Virial curves retain run colors; current-time markers use the temporal palette."
+}

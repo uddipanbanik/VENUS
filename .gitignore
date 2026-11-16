@@ -1,0 +1,39 @@
+# Build products
+/build/
+/cpu/build/
+/cpu/venus_*
+/cpu/run_weighted_*
+/cpu/test_*
+/cpu/diagnose_*
+/cpu/inspect_*
+/cpu/profile_*
+/cpu/refine_*
+
+# Runtime products
+/output/cpu/*
+/output/gpu/*
+!/output/cpu/.gitkeep
+!/output/gpu/.gitkeep
+**/restart_state.bin
+**/*.dSYM/
+
+# Python, editor, and LaTeX caches
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+**/.venv/
+**/.DS_Store
+**/._*
+/notes/*.aux
+/notes/*.fdb_latexmk
+/notes/*.fls
+/notes/*.log
+/notes/*.out
+/notes/*.toc
+/notes/tmp/
+
+# Regenerated paper assets and local render products
+/paper/generated/
+/paper/reproduced/
+/movies/generated/
+*.tmp

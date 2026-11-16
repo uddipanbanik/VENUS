@@ -1,0 +1,472 @@
+\subsection{WPIC background controls and time-history diagnostics}
+\label{sec:wpic-diagnostics}
+
+The weighted Vlasov--Poisson and subhalo tasks share one background and one
+marker evolution. The options \code{--vp-universe}, \code{--vp-alpha}, and
+\code{--vp-time-offset} select that background before the initial conditions,
+field, or particle trajectories are constructed. Let \(t\) be elapsed run
+time, \(t_0>0\) the time offset, \(A(t)\) the scale factor, \(H(t)\) its
+fractional expansion rate, and \(\alpha\) the prescribed exponent. For the
+expanding choice,
+\[
+ A(t)=\left(\frac{t+t_0}{t_0}\right)^\alpha,\qquad
+ H(t)=\frac{\alpha}{t+t_0},\qquad
+ \bar\rho(t)=\frac{3H(t)^2}{8\pi G}.                    \tag{WPIC-D1}
+\]
+The defaults are \(\alpha=2/3\) and \(t_0=12\). The driver admits finite
+\(0\le\alpha\le1\); the prescribed background and the source convention
+must match the physical problem. The static choice sets \(\alpha=0\),
+\(A=1\), \(H=0\), and \(\bar\rho=0\). Its supplied cusp is an initial
+density distribution whose equilibrium properties require independent checks.
+The mesh, collision law, and adaptive collision clocks retain their existing
+controls.
+
+\codesource{Shared WPIC background selection}{\path{cpu/src/drivers/expanding_wpic.cpp}}{Construct one consistent background for the initial conditions, field, and canonical-comoving particle push}
+\begin{lstlisting}[language=C++]
+if (result.vp_universe == "static") result.vp_alpha = 0.0;
+// make_parameters uses these resolved values:
+p.vp_universe = run.vp_universe;
+p.vp_alpha = run.vp_alpha;
+p.vp_time_offset = run.vp_time_offset;
+\end{lstlisting}
+
+A fresh run writes \path{background_contract.txt}. Restarting requires the
+same background options as that file. Earlier checkpoints with the prescribed
+expanding \(\alpha=2/3,t_0=12\) background can be imported with those values.
+The separate \path{radial_mesh_contract.txt} checks the mesh. Keeping both
+records beside the marker checkpoint preserves the interpretation of saved
+positions and velocities.
+
+The default static sample gives most particles tangential velocities close
+to their circular-orbit values. Reducing these velocities initiates a
+controlled collapse. The option \code{--initial-velocity-factor} selects a positive
+factor \(F\), with default \(F=1\). For a fresh sample it changes physical
+velocity about the halo center according to
+\[
+ u_{r,\mathrm{new}}=F(Hr+w),\qquad
+ w_{\mathrm{new}}=F(Hr+w)-Hr,\qquad
+ \eta_{\mathrm{new}}=F^2\eta.                         \tag{WPIC-D1a}
+\]
+Positions and represented masses retain their sampled values. In a static
+background the initial kinetic energy changes by \(F^2\), while the
+initial gravitational field retains its value. Thus \(F=1/4\) prepares a
+halo with one sixteenth of the default kinetic energy. In an expanding
+background the same prescription scales physical velocity, with the saved
+peculiar velocity obtained by subtracting the original Hubble flow.
+
+\codesource{Controlled initial velocities}{\path{cpu/src/drivers/expanding_wpic.cpp}}{Scale fresh physical velocities once while preserving the density sample}
+\begin{lstlisting}[language=C++]
+marker.w = run.initial_velocity_factor
+    * (marker.w + hubble_velocity) - hubble_velocity;
+marker.eta *= run.initial_velocity_factor
+    * run.initial_velocity_factor;
+\end{lstlisting}
+
+The additional \path{initial_condition_contract.txt} records \(\gamma_i\)
+and \(F\). A continuation repeats those options and evolves its saved
+velocities directly. The factor acts once during fresh initialization.
+Legacy checkpoints without this contract retain the factor-one convention.
+
+Sachiet Kapur's \path{cpu/tools/plot_wpic_history.py} reads
+\path{history.csv} and makes five aligned panels. They show the maximum
+resolved cell density, the mobile and field matter masses, the stored energy,
+the applied and limiting timesteps, and the minimum effective marker count.
+The density maximum may occur away from the center. The mobile-mass column
+includes deposited mass and the unresolved inner carrier. The field-mass
+column uses the Poisson solver's matter-mass integral. Compare these masses with the declared Poisson source and boundary
+treatment. Matter inside the unresolved inner region belongs to the mobile
+population while its contribution to the resolved profile depends on the
+field convention.
+
+The stored energy diagnostic is
+\[
+ E_{\rm hist}=\sum_{p\ {\rm active}}\left[
+ \frac{m_p}{2}\left(w_p^2+\frac{2\eta_p}{r_p^2}
+                              +\Phi(r_p)\right)+U_p\right]. \tag{WPIC-D2}
+\]
+Here \(m_p\) is represented marker mass, \(w_p\) is peculiar radial velocity,
+\(\eta_p=L_p^2/2\), \(\Phi\) is the self-consistent potential, and \(U_p\)
+is the internal energy carried by a subhalo marker. Each gravitational pair contributes to the potential at both partners.
+The factor one half on \(\Phi\) therefore counts its energy once. Expansion, the unresolved inner source,
+and boundary work enter the complete physical energy budget. The annotation
+reports the change of the stored series; numerical conservation is assessed
+with the budget appropriate to that run.
+
+\codesource{WPIC history report}{\path{cpu/tools/plot_wpic_history.py}}{Density, mass, energy, timestep, and sampling histories from saved output}
+\begin{lstlisting}[language=bash]
+python3 cpu/tools/plot_wpic_history.py --history RUN/history.csv \
+  --output output/wpic_history.png
+\end{lstlisting}
+
+\subsubsection{Density profiles and inner and outer cusp indices}
+
+The tool
+\path{cpu/tools/render_weighted_pic_gamma_fits_gifs.py} generates
+initial/final density and slope comparisons,
+inner/outer index histories, a CSV of the fitted values, fit settings in JSON,
+and an exact frame-time table. It reads \code{gamma_i} and marker sampling
+from the run metadata. Complete snapshots are checked before frame selection,
+and the first and last complete times are retained at every stride.
+
+For positive radius \(r\) and density \(\rho\), define
+\[
+ x=\log_{10}r,\qquad y=\log_{10}\rho,\qquad
+ s=\frac{\dd y}{\dd x},\qquad \gamma=-s.               \tag{WPIC-D3}
+\]
+The derivative panel displays the signed slope \(s\). The time-history
+panels display \(\gamma_{\rm in}\) and \(\gamma_{\rm out}\), so a declining
+profile \(\rho\propto r^{-3/2}\) has \(s=-3/2\) and \(\gamma=3/2\).
+The derivative uses a local quadratic fit with a 21-point window; estimates
+within half a window of either edge are omitted. The local quadratic uses neighboring samples to distinguish the slope from
+curvature. A meaningful estimate therefore requires enough resolved points
+across the fitting window.
+
+The inner straight-line fit uses a default center \(x=-0.75\) and half-width
+\(0.25\). The two command-line fit controls select these values explicitly.
+The outer fit searches inward from the outermost cell with effective marker
+count at least 200, locating the first point where the absolute second
+logarithmic derivative is below 2 or above 6. Its center is the midpoint in
+\(x\) between that feature and the sampled outer edge; its half-width is
+\(0.25\). Its fit uses cells satisfying the marker-count cut. These numerical
+choices define an empirical profile-feature estimate. A physical outer-cusp
+interpretation also needs inspection of the fit interval, comparison of
+neighboring windows, and marker and mesh convergence. An unavailable fit is
+saved as an undefined value in the CSV. The density floor is a display cut;
+the simulated density and mass remain the input data.
+
+\codesource{Extended density and cusp-index report}{\path{cpu/tools/render_weighted_pic_gamma_fits_gifs.py}}{Read saved profiles and retain differentiation, fit, and frame-selection settings}
+\begin{lstlisting}[language=bash]
+python3 cpu/tools/render_weighted_pic_gamma_fits_gifs.py \
+  --run-dir RUN --output-directory output/density \
+  --stride 10 --inner-fit-center-log10r -0.75 \
+  --inner-fit-half-width-log10r 0.25 --shoulder-neff-min 200
+\end{lstlisting}
+
+\subsubsection{Resolved Newtonian virial ratio}
+
+Sachiet's \path{cpu/tools/plot_subhalo_virial_1.py} forms a Newtonian report
+from complete logarithmic-mesh profiles. VENUS stores arithmetic radial
+centers \(r_i=(r_{i-1/2}+r_{i+1/2})/2\). For consecutive face ratio
+\(q=r_{i+1}/r_i\), the corresponding faces and shell masses are
+\[
+ r_{i-1/2}=\frac{2r_i}{1+q},\qquad
+ r_{i+1/2}=q r_{i-1/2},\qquad
+ \Delta m_i=\frac{4\pi\rho_i}{3}
+                  (r_{i+1/2}^3-r_{i-1/2}^3).           \tag{WPIC-D4}
+\]
+This reconstructs the simulation volumes, including cells with zero density.
+Let \(\bar w_i\) be the mean radial peculiar velocity,
+\(\sigma_{r,i}^2\) its variance, and \(\langle v_t^2\rangle_i\) the sum of
+the two tangential velocity second moments. With \(G=1\), the report uses
+\[
+ T=\frac12\sum_i\Delta m_i
+       (\sigma_{r,i}^2+\bar w_i^2+\langle v_t^2\rangle_i),\qquad
+ W=-\sum_i\frac{\Delta m_i}{r_i}
+       \left(\sum_{j<i}\Delta m_j+\frac{\Delta m_i}{2}\right),\qquad
+ Q=\frac{2T}{|W|}.                                     \tag{WPIC-D5}
+\]
+The report also writes a CSV with time, virial ratio, kinetic and potential
+energies, and resolved mass. When the metadata supplies the represented
+mobile mass, an additional column gives the resolved fraction of that mass.
+This fraction identifies when matter carried inside the unresolved inner
+region materially changes the radial domain represented by the ratio.
+Complete snapshots are selected before applying the requested stride.
+
+The half-shell mass in \(W\) approximates each shell's contribution to its
+own gravitational energy. This diagnostic combines resolved orbital motion
+with resolved self-gravity. Expansion,
+boundary pressure, the unresolved inner carrier, and subhalo internal energy
+have separate contributions in a complete virial budget. A relativistic halo
+is assessed with the Einstein--Vlasov balance and time-series criteria in the
+EF chapter. The reference \(Q=1\) supplies the isolated Newtonian comparison
+under its equilibrium assumptions.
+
+The orbital equations show explicitly how expansion enters this comparison.
+For a fixed set of material particles between encounter or escape events,
+define its radial second moment \(I=\sum_p m_pr_p^2\) and mixed moment
+\(C=\sum_p m_pr_pw_p\). A dot denotes a physical-time derivative.
+Substituting \(\dot r=Hr+w\) and
+\(\dot w=L^2/r^3-\Phi_r-Hw\) gives
+\[
+ \dot I=2HI+2C,\qquad
+ \dot C=2T+W_\Phi,\qquad
+ W_\Phi=-\sum_p m_pr_p\Phi_r(r_p).                    \tag{WPIC-D6}
+\]
+Here \(T\) includes radial and tangential peculiar motion of that material
+set. The centrifugal term in \(\dot C\) supplies its tangential kinetic
+energy. Differentiating the first relation and substituting the second gives
+\[
+ \frac12\ddot I-H\dot I-\dot H I=2T+W_\Phi.           \tag{WPIC-D7}
+\]
+The force moment \(W_\Phi\) includes the declared background and central
+gravity sources. Its definition therefore differs from the resolved-shell
+self-gravity quadrature \(W\) in (WPIC-D5). A fixed radial observation volume
+also has surface transport and pressure terms, and a capture or a change in
+the deposited carrier has its own moment change. For a closed isolated
+stationary Newtonian system, \(H=0\), \(\ddot I=0\), and the self-gravity
+force moment equals its potential energy. Equation (WPIC-D7) then yields
+\(2T+W=0\). Sustained settling of the measured ratio, density profile, and
+the applicable moment and boundary budgets supplies the physical evidence
+for virialization.
+
+The driver also writes \path{virial_budget.csv} at each history output.
+It evaluates \(I,C,T\), and \(W_\Phi\) over every active marker, including
+matter carried inside the resolved mesh. The force sample is the same
+interpolated field used by the orbit update. Alongside these quantities it
+records resolved and hidden mass, physical kinetic energy
+\(T_{\rm phys}=T+HC+H^2I/2\), internal energy, \(H\), and \(\dot H\).
+Its columns \code{C_dot_orbit} and \code{I_ddot_half_orbit} give the
+instantaneous orbital right-hand sides of the moment equations. A finite
+difference through a collision or reflecting-wall event also includes the
+corresponding jump or impulse.
+
+\codesource{Applied-force virial moments}{\path{cpu/src/drivers/expanding_wpic.cpp}}{Include the same gravity as the marker pusher in the global orbital balance}
+\begin{lstlisting}[language=C++]
+result.inertia += mass * r * r;
+result.radial_moment += mass * r * w;
+result.kinetic_peculiar += 0.5L * mass * (w * w + vt2);
+result.kinetic_physical += 0.5L * mass * (u * u + vt2);
+result.force_virial -= mass * r * sample.phi_r;
+\end{lstlisting}
+
+An unresolved central mass \(M_{\rm h}\) attracts the resolved halo even
+when its mass lies outside the profile integral. Its approximate cross
+contribution to the resolved force moment is
+\[
+ W_{\rm cross}=-G M_{\rm h}\sum_i\frac{\Delta m_i}{r_i}. \tag{WPIC-D8}
+\]
+Comparing this term with (WPIC-D5) identifies the effect of the omitted inner
+source. The all-marker budget additionally retains inner kinetic energy
+and the actual force interpolation. Numerical refinement then tests the
+discretization of the same physical balance.
+
+\codesource{Resolved Newtonian virial report}{\path{cpu/tools/plot_subhalo_virial_1.py}}{Integrate saved shell moments with the simulation's arithmetic-center geometry}
+\begin{lstlisting}[language=bash]
+python3 cpu/tools/plot_subhalo_virial_1.py --run-dir RUN \
+  --output output/newtonian_virial.png --stride 10
+\end{lstlisting}
+
+\subsubsection{Initial data, time-colored profiles, and radius scaling}
+
+The tool \path{cpu/tools/plot_initial.py} reads the state actually written
+by a zero-time grid-solver setup. It follows the model name in the metadata
+when selecting relativistic metric panels. A comparison of initial conditions
+therefore uses the same density, velocity moments, and phase-space output
+that the chosen solver will evolve.
+
+\codesource{Initial-state visualization}{\path{cpu/tools/plot_initial.py}}{Inspect the grid solver's saved initial profiles and phase-space distribution}
+\begin{lstlisting}[language=bash]
+python3 cpu/tools/plot_initial.py --input-dir SETUP_OUTPUT \
+  --output-dir output/initial_state
+\end{lstlisting}
+
+The tool \path{cpu/tools/plot_color_rho_r.py} overlays saved WPIC density
+profiles, using color to identify physical time. The tool
+\path{cpu/tools/plot_wpic_scaled_profiles.py} additionally selects a radius
+\(R_f(t)\) enclosing a chosen fraction \(0<f<1\) of the resolved mass.
+It integrates the shell masses in (WPIC-D4). Within a shell of constant cell
+average density, the enclosed mass is linear in \(r^3\), which determines
+\(R_f\) by interpolation. Its radius-scaled panel shows
+\(r/R_f\); the optional density normalization shows
+\(\rho R_f^3/M_{\rm resolved}\). The complete resolved mesh determines
+\(R_f\) before the effective-marker display cut is applied. A self-similar profile has a time-independent shape and amplitude in these
+scaled coordinates. Compare both over several times, while accounting
+separately for the inner carrier and boundaries.
+
+\codesource{Radius-scaled WPIC profiles}{\path{cpu/tools/plot_wpic_scaled_profiles.py}}{Compare resolved profiles using measured enclosed-mass radii and optional density scaling}
+\begin{lstlisting}[language=bash]
+python3 cpu/tools/plot_wpic_scaled_profiles.py 'RUN/profile_*.csv' \
+  --num 6 --frac 0.1 --normalize-density --output output/scaled_profiles.png
+\end{lstlisting}
+
+\subsubsection{Radial dispersion and mean flow}
+
+The material-WPIC profile writer uses explicit columns
+\code{radial_mean} and \code{radial_variance}; the latter is already the
+centered variance.  Its \code{tangential_second} is the sum of the two
+tangential second moments.  Persistent-marker SphDSMC instead writes
+\(j=\rho\overline v_r\), centered pressure \(p=\rho\sigma_r^2\), and
+\(p_t=\rho\langle v_t^2\rangle\).  These conventions determine which
+mean-flow term enters the kinetic energy.
+
+The radial dispersion measures motion about the local mean velocity.
+Spherical DSMC writes its pressure column as \(p=\rho\sigma_r^2\),
+while the Newtonian grid writes \(p=\rho\langle v_r^2\rangle\).
+Both write radial momentum density \(j=\rho\langle v_r\rangle\).
+The renderer \path{cpu/tools/render_density_slope_sigma2_gif.py} therefore uses
+\[
+ \sigma_r^2=\begin{cases}
+ p/\rho, &\text{spherical DSMC pressure},\\
+ p/\rho-(j/\rho)^2, &\text{Newtonian grid second moment}.
+ \end{cases}                                             \tag{WPIC-D9}
+\]
+The metadata field \code{bp_collision_operator=spherical_dsmc} selects the
+first convention. Other Newtonian tables use the second convention;
+\code{--radial-moment-convention central} or \code{raw} specifies it for
+external tables. The selected input convention is saved beside the GIF.
+
+\codesource{Radial pressure convention}{\path{cpu/tools/render_density_slope_sigma2_gif.py}}{Convert the raw second moment to central pressure before combining radial cells}
+\begin{lstlisting}[language=Python]
+if convention == "raw":
+    profiles["p"] = (
+        profiles["rho"]
+        * radial_dispersion_squared(profiles, "raw")
+    )
+\end{lstlisting}
+Combining radial cells must preserve their mass, momentum, and kinetic
+energy. Adaptive bins therefore first sum mass, radial momentum, and the full
+second velocity moment. Subtracting the merged mean velocity squared then retains
+both the original dispersions and differences of bulk velocity between
+cells. This permits a physical comparison of an outer dispersion bump with
+the accompanying mean radial flow.
+
+Explicitly, merging cells of mass \(M_i\), radial mean \(u_i\), and centered
+variance \(\sigma_i^2\) gives
+\[
+ \sigma_{\rm merged}^2=
+ \frac{\sum_i M_i(\sigma_i^2+u_i^2)}{\sum_i M_i}
+ -\left(\frac{\sum_iM_i u_i}{\sum_iM_i}\right)^2.        \tag{WPIC-D10}
+\]
+The first term retains the kinetic energy carried by differences in mean
+flow between the cells; the second removes the merged bin's own mean flow.
+
+The Frank benchmark renderers additionally apply fixed unit conversions.
+Their stated convention is \(G=M_{\rm total}=r_s=1\), with
+\(M_{\rm total}/M_s=1.1252580933331495\).  A native
+\(G=M_s=r_s=1\) profile uses a different density, velocity, and time
+conversion.  Establish that convention from the initial-data record before
+using a benchmark renderer for a physical comparison.
+
+\subsubsection{Native initial states and reflecting-wall measurements}
+
+A native particle file can supply a different initial density distribution.
+The CPU driver accepts \code{--initial-condition-label gaussian_shell} with
+an explicit \code{--restart} input. This label describes the supplied
+particles. The checkpoint checksum identifies their actual state. For this
+input the metadata gives the actual total marker mass and the mass inside
+the first resolved face, together with \code{native_input_sha256}.
+The physical radial velocity is \(u=Hr+w\), with \(H=0\) in a static run.
+Retaining the same \(r,u,\eta,m\) and particle identities therefore requires
+\(w=u-Hr\) in the expanding initial file; here \(m\) is represented mass
+and \(\eta=L^2/2\) for specific angular momentum \(L\).
+
+\codesource{Describe a native Gaussian initial state}
+{\path{cpu/src/drivers/expanding_wpic.cpp}}
+{Evolve the supplied particles and record their actual mass and checksum}
+\begin{lstlisting}[language=bash]
+cpu/venus_cpu_vlasov_poisson_wpic_expanding \
+  --restart INITIAL/restart_state.bin \
+  --initial-condition-label gaussian_shell --vp-universe static \
+  --gamma 0.5 --initial-velocity-factor 1 \
+  --radial-cells 512 --radial-minimum 0.01 --radial-maximum 10000 \
+  --maximum-timestep 0.015 --end-time 10000 \
+  --boundary-diagnostics --output-directory RUN
+\end{lstlisting}
+The background, mesh and initial-condition sidecars remain beside the native
+input. The descriptive label is independent of those existing restart
+contracts. A native state at \(t=0\) also writes its initial profile when
+this custom label is supplied. The profile can then be checked against the
+intended Gaussian density before inspecting its evolution.
+
+The optional \code{--boundary-diagnostics} counts specular impacts at the
+outer wall. It also records the largest particle radius among accepted
+step endpoints. If \(n_k\) is the number of wall impacts in accepted step
+\(k\), the segment budget and endpoint radius are
+\[
+ N_{\rm wall}=\sum_{k\,\rm accepted}n_k,\qquad
+ r_{\rm max,end}=\max_{k,p}r_p(t_k).                 \tag{WPIC-D11}
+\]
+Here \(p\) labels particles and \(t_k\) is an accepted endpoint. Regular
+passages through the origin preserve the particle trajectory and contribute
+zero wall impacts. A trial step rejected by the collision-clock check is
+rolled back before either diagnostic enters the budget.
+
+\codesource{Accepted-step wall budget}
+{\path{cpu/src/drivers/expanding_wpic.cpp}}
+{Accumulate physical wall impacts after the orbit step is accepted}
+\begin{lstlisting}[language=C++]
+segment_wall_impacts +=
+    orbit_step_diagnostics.reflecting_wall_impacts;
+\end{lstlisting}
+The file \path{boundary_history.csv} gives the accepted step and time,
+segment start step and time, cumulative outer impacts, maximum endpoint
+radius and its recorded endpoint time, and the physical outer-wall radius.
+Profiles, checkpoints and scheduler stops flush this record. Each process
+continuation starts an explicitly identified segment; its final cumulative
+count supplies that segment's contribution. These measurements establish
+whether the chosen physical wall is reached during the calculation.
+
+\subsubsection{Complete particles and their self-consistent potential}
+
+The GPU production driver can retain selected particle states together with
+the field reconstructed from those same particles. The schedule is empty by
+default. Every selected time lies on the existing profile schedule, so the
+output uses the established orbit landing times. The callback follows the
+completed KDK kick and any due collision batch.
+
+\codesource{Select complete particle and field output}
+{\path{gpu/src/wpic_production_driver.cu}}
+{Add selected snapshots to an otherwise unchanged GPU invocation}
+\begin{lstlisting}[language=bash]
+--output-interval 10 \
+--phase-space-snapshot-times 0,10,30,100,300,800,2000,5000,10000
+\end{lstlisting}
+Each \path{phase_space/snapshot_NNNNN} directory contains the native
+\path{particles.bin}, actual \path{field.json}, and joint
+\path{manifest.json}. The particle file retains \(m,r,w,\eta\), identities,
+internal states and restart clocks in the portable CPU/GPU format. The field
+file retains the potential \(\Phi\), its radial derivative, enclosed source
+masses, line density, mesh, moments, inner mass and expansion parameters.
+It states whether particle weights describe total density or density
+contrast, and records the solver's zero-at-infinity potential convention.
+The manifest gives actual and requested time, accepted step, both file
+checksums, input checkpoint and executable checksums, and the full invocation.
+The complete group is installed with one directory rename.
+
+\codesource{Serialize an existing endpoint field}
+{\path{gpu/src/wpic_production_driver.cu}}
+{Save the field already reconstructed at the profile callback}
+\begin{lstlisting}[language=C++]
+venus_gpu::driver::write_phase_space_field_json(
+    (temporary / "field.json").string(), restart.time,
+    field, mesh, options,
+    run.universe == UniverseMode::eds_expanding);
+\end{lstlisting}
+An exact continuation preserves an existing snapshot whose particle and
+field checksums agree. Existing snapshots later than the supplied restart
+cause a chronology error. A continuation in a fresh output directory saves
+the selected states reached from its input time. The CPU production driver
+continues to write its normal native checkpoints; the selected paired output
+above belongs to the GPU production driver. The portable particle file can
+be read by either native checkpoint reader.
+
+To reconstruct the spherical distribution, integrate over the position and
+tangential-velocity angles. Their factors \(4\pi\) and \(2\pi\), together
+with \(v_t\,dv_t=d\eta/r^2\), give
+\[
+ d\Gamma=8\pi^2\,dr\,du\,d\eta,\qquad
+ f_{\rm bin}=\frac{\sum_{p\in\rm bin}m_p}
+ {8\pi^2\,\Delta r\,\Delta u\,\Delta\eta}.           \tag{WPIC-D12}
+\]
+Here \(d\Gamma\) is physical phase volume, \(v_t\) is tangential speed,
+\(f_{\rm bin}\) is the bin-averaged mass distribution function, and each
+\(\Delta\) denotes that bin's width. The change from \(w\) to \(u=w+Hr\)
+has unit Jacobian at fixed radius and time. A projection over \(\eta\)
+gives mass per \(dr\,du\). For a logarithmic radius axis, retain the actual
+\(\Delta r\), or explicitly normalize by \(\Delta\log_{10}r\).
+
+The same saved field gives each particle's instantaneous orbital energy per
+unit mass,
+\[
+ \epsilon_p=\frac{u_p^2}{2}+\frac{\eta_p}{r_p^2}
+                  +\Phi(r_p,t).                    \tag{WPIC-D13}
+\]
+Use the solver's constant-line-mass reconstruction for \(\Phi(r_p,t)\).
+The centrifugal term has its regular zero limit for \(L=0\) at the origin.
+A weighted histogram then gives \(dM/d\epsilon\), retaining the full mass
+at both negative and positive orbital energies. In an expanding run
+\(\Phi\) is the peculiar potential and \(\epsilon_p\) is an instantaneous
+halo binding diagnostic. Subsequent motion and the boundary budget determine
+escape. An energy-dependent phase-space density additionally requires the
+phase volume of each energy bin. The reconstruction and these conventions
+are described in \path{gpu/docs/PHASE_SPACE_SNAPSHOTS.md}.

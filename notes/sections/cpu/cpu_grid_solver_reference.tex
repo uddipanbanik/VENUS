@@ -1,0 +1,103 @@
+\subsection{Numerical Scope and Scientific Limitations of the Eulerian Families}
+\label{sec:eulerian-family-scope}
+
+The CPU implementation offers three complementary Eulerian descriptions of
+spherical kinetic evolution.  Each stores and transports the distribution in
+a different form and treats phase-space boundaries accordingly.  The choice
+therefore depends on the orbits, boundary fluxes, and collision processes that
+the calculation must resolve.
+
+Here \emph{Eulerian} means that the distribution is stored on a fixed
+phase-space mesh, rather than carried by individual moving markers.  An
+\emph{upwind} face flux takes its distribution value from the side of a cell
+face from which the characteristic flow arrives; the first-order rule uses
+the nearest stored value on that upstream side.
+
+The canonical family uses \(\eta=L^2/2\), the angular-momentum coordinate;
+\(H=\Phi(r)+w^2/2+\eta/r^2\), the one-particle Hamiltonian in a frozen
+potential \(\Phi\); and \(\tau_{\rm orb}\in[0,1)\), the radial-orbit phase
+normalized by one radial period.  The subscript distinguishes this orbit
+phase from the Schwarzschild time \(\tau\) used in the relativistic chapters.
+The canonical chapter denotes this normalized orbit phase by
+\(\zeta_{\rm orb}\).  In a relativistic context, \(\tau\) denotes
+Schwarzschild time.  The orbit atlas tabulates the represented bound orbit families.
+An \emph{open packet} is a continuous phase-space carrier for matter that the
+bound atlas cannot currently represent, such as an unbound or otherwise
+unsupported orbit; VENUS retains and advances that matter instead of silently
+discarding it.
+
+\begin{center}
+\footnotesize
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.19\linewidth}
+                  >{\raggedright\arraybackslash}p{0.38\linewidth}
+                  >{\raggedright\arraybackslash}p{0.34\linewidth}@{}}
+\toprule
+Solver family & Numerical representation & Scientific limitations and suitable use \\
+\midrule
+Explicit finite volume &
+Cell averages on the spherical \((r,w,L)\) or \((r,w,\eta)\) mesh, advanced
+with first-order upwind radial and radial-velocity face fluxes.  The
+implementation includes reflecting, vacuum-outflow, and prescribed-inflow
+faces, threaded flux construction, and a multidimensional CFL limit. &
+The first-order stencil is diffusive near sharp orbit boundaries.  Long-time
+equilibria require mesh refinement in every occupied phase-space direction,
+and boundary fluxes must be included explicitly in mass and energy budgets. \\
+\addlinespace
+Grid semi-Lagrangian &
+Nodal characteristic pullback for EV and VP, plus cell-integrated
+conservative and Hamiltonian SLDG for VP.  The conservative path uses
+positivity-limited reconstruction, mapped-cell overlap integrals, midpoint
+self-gravity, recursive map refinement, and a delayed central carrier. &
+The nodal path is not locally conservative.  The cell-integrated Hamiltonian
+path is restricted to a static background, and very low angular momentum,
+long delayed returns, rapidly changing fields, and map fallbacks require
+problem-specific refinement. \\
+\addlinespace
+Canonical orbit phase &
+A bound-orbit atlas in \((\eta,H,\tau_{\rm orb})\), frozen-potential phase translation,
+Eulerian overlap maps, field rebuilds, finite-angle collision couplings, open
+packets, positive packet compression, independent event clocks, and
+versioned restarts. &
+The representation is most efficient when the potential changes slowly
+compared with an orbital period.  Unbound tails remain explicit packets, and
+the orbit atlas, continuous-packet population, collision locality, and field
+refresh cadence must all be refined together. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+For the finite-volume update, a cell \((i,j,k)\) loses the difference of its
+two radial-face fluxes and its two radial-velocity-face fluxes.  This is a
+conservative balance law: a reflecting face returns the appropriate
+velocity-space flux, while an outflow or prescribed-inflow face contributes
+to the recorded boundary budget.  Adding the interior matter to those
+boundary transfers gives the conserved total.  This complete budget is the
+quantity to check after each step.
+
+The conservative SLDG family replaces face fluxes by a forward map of each
+source cell.  It limits a local polynomial to remain nonnegative, subdivides
+a mapped patch when its area or reversibility defect is too large, integrates
+exact polynomial moments over polygon--cell intersections, and records mass
+that cannot be represented by the accepted map.  Midpoint gravity and the
+persistent delayed-inner carrier keep field evolution and unresolved central
+passages in the same conservative accounting.  These ingredients are
+described in detail in Section~\ref{sec:cell-integrated-sldg}.
+
+The canonical family changes coordinates instead.  For a frozen spherical
+potential, angular momentum \(\eta\), Hamiltonian \(H\), and orbital phase
+\(\tau_{\rm orb}\) separate stationary orbit structure from phase translation.  Matter
+created by a collision is retained as a continuous packet until it can be
+mapped positively onto the orbit atlas; bound and open-orbit matter are never
+silently conflated.  The full construction is described in
+Section~\ref{sec:fully-kinetic-bp}.
+
+All three families require a numerical convergence study appropriate to the
+chosen physical problem.  Refine every coordinate or sampling budget that
+controls the active operator; compare density, force, characteristic
+invariants, and collision moments; reduce the timestep and any operator
+splitting interval; verify that boundary and hidden-carrier ledgers close;
+and compare uninterrupted and restarted evolution.  Supported OpenMP and MPI
+layouts should reproduce the same physical observables within the declared
+floating-point and stochastic uncertainty.  For collisional calculations,
+also require collision regions smaller than the local mean free path and
+separate Monte--Carlo scatter from deterministic discretization error.

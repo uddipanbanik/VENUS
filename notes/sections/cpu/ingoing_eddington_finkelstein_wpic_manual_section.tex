@@ -1,0 +1,3358 @@
+\subsection{Ingoing Eddington--Finkelstein Einstein--Vlasov Weighted
+Particle-in-Cell (WPIC) Module}
+\label{sec:ingoing-eddington-finkelstein-wpic}
+
+\[
+ \boxed{\dd s^2=-a(v,r)b(v,r)^2\dd v^2
+          +2b(v,r)\dd v\,\dd r+r^2\dd\Omega^2.}          \tag{IEF2}
+\]
+This is the ingoing Eddington--Finkelstein (EF) line element used by VENUS.
+The symbol \(\dd s^2\) is the squared spacetime interval; the metric signature
+is \((-+++)\).  The coordinate \(v\) is advanced, or ingoing-null, time.
+The coordinate \(r\) is areal radius, so a sphere at \(r\) has area
+\(4\pi r^2\).  The angles are \(\theta\) and \(\phi\), and
+\(\dd\Omega^2=\dd\theta^2+\sin^2\theta\,\dd\phi^2\) is the unit-sphere line
+element.  The dimensionless functions \(a(v,r)\) and \(b(v,r)\) determine the
+geometry; VENUS uses the future-directed branch \(b>0\).  Geometrized units
+\(G=c=1\) are used throughout.
+
+The derivation first establishes the null geometry, then obtains the field
+constraints and particle characteristics.  The implementation sections follow
+the same order, from source deposition to the metric solve and particle
+update.
+
+\subsubsection{The geometry before the equations}
+\label{sec:ef-geometry-first}
+
+In the two coordinates \((v,r)\), the metric and its inverse are
+\[
+ (g_{AB})=
+ \begin{pmatrix}-ab^2&b\\ b&0\end{pmatrix},\qquad
+ (g^{AB})=
+ \begin{pmatrix}0&b^{-1}\\ b^{-1}&a\end{pmatrix}.          \tag{IEF3}
+\]
+Upper-case indices \(A,B\) run over \(v,r\); lower-case indices \(a,b\) run
+over all four spacetime coordinates.  The determinant and invariant
+four-volume are
+\[
+ g:=\det(g_{ab})=-b^2r^4\sin^2\theta,\qquad
+ \sqrt{-g}\,\dd v\,\dd r\,\dd\theta\,\dd\phi
+ =br^2\sin\theta\,\dd v\,\dd r\,\dd\theta\,\dd\phi.       \tag{IEF4}
+\]
+The off-diagonal term \(2b\,\dd v\,\dd r\) keeps the \((v,r)\) block
+nondegenerate even when \(a=0\).  This simple algebra is the local reason the
+chart can remain regular at an apparent horizon.
+
+The Hawking--Misner--Sharp mass \(m(v,r)\), meaning the gravitational mass
+enclosed by a symmetry sphere, is defined by
+\[
+ a=g^{AB}\partial_A r\,\partial_B r
+   =1-\frac{2m(v,r)}{r}.                                  \tag{IEF5}
+\]
+Here \(\partial_A\) is a coordinate partial derivative.  A subscript on a
+field will mean the same operation, for example
+\(b_r=(\partial b/\partial r)_v\) and
+\(a_v=(\partial a/\partial v)_r\).
+
+\paragraph{Immediate comparison with the Schwarzschild chart.}
+The companion Schwarzschild-coordinate (SC) module uses the Schwarzschild
+line element
+\[
+ \dd s^2=-e^{2\mu(\tau,r)}\dd\tau^2
+          +e^{2\lambda(\tau,r)}\dd r^2+r^2\dd\Omega^2.    \tag{IEF38}
+\]
+The name Schwarzschild coordinates describes this diagonal spherical gauge;
+it does not assume that the spacetime is the static vacuum Schwarzschild
+solution.  The coordinate \(\tau\) labels spacelike Schwarzschild slices,
+\(\mu(\tau,r)\) is the lapse potential, and \(\lambda(\tau,r)\) is the radial
+metric potential.  The two descriptions keep the same areal radius and
+angles but assign different time labels to the same event:
+\[
+       v=v(\tau,r),\qquad r_{\rm EF}=r_{\rm SC}.
+\]
+An SC surface \(\tau=\mathrm{constant}\) is a simultaneous spacelike slice.
+An EF surface \(v=\mathrm{constant}\) is instead an inward-moving light
+front.  Thus equal printed values of \(v\) and \(\tau\) do not identify the
+same events.
+
+\paragraph{What advanced time and radial null curves mean.}
+Set \(\dd\Omega=0\) and \(\dd s^2=0\) in (IEF2).  The radial-null condition
+factors as
+\[
+ \dd v\,(-ab^2\dd v+2b\,\dd r)=0.
+\]
+It has two future radial families:
+\[
+ \boxed{\dd v=0\quad\hbox{(ingoing)}},\qquad
+ \boxed{\frac{\dd r}{\dd v}=\frac{ab}{2}
+        \quad\hbox{(outgoing)}}.                          \tag{IEF6a}
+\]
+A constant-\(v\) surface is therefore built from ingoing radial light rays.
+The word advanced means that this null label is normalized toward the future
+at the outer boundary: later ingoing light fronts have larger \(v\).
+
+For later geometric diagnostics choose future null vectors
+\[
+ k^a=(\partial_v)^a+\frac{ab}{2}(\partial_r)^a,\qquad
+ n^a=-\frac1b(\partial_r)^a,\qquad k^a n_a=-1.            \tag{IEF6}
+\]
+The operator \(\partial_v\) differentiates while holding \(r,\theta,\phi\)
+fixed, and similarly for \(\partial_r\).  Their spherical expansions, meaning
+the fractional rates at which the areas of neighboring light fronts change,
+are
+\[
+ \theta_+=\frac{2k(r)}r=\frac{ab}{r},\qquad
+ \theta_-=\frac{2n(r)}r=-\frac{2}{br},\qquad
+ \theta_+\theta_-=-\frac{2a}{r^2}.                        \tag{IEF7}
+\]
+Consequently an outer marginally trapped sphere satisfies
+\[
+ a=0\quad\Longleftrightarrow\quad 2m/r=1.                 \tag{IEF8}
+\]
+At this apparent horizon an outgoing radial light ray has
+\(\dd r/\dd v=0\).  In a trapped region \(a<0\), both future radial-null
+directions move toward smaller areal radius.  An apparent horizon is a
+slice-local diagnostic; the event horizon is a global causal boundary and
+need not coincide with it.
+
+\subsubsection{Eikonal construction: from static Schwarzschild to a dynamical map}
+\label{sec:ef-eikonal-construction}
+
+Before specializing to any coordinate, let \(\Phi(x^a)\) be a scalar whose
+level sets are proposed null hypersurfaces.  Its normal covector is
+\(k_a=\nabla_a\Phi=\partial_a\Phi\), where \(\nabla_a\) is the spacetime
+covariant derivative and the second equality holds because \(\Phi\) is a
+scalar.  The general eikonal equation is
+\[
+ \boxed{g^{ab}\partial_a\Phi\,\partial_b\Phi=0.}           \tag{IEF-EIK}
+\]
+It says that the normal has zero squared length.  A null hypersurface is
+special because its normal is also tangent to the light rays that generate
+the surface.
+
+\paragraph{Static Schwarzschild derivation.}
+For a vacuum mass \(M>0\), define
+\(f_{\rm S}(r):=1-2M/r\).  The exterior Schwarzschild metric is
+\[
+ \dd s^2=-f_{\rm S}\dd\tau^2+f_{\rm S}^{-1}\dd r^2
+          +r^2\dd\Omega^2,\qquad r>2M.                    \tag{IEF-SCH}
+\]
+Radial light rays obey
+\[
+ 0=-f_{\rm S}\dd\tau^2+f_{\rm S}^{-1}\dd r^2
+ \quad\Longrightarrow\quad
+ \frac{\dd r}{\dd\tau}=\pm f_{\rm S}.                     \tag{IEF-SCH-null}
+\]
+The minus sign is ingoing and the plus sign is outgoing.  Introduce the
+tortoise radius \(r_\star\) by
+\[
+ \frac{\dd r_\star}{\dd r}=\frac1{f_{\rm S}},\qquad
+ r_\star=r+2M\log\left|\frac{r}{2M}-1\right|+\mathrm{constant}. \tag{IEF40b-vac}
+\]
+The advanced and retarded null labels are
+\[
+       v=\tau+r_\star,\qquad u_{\rm ret}=\tau-r_\star.
+\]
+Along an ingoing ray \(\dd r/\dd\tau=-f_{\rm S}\), hence \(\dd v=0\);
+along an outgoing ray \(\dd u_{\rm ret}=0\).  Substituting
+\(\dd\tau=\dd v-\dd r/f_{\rm S}\) cancels the divergent diagonal
+\(\dd r^2/f_{\rm S}\) term and gives
+\[
+ \dd s^2=-f_{\rm S}\dd v^2+2\dd v\,\dd r+r^2\dd\Omega^2.
+\]
+Thus the static vacuum case of (IEF2) has
+\(a=f_{\rm S}\) and \(b=1\).  The mixed term records the change to a null time coordinate.  Particle
+motion follows from the same spacetime metric expressed in these coordinates.
+
+Schwarzschild time fails at \(r=2M\) because
+\(g_{rr}=f_{\rm S}^{-1}\) and \(r_\star\) diverge there.  In EF variables
+the determinant (IEF4), inverse (IEF3), null slopes (IEF6a), Einstein
+constraints below, and massive-particle characteristics remain finite when
+\(a=0\), provided \(0<b<\infty\) and the future momentum variable \(P\)
+remains positive.  This permits numerical evolution through an apparent
+horizon and into a trapped region.  It does not regularize a curvature
+singularity, turn an apparent horizon into an event-horizon measurement,
+supply data at the true origin, or justify arbitrary removal of the interior.
+Post-horizon evolution still requires a causally placed excision surface,
+fixed-mass bookkeeping, finite fields, and convergence under changes of
+resolution and excision controls.
+
+\paragraph{The dynamical eikonal equation.}
+For the general SC metric (IEF38), an advanced label \(v(\tau,r)\) obeys
+\[
+ 0=-e^{-2\mu}v_\tau^2+e^{-2\lambda}v_r^2,\qquad
+ v_r=+e^{\lambda-\mu}v_\tau.                              \tag{IEF38a}
+\]
+The positive root is the ingoing family because a level set satisfies
+\[
+ \left.\frac{\dd r}{\dd\tau}\right|_v
+ =-\frac{v_\tau}{v_r}=-e^{\mu-\lambda}<0.                 \tag{IEF38b}
+\]
+Define the positive map factor \(A:=v_\tau>0\), the inverse radial light speed
+\(h:=e^{\lambda-\mu}>0\), and the radial light speed
+\(c:=h^{-1}=e^{\mu-\lambda}>0\).  Then
+\[
+ \dd v=A(\dd\tau+h\,\dd r),\qquad
+ \partial_r A=\partial_\tau(Ah).                          \tag{IEF38c}
+\]
+The second equation is the integrability condition
+\(\partial_r v_\tau=\partial_\tau v_r\).  It is why a dynamical map requires
+spacetime history rather than a single metric snapshot.
+
+Equivalently, \(v\) solves the transport equation
+\[
+ v_\tau-cv_r=0,\qquad
+ \frac{\dd r_-}{\dd\tau}=-c(\tau,r_-),\qquad
+ \left.\frac{\dd v}{\dd\tau}\right|_{r_-}=0,              \tag{IEF38c-1}
+\]
+whose characteristics \(r_-(\tau)\) are ingoing radial light rays.  On an
+initial SC slice \(\tau=\tau_0\) and a vacuum worldtube \(r=R_B\), a compatible
+normalization is
+\[
+ v(\tau_0,r)=\tau_0+v_0-\int_r^{R_B}
+ e^{\lambda(\tau_0,\rho)-\mu(\tau_0,\rho)}\,\dd\rho,
+ \qquad
+ v(\tau,R_B)=\tau+v_0.                                   \tag{IEF38c-2}
+\]
+Here \(R_B\) is the fixed map-boundary radius, \(\rho\) is only the dummy
+integration radius, and \(v_0\) fixes the additive time origin.  The boundary
+condition makes \(A=1\) on the worldtube.  A numerical construction must also
+satisfy the usual corner compatibility where the initial slice meets the
+worldtube.
+
+The complete Jacobians are
+\[
+ \frac{\partial(v,r)}{\partial(\tau,r)}
+ =\begin{pmatrix}A&Ah\\0&1\end{pmatrix},\qquad
+ \frac{\partial(\tau,r)}{\partial(v,r)}
+ =\begin{pmatrix}F&-h\\0&1\end{pmatrix},\qquad F:=A^{-1}>0, \tag{IEF38c-5}
+\]
+Consequently, the derivative operators at the same event satisfy
+\[
+ \left.\partial_v\right|_r=F\left.\partial_\tau\right|_r,
+ \qquad
+ \left.\partial_r\right|_v
+ =\left.\partial_r\right|_\tau-h\left.\partial_\tau\right|_r. \tag{IEF38c-6}
+\]
+Substitution of \(\dd\tau=F\dd v-h\dd r\) into (IEF38) yields
+\[
+ \dd s^2=-F^2e^{2\mu}\dd v^2
+       +2F e^{\lambda+\mu}\dd v\,\dd r+r^2\dd\Omega^2,
+ \qquad
+ a=e^{-2\lambda},\quad b=F e^{\lambda+\mu}.               \tag{IEF38d}
+\]
+Thus \(a\) is the same invariant radial-mass combination in both charts,
+whereas \(b\) contains both SC metric potentials and the dynamical
+normalization \(F\).  The upper-case \(A=v_\tau\) is a map Jacobian and must
+not be confused with the lower-case EF field \(a=1-2m/r\).
+
+In a static geometry \(A=F=1\), giving
+\[
+ v=\tau+\int^r e^{\lambda-\mu}\dd r'
+   =\tau+\int^r\frac{\dd r'}{a(r')b(r')}.                 \tag{IEF39}
+\]
+The static metric functions are therefore
+\[
+ a=e^{-2\lambda},\qquad b=e^{\lambda+\mu}.               \tag{IEF40}
+\]
+Conversely, a local diagonal polar time can be reconstructed from EF data only
+where \(a>0\):
+\[
+ \dd\tau=F(v,r)\left(\dd v-\frac{\dd r}{ab}\right),\qquad
+ \partial_r F=-\partial_v\left(\frac{F}{ab}\right).       \tag{IEF40d}
+\]
+The factor \(1/(ab)\) makes this inverse construction singular at \(a=0\).
+Therefore SC--EF comparison is an exterior overlap test; the EF evolution
+itself does not use this inverse map after horizon formation.
+
+\subsubsection{Neutral spherical matter and scope}
+\label{sec:ef-neutral-scope}
+
+The module evolves a collisionless, spherically symmetric ensemble of
+uncharged unit-rest-mass particles.  Collisionless means that particles
+interact through the self-consistent metric.  Material collisions are
+introduced separately in the relativistic Boltzmann chapter.  Its implementation is
+\path{cpu/include/ev/weighted_einstein_vlasov_pic_eddington_finkelstein.hpp}
+in the namespace \code{ev::eddington_finkelstein}.  Its marker, metric, and
+source data objects are distinct from those of the SC module, so an SC restart
+cannot be reinterpreted as EF data.
+
+This is the strict neutral limit of the cited Einstein--Maxwell--Vlasov
+formulation:
+\[
+ \mathfrak e=0,\qquad q_0=0,\qquad Q_{\rm ext}=0,\qquad
+ Q_{\rm encl}(v,r)=0,\qquad {\cal F}_{ab}=0.              \tag{IEF1}
+\]
+Here \(\mathfrak e\) is particle charge, \(q_0\) is charge per unit rest mass,
+\(Q_{\rm ext}\) is total exterior charge, \(Q_{\rm encl}\) is enclosed charge,
+and \({\cal F}_{ab}\) is the electromagnetic field tensor.  Consequently
+there is no Maxwell current or stress, Coulomb mass term, or Lorentz force.
+The letter \(F=A^{-1}\) used for the coordinate map is unrelated to the
+electromagnetic tensor \({\cal F}_{ab}\).
+
+Every spherical particle carries an angular-momentum magnitude \(L\), but its
+angular direction is populated isotropically.  The total angular-momentum
+vector \(\boldsymbol J\) and the component \(T_{v\phi}\) vanish.  A black hole
+formed by this module therefore has zero spin; angular-momentum threshold
+below refers to the particle centrifugal barrier, not Kerr spin.
+
+The continuum equations follow the neutral systems described by East and by
+Andr\'easson--Rein.  Cloud shapes, finite-volume quadrature, face-aware
+interpolation, fourth-order Runge--Kutta (RK4), midpoint field coupling,
+timestep control, and excision thresholds are VENUS numerical choices.  They
+must be tested for convergence and are not new continuum assumptions.
+
+\paragraph{Equation and implementation provenance.}
+The metric, radial equations, characteristics, and particle sources follow
+Appendices A and B of William East,
+\href{https://arxiv.org/abs/2511.20567}{arXiv:2511.20567}, in the strict
+neutral limit.  The complete neutral characteristic Einstein--Vlasov system
+is independently given by H.~Andr\'easson and G.~Rein,
+\href{https://arxiv.org/abs/0910.1254}{arXiv:0910.1254}.  East's public \code{evolveEF.c} provides an independent implementation
+of these equations. VENUS uses the radial mesh, quadrature and particle
+updates derived in this chapter.
+
+\subsubsection{Einstein equations on an ingoing-null slice}
+\label{sec:ef-einstein-derivation}
+
+Einstein's equation,
+\[
+                 G_{ab}=8\pi T_{ab},
+\]
+equates the Einstein curvature tensor \(G_{ab}\) to the matter stress-energy
+tensor \(T_{ab}\).  The mixed \(dv\,dr\) metric term changes coordinate
+components, not the underlying tensor.  A null slice also cuts across moving
+matter differently from a spacelike SC slice, so its radial mass accumulation
+contains both local energy and radial current.
+
+A direct calculation from (IEF2) gives the independent covariant components
+\begin{align}
+ -\frac{b}{r^2}
+ \left(ra_v+rab a_r+a^2b-ab\right)
+ &=8\pi T_{vv},                                           \tag{IEF24}\\
+ \frac{b}{r^2}\left(ra_r+a-1\right)
+ &=8\pi T_{vr},                                           \tag{IEF25}\\
+ \frac{2b_r}{rb}
+ &=8\pi T_{rr},                                           \tag{IEF26}\\
+ \frac{r^2}{2b^2}\left(
+ 2b_{rv}+b^2a_{rr}+2ab b_{rr}
+ -\frac{2b_rb_v}{b}+3b a_rb_r
+ +\frac{2b^2a_r}{r}+\frac{2ab b_r}{r}\right)
+ &=8\pi T_{\theta\theta}.                                \tag{IEF27}
+\end{align}
+The \(\phi\phi\) equation is
+\(T_{\phi\phi}=\sin^2\theta\,T_{\theta\theta}\).  The first two subscripts on
+\(T_{ab}\) name covariant coordinate components, not derivatives.
+
+Equation (IEF26) immediately gives the first radial constraint,
+\[
+ \boxed{\partial_r\ln b=4\pi rT_{rr}.}                    \tag{IEF28}
+\]
+Define the positive source combination
+\[
+ S:=-\frac{2}{b}T_{vr}-aT_{rr}.                           \tag{IEF23a}
+\]
+Insert this definition into (IEF25), use \(a=1-2m/r\), and combine the result
+with (IEF28).  The second radial constraint becomes
+\[
+ \boxed{\frac1b\partial_r(mb)
+       =2\pi r^2(T_{rr}+S).}                              \tag{IEF29}
+\]
+These two ordinary differential equations are the metric equations solved on
+each \(v=\) constant light front.  The pusher needs
+\[
+ b_r=4\pi rbT_{rr},\qquad
+ a_r=\frac{1-a}{r}-4\pi r(aT_{rr}+S).                    \tag{IEF30}
+\]
+The unused \(vv\) equation supplies the continuum time identity
+\[
+ a_v=-8\pi r\left(\frac{T_{vv}}b+aT_{vr}\right),\qquad
+ m_v=4\pi r^2\left(\frac{T_{vv}}b+aT_{vr}\right).         \tag{IEF31}
+\]
+In vacuum outside all matter these constraints give the exact exterior
+\[
+ m=M_{\rm ADM},\qquad b=1,\qquad
+ a=1-\frac{2M_{\rm ADM}}r.                               \tag{IEF32}
+\]
+When the Vlasov equation enforces \(\nabla_aT^{ab}=0\), the contracted Bianchi
+identity \(\nabla_aG^{ab}=0\) propagates the remaining Einstein components.
+Here \(\nabla_a\) is the metric-compatible covariant derivative.
+
+\paragraph{Equation-by-equation bridge to SC variables.}
+Let \(\rho\), \(p_{\rm rad}\), and \(j\) denote energy density, radial pressure,
+and outward radial current measured in the local orthonormal frame of the SC
+chart.  The SC constraints are
+\[
+ \left.m_r\right|_\tau=4\pi r^2\rho,\qquad
+ \lambda_r=\frac{4\pi r\rho-m/r^2}{a},\qquad
+ \mu_r=\frac{m/r^2+4\pi rp_{\rm rad}}{a},\qquad
+ \lambda_\tau=-4\pi r e^{\lambda+\mu}j.                  \tag{IEF-SC-E}
+\]
+At the same event, tensor transformation with (IEF38c-5) gives
+\[
+ T_{vv}=F^2e^{2\mu}\rho,\qquad
+ T_{vr}=-b(\rho+j),\qquad
+ T_{rr}=e^{2\lambda}(\rho+2j+p_{\rm rad}),\qquad
+ S=\rho-p_{\rm rad}.                                     \tag{IEF45i-2}
+\]
+The current appears twice in \(T_{rr}\) because the radial basis vector at
+fixed \(v\) contains a time-directed part:
+\[
+ \left.\partial_r\right|_v
+ =\left.\partial_r\right|_\tau-h\left.\partial_\tau\right|_r.
+\]
+Using this derivative and \(b=F e^{\lambda+\mu}\) makes the equivalence
+transparent:
+\begin{align}
+ \left.(\ln b)_r\right|_v
+ &=\lambda_r+\mu_r-2h\lambda_\tau
+   =4\pi rT_{rr},                                        \tag{IEF-SC-E1}\\
+ \left.a_r\right|_v
+ &=\frac{1-a}{r}-8\pi r(\rho+j)
+   =\frac{1-a}{r}-4\pi r(aT_{rr}+S),                     \tag{IEF-SC-E2}\\
+ \left.m_r\right|_v
+ &=4\pi r^2(\rho+j)
+   =2\pi r^2(aT_{rr}+S),                                 \tag{IEF-SC-E3}\\
+ m_v&=F m_\tau=-4\pi r^2F e^{\mu-\lambda}j
+   =4\pi r^2\left(\frac{T_{vv}}b+aT_{vr}\right).         \tag{IEF-SC-E4}
+\end{align}
+Thus (IEF28) is the transformed sum of the SC radial lapse and metric
+constraints, (IEF30) is the transformed SC mass constraint, (IEF29) is its
+numerically convenient product form, and (IEF31) is the transformed SC flux
+equation.  No extra matter source has been introduced by the EF chart.
+
+\paragraph{Radial boundary formulations.}
+Let
+\[
+ Y(r):=m(r)b(r),\qquad
+ Y_r=2\pi b r^2(T_{rr}+S).                               \tag{IEF33}
+\]
+With the asymptotic normalization \(b(\infty)=1\),
+\[
+ b(r)=\exp\left[-4\pi\int_r^\infty r'T_{rr}(r')\,\dd r'\right]. \tag{IEF34}
+\]
+The reusable library supports a regular first slice with no point mass:
+\[
+ Y(0)=0,\qquad
+ Y(r)=\int_0^r2\pi b(r')r'^2[T_{rr}(r')+S(r')]\,\dd r'. \tag{IEF35}
+\]
+This outward solve infers the Arnowitt--Deser--Misner (ADM) mass.  After that,
+or whenever a black-hole interior is represented, the correct formulation is
+the fixed-mass inward solve
+\[
+ Y(r)=M_{\rm ADM}
+ -\int_r^\infty2\pi b(r')r'^2[T_{rr}(r')+S(r')]\,\dd r'. \tag{IEF36}
+\]
+On a finite vacuum outer boundary \(R_E\),
+\[
+ b(R_E)=1,\qquad Y(R_E)=M_{\rm ADM}.                      \tag{IEF37}
+\]
+Production fresh EF runs do not use the regular-center inference path.  They
+authenticate a solved null initial-data artifact, import its
+\(M_{\rm null}\), and set \(M_{\rm ADM}=M_{\rm null}\) from the first EF field
+solve onward.  Repeating the outward regular-center solve after excision would
+erase the hole mass and is forbidden.
+
+\subsubsection{Vlasov equation and particle characteristics}
+\label{sec:ef-vlasov-derivation}
+
+The distribution function
+\[
+                 f=f(v,r,P,L^2)
+\]
+is a scalar on the future unit-mass shell.  Its arguments are advanced time
+\(v\), areal radius \(r\), the covariant canonical radial momentum
+\(P:=p_r>0\), and the conserved squared angular-momentum magnitude \(L^2\).
+VENUS stores \(\eta:=L^2/2\) and uses
+\[
+ \chi(r,\eta):=1+\frac{2\eta}{r^2}.                       \tag{IEF9}
+\]
+The symbol \(p_a\) denotes the particle four-momentum covector; unit particle
+rest mass is used, while a marker's invariant rest-number weight represents
+many physical particles.
+
+The mass-shell condition \(g^{ab}p_a p_b=-1\) is
+\[
+ -1=\frac{2}{b}p_v P+aP^2+\frac{2\eta}{r^2}.             \tag{IEF11}
+\]
+Because \(g^{vr}=1/b\),
+\[
+ p^v=\frac{P}{b}>0,                                      \tag{IEF10}
+\]
+so \(P>0\) selects the future branch; it does not mean outward motion.  Solving
+the mass shell for the momentum conjugate to \(v\) gives the advanced-time
+Hamiltonian
+\[
+ p_v=-\frac b2\left(aP+\frac{\chi}{P}\right),\qquad
+ {\cal H}_{\rm EF}:=-p_v
+ =\frac b2\left(aP+\frac{\chi}{P}\right).                \tag{IEF12}
+\]
+The contravariant radial momentum is
+\[
+ p^r=\frac12\left(aP-\frac{\chi}{P}\right).               \tag{IEF13}
+\]
+
+Collisionless transport means that \(f\) is constant along geodesic
+characteristics:
+\[
+ \partial_v f+\dot r\,\partial_r f+\dot P\,\partial_P f=0,
+ \qquad \dot\eta=0,                                      \tag{IEF14}
+\]
+where a dot now means \(\dd/\dd v\).  Hamilton's equations give every
+characteristic:
+\[
+ \boxed{\dot r=\frac{\partial{\cal H}_{\rm EF}}{\partial P}
+ =\frac b2\left(a-\frac{\chi}{P^2}\right),}              \tag{IEF15}
+\]
+\[
+ \boxed{\dot P=-\frac{\partial{\cal H}_{\rm EF}}{\partial r}
+ =-\frac P2(ab_r+ba_r)-\frac{b_r\chi}{2P}
+   +\frac{2b\eta}{P r^3}.}                               \tag{IEF16}
+\]
+In the last derivative \(P\) and \(\eta\) are held fixed.  The first term
+differentiates the metric factor \(ab\) multiplying the radial kinetic
+momentum.  The second differentiates the factor \(b\) multiplying rest and
+angular energy.  The last follows from
+\(\partial_r\chi=-4\eta/r^3\) and is the spherical centrifugal term.  These
+are coordinate forms of geodesic motion, not separate forces added to the
+Einstein equations.
+
+The sign of physical radial motion is
+\[
+ \dot r<0\Longleftrightarrow aP^2<\chi,\qquad
+ \dot r=0\Longleftrightarrow aP^2=\chi,\qquad
+ \dot r>0\Longleftrightarrow aP^2>\chi.                  \tag{IEF13a}
+\]
+At an apparent horizon,
+\[
+ \left.\dot r\right|_{a=0}=-\frac{b\chi}{2P^2}<0.         \tag{IEF17}
+\]
+A future massive particle therefore crosses inward at finite advanced time.
+No \(1/a\) occurs in (IEF15)--(IEF16).  A step that loses \(P>0\) is invalid
+and is rejected rather than repaired with a floor.
+
+\paragraph{Term-by-term correspondence with the SC characteristics.}
+Let \(w\) be SC orthonormal radial momentum and define the local energy per
+unit rest mass
+\[
+ \epsilon:=\sqrt{1+w^2+\frac{2\eta}{r^2}}.                \tag{IEF41}
+\]
+The SC characteristic equations are
+\[
+ \frac{\dd r}{\dd\tau}=e^{\mu-\lambda}\frac{w}{\epsilon},
+ \qquad
+ \frac{\dd w}{\dd\tau}
+ =-\lambda_\tau w-e^{\mu-\lambda}\mu_r\epsilon
+  +e^{\mu-\lambda}\frac{L^2}{r^3\epsilon}.               \tag{IEF-SC-V}
+\]
+Their three momentum terms describe the changing radial metric, the lapse
+gradient, and the centrifugal barrier.
+
+A momentum is a covector, so equality of the canonical one-form at the same
+event,
+\[
+ p_\tau\dd\tau+p_r^{({\rm SC})}\dd r=p_v\dd v+P\dd r,
+\]
+with \(p_\tau=-e^\mu\epsilon\) and
+\(p_r^{({\rm SC})}=e^\lambda w\), gives
+\[
+ \boxed{P=e^\lambda(\epsilon+w)},\qquad
+ \boxed{-p_v=F e^\mu\epsilon}.                            \tag{IEF42}
+\]
+The subtraction-free expression
+\[
+ P=\frac{1+2\eta/r^2}{\sqrt a\,(\epsilon-w)}              \tag{IEF43}
+\]
+is used for strongly infalling data.  Along a particle,
+\[
+ \frac{\dd v}{\dd\tau}
+ =A\left(1+\frac{w}{\epsilon}\right)>0.                  \tag{IEF42a}
+\]
+Dividing the SC radial equation by this positive factor gives (IEF15)
+directly.
+
+For the momentum equation set
+\(x:=\epsilon+w=\sqrt a\,P\) and \(c=e^{\mu-\lambda}\).
+Differentiating \(P=e^\lambda x\) along the SC characteristic and dividing by
+\(\dd v/\dd\tau\) yields
+\[
+ \frac{\dot P}{P}
+ =F\left[
+   \lambda_\tau\frac{\epsilon-w}{x}
+  +c\lambda_r\frac{w}{x}
+  -c\mu_r\frac{\epsilon}{x}
+  +c\frac{L^2}{r^3x^2}\right].                           \tag{IEF-SC-V1}
+\]
+Substitution of the metric identities in
+(IEF38d), (IEF-SC-E1), and (IEF-SC-E2) reduces this expression exactly to
+(IEF16).  The four displayed pieces are respectively the SC time-dependent
+radial metric term, spatial radial-metric term, lapse force, and angular
+barrier.  Their regrouping into \(a_r\), \(b_r\), and \(\chi_r\) explains
+every EF term.
+
+\paragraph{Stress energy carried by the distribution.}
+Using \(\eta=L^2/2\), the independent covariant components are
+\begin{align}
+ T_{vv}
+ &=\frac{2\pi}{r^2}\int_0^\infty\!\int_0^\infty
+   \frac{p_v^2}{P}f\,\dd\eta\,\dd P,                  \tag{IEF18}\\
+ T_{vr}
+ &=\frac{2\pi}{r^2}\int_0^\infty\!\int_0^\infty
+   p_v f\,\dd\eta\,\dd P,                            \tag{IEF19}\\
+ T_{rr}
+ &=\frac{2\pi}{r^2}\int_0^\infty\!\int_0^\infty
+   P f\,\dd\eta\,\dd P,                              \tag{IEF20}\\
+ T_{\theta\theta}
+ &=\frac{2\pi}{r^2}\int_0^\infty\!\int_0^\infty
+   \frac{\eta}P f\,\dd\eta\,\dd P,                \tag{IEF21}\\
+ T_{\phi\phi}&=\sin^2\theta\,T_{\theta\theta}.           \tag{IEF22}
+\end{align}
+Using (IEF12), the constraint source introduced in (IEF23a) is
+\[
+ S=\frac{2\pi}{r^2}\int_0^\infty\!\int_0^\infty
+   \frac{1+2\eta/r^2}{P}f\,\dd\eta\,\dd P.         \tag{IEF23}
+\]
+Thus \(T_{rr}\) weights radial canonical momentum, while \(S\) weights rest
+and angular energy divided by that momentum.  VENUS deposits precisely these
+two combinations for the radial constraint solve; it reconstructs the other
+components for profiles and coordinate-parity checks.
+
+\subsubsection{What the production code solves}
+\label{sec:ef-what-code-solves}
+
+A production EF step does not freely evolve all four Einstein components.
+At each advanced time it deposits the active marker ensemble, solves the two
+radial constraints (IEF28)--(IEF29), and advances the Vlasov characteristics
+(IEF15)--(IEF16).  The remaining Einstein equations are consistency
+relations.  WPIC means weighted particle in cell: each numerical marker has
+an invariant rest-number weight, and its cloud deposits a fraction of that
+weight into neighboring radial cells.
+
+Constructing an ingoing null initial slice requires the SC solution at the
+different times where particle worldlines cross that slice.  The version-2
+donor, abbreviated donor-v2, stores this dense SC history together with the
+center and face data needed to reconstruct its metric.  The solved null
+artifact is the binary initial-data file obtained from those crossings.  It
+contains the mapped markers, metric and stress data, boundary mass, accuracy
+record, and hashes that identify its inputs.
+The ledger is the ordered list of every accepted donor step and its exact
+timestep, used for deterministic replay.  A manifest is a JavaScript Object
+Notation (JSON) metadata file that names the artifacts and their 256-bit
+Secure Hash Algorithm (SHA-256) digests.  Provenance means this recorded chain
+from physical initial condition and source version to each derived object.
+A check is called fail-closed when complete, consistent evidence is required
+to pass.  Missing or inconsistent data then produces a stop or an
+inconclusive result.
+
+The public data objects used below have distinct roles.  A \code{Marker}
+stores invariant rest weight, \(r,P,\eta\), persistent and source identifiers,
+and an active, excised, or escaped state.  \code{DepositedSources} stores cell
+and shell source arrays.  \code{Metric} stores center and face values of
+\(a,b,m,a_r,b_r\), while \code{Field} pairs that metric with its deposited
+sources.  \code{ConstraintOptions} selects the radial mass boundary and
+excision controls; \code{EvolutionOptions} adds the pusher, particle shape,
+thread count, and timestep controls.  A \code{StepResult} reports the accepted
+step, endpoint field, fixed mass, and excision outcome.  A map
+\code{EikonalSurface} stores the solved null-surface event times, Jacobians,
+and refinement evidence.
+
+\begin{figure}[ht]
+\centering
+\textbf{Physics flow: ingoing-EF Einstein--Vlasov WPIC}
+\par\smallskip
+\begin{tikzpicture}[node distance=0.22cm]
+\node[physicsflow] (ef1) {Authenticate the solved null initial-data artifact, its donor-v2 history, and the fixed mass \(M_{\rm null}\)};
+\node[physicsflow,below=of ef1] (ef2) {Deposit active markers into the null-slice sources \(T_{rr}\) and \(S\)};
+\node[physicsflow,below=of ef2] (ef3) {Integrate \(b\) and \(mb\) inward from the vacuum outer boundary; form \(a\), metric derivatives, and the apparent-horizon diagnostic};
+\node[physicsflow,below=of ef3] (ef4) {Choose a causality and momentum limited advanced-time step};
+\node[physicsflow,below=of ef4] (ef5) {Push a copy of the markers through half a step in the old field};
+\node[physicsflow,below=of ef5] (ef6) {Redeposit that copy, solve the midpoint field, and push the original markers through the full step};
+\node[physicsflow,below=of ef6] (ef7) {Solve the endpoint field, apply only causally available excision, and recompute the fixed-mass endpoint field};
+\node[physicsflow,below=of ef7] (ef8) {Audit every accepted state; write diagnostics and an atomic restart; then repeat};
+\draw[physicsarrow] (ef1) -- (ef2);
+\draw[physicsarrow] (ef2) -- (ef3);
+\draw[physicsarrow] (ef3) -- (ef4);
+\draw[physicsarrow] (ef4) -- (ef5);
+\draw[physicsarrow] (ef5) -- (ef6);
+\draw[physicsarrow] (ef6) -- (ef7);
+\draw[physicsarrow] (ef7) -- (ef8);
+\end{tikzpicture}
+\caption{Code-logic flow for one production ingoing-EF Einstein--Vlasov
+WPIC update.  The fixed null-slice mass is retained when interior marker
+sources are excised.}
+\label{fig:ef-code-logic-flowchart}
+\end{figure}
+
+\paragraph{Initial data and first field solve.}
+A fresh production EF run is allowed only in the high-compactness scenario,
+on a linear radial grid with the configured origin-parity mesh convention.
+It must receive both the authenticated coordinate-neutral physical initial
+condition and a solved EF null artifact.  The artifact records the
+worldline/null-surface intersections, EF marker momenta, reconstructed
+center/face fields, map errors, donor ledger, hashes, and \(M_{\rm null}\).
+Supplying only a spacelike SC marker file is a hard error.  The driver verifies
+the physical-initial-condition hash, base and realized fingerprints, sampling
+realization, marker count and grid, map-manifest hash, artifact hashes, and
+initial metric/stress pullbacks before evolution.  Its first and all later
+constraint solves use the inward boundary condition
+\(Y(R_E)=M_{\rm null}\).  The regular-center mode (IEF35) remains available
+only as a reusable library mode and unit-test target.
+
+A restart is an atomic checkpoint containing the state needed to continue the
+same evolution.  A resume reads the EF markers, advanced time, step number,
+excision mode, and fixed boundary mass, then reconstructs the metric from
+those markers. When physical or null initial data are supplied, it compares
+each marker's invariant rest weight, angular momentum, identifier, and source
+identifier with that authenticated realization before opening output files.
+An accepted-step audit sidecar is trusted only when its exact
+step number and advanced time match the restart.  A missing, stale, or
+old-schema sidecar does not invent evidence: evolution may continue, but
+black-hole certification remains disabled until a complete new audit exists.
+Here a sidecar is a separate atomic evidence file tied to the checkpoint; a
+run summary is the machine-readable record of a completed run, and a
+certificate is a separately authenticated record that promotes a scientific
+claim only after all named checks pass.
+Atomic means that the completed file replaces the old file as one operation,
+so an interrupted write is not mistaken for a valid checkpoint.
+
+\paragraph{Boundary, horizon, and excision conditions.}
+The map worldtube \(R_B\) and the EF evolution boundary \(R_E\) are distinct.
+The extraction requires \(R_B\le R_E\); the initial null surface between them
+may use the audited analytic vacuum extension.  Evolution uses the full
+domain through \(R_E\).  At the outer boundary,
+\(b(R_E)=1\) and \(Y(R_E)=M_{\rm null}\).  This assumes the boundary stays in
+vacuum; fixed total mass cannot reconstruct the finite-radius field of
+dynamically important matter that has left the grid.
+An escaped marker is an active marker that leaves the evolution domain; its
+record and rest weight remain in accounting, but it no longer deposits on the
+finite grid.
+
+At the inner side, the origin-parity option creates a true \(r=0\) field face
+but does not reflect EF characteristics.  Before an excision surface exists,
+an active marker must remain at positive radius inside the field domain.
+An attempted inner crossing rejects the trial step; the interior-evolution driver
+retries with a smaller timestep as described below.
+The characteristic equations are singular at \(r=0\) for \(\eta>0\).
+
+The metric solver searches face intervals for the outermost
+negative-to-positive zero of \(a\) and interpolates \(r^2a\) to obtain the
+apparent-horizon radius \(r_H\), with \(m_H=r_H/2\).  Excision is enabled only
+after a cell center satisfies \(a<a_{\rm ex}<0\); the particle boundary is
+placed a configured number of cell centers farther inward and at most a fraction
+\(F=0.1\) of the apparent-horizon radius.  The selected center, every center in the outward buffer, and the intervening
+faces must satisfy \(a<a_{\rm ex}\), with finite positive \(b\).  A trapped outer
+shell surrounding an untrapped central cavity therefore supplies a boundary
+only when a qualifying trapped center lies within this radius cap.  Markers at or
+inside it change from active to excised, keep their records and invariant
+weights, stop depositing, and are no longer pushed.  The endpoint field is
+then recomputed with fixed \(M_{\rm null}\).  No inner boundary data are
+supplied inside this trapped, causally disconnected region.
+An excision radius already present in the old field is enforced during every
+frozen-metric push.  An endpoint-supported candidate boundary
+is selected from the recomputed trapped region; it is applied before the step is
+accepted and that endpoint field is recomputed. The retained boundary is
+checked in this recomputed metric, including its buffer and radius cap.
+
+The option \code{--ef-evolve-interior} retains all interior markers. Horizon
+detection continues, while every metric stage sets the applied excision
+radius to zero. The markers continue to move and deposit their stress.
+Section~\ref{sec:ef-interior-evolution} gives the timestep, restart, and resolution
+conditions for this mode.
+
+\paragraph{Time integration, rejection, and accepted-state audit.}
+The production driver uses two equal characteristic substeps and
+\(C_{\rm CFL}=0.20\), where the Courant--Friedrichs--Lewy (CFL) number limits
+radial travel and momentum change per step.  Internally the RK4 pusher evolves
+\(u=\log P\), which preserves the mathematical \(P>0\) branch without imposing
+a momentum floor.  A nonfinite characteristic stage, invalid logarithmic
+state, or retryable right-hand-side (RHS) or RK4 failure rejects the whole
+self-consistent step;
+the driver halves \(\Delta v\) and retries, at most 24 times. In interior-evolution
+mode, an attempted inner crossing or a nonfinite trial constraint solve also
+allows this retry. The last accepted state is saved when the available
+retries or floating-point time resolution are exhausted in interior-evolution mode.
+
+Before output cadence is considered, every accepted state is audited for
+finite markers, sources, center and face metric arrays, \(P>0\), \(b>0\),
+fixed-\(M_{\rm null}\) agreement, causal excision, and positive excised weight
+when excision is claimed.  Saved history then records marker-weight channels,
+ADM mass, compactness, minimum \(a\) and \(b\), horizon and excision radii,
+Lagrangian radii, virial and Jeans diagnostics.  Full stress profiles support
+independent coordinate pullbacks.  General independent residuals of
+(IEF28)--(IEF31) and a generic evolved-exterior vacuum norm are recommended
+validation diagnostics, but are not currently emitted as ordinary
+production-history columns; the implemented exact-vacuum residual belongs to
+the authenticated null-map extension audit.
+\subsubsection{Detailed coordinate map, donor-v2 history, and fail-closed provenance}
+\label{sec:ef-detailed-map}
+
+Section~\ref{sec:ef-eikonal-construction} established the geometry and the
+forward dynamical map.  This section records the component identities and
+numerical evidence used by the implementation.  It is deliberately placed
+after the field and particle equations because the map initializes those
+equations and identifies the physical events used to compare them.
+
+At one mapped event the covariant and contravariant radial metric blocks are
+\begin{align}
+ g^{\rm EF}_{vv}&=-ab^2=-F^2e^{2\mu},&
+ g^{\rm EF}_{vr}&=b=F e^{\lambda+\mu},&
+ g^{\rm EF}_{rr}&=0,                                    \tag{IEF38d-1}\\
+ g_{\rm EF}^{vv}&=0,&
+ g_{\rm EF}^{vr}&=b^{-1}=A e^{-\lambda-\mu},&
+ g_{\rm EF}^{rr}&=a=e^{-2\lambda}.                       \tag{IEF38d-2}
+\end{align}
+These are component transformations, not an identification of the raw arrays
+\((\lambda,\mu)\) and \((a,b)\).  The retarded root reverses the mixed term
+and has \(b_{\rm out}<0\); the EF evolution namespace implements only the
+future advanced branch \(b>0\).
+
+For a static exterior, both directions of the transformation are
+\begin{align}
+ \dd v&=\dd\tau+e^{\lambda-\mu}\dd r
+       =\dd\tau+\frac{\dd r}{ab},
+ &v(\tau,r)&=\tau+\int^r\frac{\dd r'}{a(r')b(r')},       \tag{IEF40a}\\
+ \dd\tau&=\dd v-\frac{\dd r}{ab},
+ &\tau(v,r)&=v-\int^r\frac{\dd r'}{a(r')b(r')}.          \tag{IEF40b}
+\end{align}
+The corresponding metric functions satisfy
+\[
+ e^{2\lambda}=\frac1a,\qquad e^{2\mu}=ab^2,\qquad
+ \lambda=-\frac12\log a,\qquad
+ \mu=\log b+\frac12\log a.                               \tag{IEF40c}
+\]
+For a dynamical inverse map, the integrating factor in (IEF40d) must satisfy
+\[
+ \partial_r F=-\partial_v\left(\frac{F}{ab}\right),       \tag{IEF40e}
+\]
+and substitution gives
+\[
+ \dd s^2=-\frac{ab^2}{F^2}\dd\tau^2
+          +\frac1a\dd r^2+r^2\dd\Omega^2.                \tag{IEF40f}
+\]
+Setting \(F=1\) in a time-dependent field would impose the extra restriction
+\(\partial_v[(ab)^{-1}]=0\); it is not a freely available gauge choice.
+Neither \(F\) nor the event correspondence can be reconstructed from one
+metric snapshot.
+
+All SC-to-EF transformations and their inverse checks are restricted to the
+connected overlap with \(a>0\).  As \(a\to0^+\), \(e^{2\lambda}=1/a\) and
+\(1/(ab)\) diverge, so SC data and the public momentum-map helpers stop.
+Finite positive \(b\) leaves the EF metric and EF characteristics regular;
+the restriction belongs to the comparison chart, not the EF evolution.
+
+\paragraph{Momentum components carried by the mapped artifact.}
+If \(w\) is the existing VENUS orthonormal radial momentum and
+\[
+ \epsilon=\sqrt{1+w^2+\frac{2\eta}{r^2}},
+\]
+then the polar-coordinate covector components and inverse-coordinate
+derivatives at the same event are
+\[
+ p_\tau=-e^\mu\epsilon,\qquad
+ p_r^{({\rm pol})}=e^\lambda w,\qquad
+ \left.\partial_v\tau\right|_r=F,\qquad
+ \left.\partial_r\tau\right|_v=-\frac{F}{ab}
+ =-e^{\lambda-\mu}.                                    \tag{IEF41a}
+\]
+A momentum is a one-form,
+\[
+ p=p_\tau\dd\tau+p_r^{({\rm pol})}\dd r
+   =p_v\dd v+P\dd r.                                  \tag{IEF41b}
+\]
+Its components transform with derivatives of the old coordinates.  Using
+(IEF40d), and equivalently \(ab=F e^{\mu-\lambda}\), gives
+\[
+ \boxed{
+ P=p_r^{({\rm pol})}+p_\tau
+       \left.\partial_r\tau\right|_v
+  =e^\lambda(w+\epsilon)
+  =\frac{w+\epsilon}{\sqrt a}},\qquad
+ p_v=p_\tau\left.\partial_v\tau\right|_r
+    =-F e^\mu\epsilon.
+\]
+The integrating factor cancels from \(P\).  Hence (IEF42) remains an exact
+pointwise identity for a dynamical coordinate map when its SC and EF
+arguments describe the same event.  The helper needs \(a\), but not \(F\);
+it does not determine which events on two different slices correspond.
+For strongly infalling data the subtraction-free evaluation is
+\[
+ P=\frac{1+2\eta/r^2}{\sqrt a\,(\epsilon-w)}.
+\]
+The inverse map, defined only for \(a>0\), is
+\[
+ x:=\sqrt a\,P,\qquad
+ w=\frac12\left(x-\frac{\chi}{x}\right),\qquad
+ \epsilon=\frac12\left(x+\frac{\chi}{x}\right).       \tag{IEF44}
+\]
+The same covector transformation gives
+\[
+ \frac b2\left(aP+\frac\chi P\right)
+ =-p_v=F e^\mu\epsilon.                               \tag{IEF45}
+\]
+Thus the right-hand side is \(e^\mu\epsilon\) in the static normalization
+\(F=1\).  The factor \(F\) is essential in a general dynamical
+polar-to-advanced coordinate transformation; it is already encoded in the EF
+metric function \(b=F e^{\lambda+\mu}\).
+
+For reference, the retarded/outgoing coordinate and its future-directed
+signed momentum are
+\[
+ u_{\rm ret}=\tau-\int^r e^{\lambda-\mu}\dd r',\qquad
+ b_{\rm out}=-e^{\lambda+\mu},\qquad
+ (p_r)_{\rm out}=e^\lambda(w-\epsilon)<0.              \tag{IEF45a}
+\]
+East's physical-data recipe first evolves an outward/dispersing solution and
+then uses \(t\mapsto-t\) to obtain its incoming time reverse.  With
+\(w_{\rm in}=-w_{\rm out}\), it acts as
+\[
+ b_{\rm in}=-b_{\rm out}>0,\qquad
+ (p_r)_{\rm in}=-(p_r)_{\rm out}>0,\qquad
+ r_{\rm in}=r_{\rm out},\qquad
+ \eta_{\rm in}=\eta_{\rm out}.                        \tag{IEF45b}
+\]
+and therefore
+\[
+ -(p_r)_{\rm out}
+ =e^\lambda(\epsilon-w_{\rm out})
+ =e^\lambda(\epsilon+w_{\rm in})=(p_r)_{\rm in}.       \tag{IEF45c}
+\]
+Time reversal here means more than replacing the printed time coordinate by
+its negative: every radial velocity or momentum is reversed as well, while
+positions, angular-momentum magnitudes, and invariant weights are retained.
+Changing \(t\) without changing \(w\) would not construct the incoming
+solution.
+VENUS does not use that operation to relabel an outgoing production run as its
+physical collapse.  Its physical neutral shell receives the controlled inward
+kick (IEF-S26), so the physical Schwarzschild evolution is already ingoing and
+is never time-reversed.  The null-slice extractor nevertheless needs the part
+of that physical solution at negative Schwarzschild times because a single
+ingoing null slice intersects different radii at different \(\tau\).  It
+obtains that history without backward numerical integration by making an
+\emph{independent} donor copy and using East's construction exactly once:
+\[
+ s=-\tau,\qquad w_{\rm reverse}(s=0)=-w_{\rm physical}(\tau=0).
+                                                               \tag{IEF45c-1}
+\]
+The copy is evolved forward in \(s\).  At a marker--null-surface crossing the
+physical momentum is restored as
+\(w_{\rm physical}=-w_{\rm reverse}\), after which (IEF42) gives the
+future-directed \(P>0\).  Thus ``using \(t\mapsto-t\)'' refers only to this
+auxiliary donor/history construction.  The incoming Schwarzschild run is
+unchanged, and the EF characteristic pusher never reverses its time or its
+momentum.
+
+The public conversion routines implement (IEF42)--(IEF44), including the
+stable infalling branch:
+\codesource{SC--EF marker-momentum conversion}{\path{cpu/include/ev/weighted_einstein_vlasov_pic_eddington_finkelstein.hpp}}{Public same-event momentum-map helpers and EF marker construction}
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\scriptsize]
+namespace ef = ev::eddington_finkelstein;
+
+const double p_r = ef::canonical_p_r_from_schwarzschild_w(
+    marker.w, marker.eta, marker.r, metric_gap);
+ef::Marker ef_marker = ef::from_schwarzschild_marker(
+    marker, metric_gap);
+
+const double w = ef::schwarzschild_w_from_canonical_p_r(
+    ef_marker.p_r, ef_marker.eta, ef_marker.r, metric_gap);
+
+const double p_r_out =
+    ef::outgoing_canonical_p_r_from_schwarzschild_w(
+        outgoing_w, eta, radius, metric_gap);
+const double p_r_in =
+    ef::time_reverse_outgoing_canonical_p_r(p_r_out);
+\end{lstlisting}
+The marker rest weight and \(\eta\), its persistent identifier (ID), and its
+source identifier are unchanged by this conversion.
+
+The production extractor makes the separation between physical and reverse
+states explicit (irrelevant checks are elided here):
+\codesource{Solved-null initial-data extraction}{\path{cpu/src/drivers/einstein_vlasov_wpic.cpp}}{Production reverse-donor copy, eikonal solve, deterministic replay, and marker crossings}
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\scriptsize]
+std::vector<ev::WeightedPICMarker> reverse_initial = physical_markers;
+for (auto& marker : reverse_initial) {
+    marker.w = -marker.w;                 // s=-tau donor only
+}
+std::vector<ev::WeightedPICMarker> donor_markers = reverse_initial;
+// Store every accepted donor field and the exact accepted-dt ledger.
+map::EikonalSurface surface = map::solve_ingress_eikonal_surface(
+    history, grid, reverse_time, 8);
+// Replay the ledger bit-for-bit and require one crossing for every ID.
+crossings.push_back(map::interpolate_marker_crossing(
+    before[q], replay[q], replay_time, next_time,
+    surface, history, grid, step + 1));
+\end{lstlisting}
+The integer passed to the surface solver is \(n\), the number of RK4
+substeps used for the coarse solve on each radial cell.  Starting from the
+same already accepted state \(Y_{i,\mathrm{in}}\) at the outer end of cell
+\(i\), the extractor independently computes an \(n\)-substep result
+\(Y_i^{(n)}\) and a \(2n\)-substep result \(Y_i^{(2n)}\), where
+
+\[
+        Y=(s_\sigma,\log A).
+\]
+It accepts \(Y_i^{(2n)}\) as the incoming state for the next cell; it does not
+advance with the coarse result and does not Richardson-extrapolate the state.
+For each component it estimates the local error of that accepted, refined
+fourth-order result by
+\begin{align}
+ \epsilon_{s,i}
+ &=\frac{\left|s_{\sigma,i}^{(2n)}-s_{\sigma,i}^{(n)}\right|}
+ {\left(2^4-1\right)
+  \max\!\left(1,
+       \left|s_{\sigma,i,\mathrm{in}}\right|,
+       \left|s_{\sigma,i}^{(2n)}\right|\right)},                 \tag{IEF45c-2}\\
+ \epsilon_{\log A,i}
+ &=\frac{\left|\left(\log A\right)_i^{(2n)}
+                    -\left(\log A\right)_i^{(n)}\right|}
+ {\left(2^4-1\right)
+  \max\!\left(1,
+       \left|\left(\log A\right)_{i,\mathrm{in}}\right|,
+       \left|\left(\log A\right)_i^{(2n)}\right|\right)} .       \tag{IEF45c-3}
+\end{align}
+The unit term gives a dimensionless error that behaves as an absolute error
+for small values and a relative error for large ones.  It uses one code-time
+unit for \(s_\sigma\).  The factor \(2^4-1=15\) is the RK4
+step-doubling Richardson divisor.  The surface records the two maxima
+separately as
+\texttt{maximum\_reverse\_time\_richardson\_error} and
+\texttt{maximum\_log\_A\_richardson\_error}.  The authenticated manifest
+serializes them unambiguously as
+\path{maximum_eikonal_reverse_time_richardson_error} and
+\path{maximum_eikonal_log_A_richardson_error}, together with the exact
+normalization string in (IEF45c-2)--(IEF45c-3).  Its backward-compatible
+aggregate is exactly
+\[
+ \texttt{maximum\_eikonal\_ode\_residual}
+ =\max_i\left\{\epsilon_{s,i},\epsilon_{\log A,i}\right\}.       \tag{IEF45c-4}
+\]
+Despite its retained manifest name, (IEF45c-4) is an integration-error
+estimate, not the finite-difference quantity
+
+\[
+ \left|\frac{\Delta s_\sigma}{\Delta r}
+              -h(s_{\mathrm{mid}},r_{\mathrm{mid}})\right| .     \tag{IEF45c-5}
+\]
+The latter includes the midpoint quadrature defect produced by the curvature
+of the physical null ray.  It can therefore remain larger than the RK4
+integration error even when the ray is accurately integrated.  It is not used as an acceptance residual.
+The null-map preflight applies the same, unchanged \(2\times10^{-5}\)
+ceiling to each authenticated extraction component and to their aggregate.
+This integration-error estimate separates RK4 error from the physical
+curvature of the ray while preserving the acceptance tolerance.  The later same-event history comparator solves a
+different initial-value problem for each sampled event.  It deliberately
+uses the still more conservative raw \(n\)-versus-\(2n\) change described
+below, rather than assuming that a ray crossing time-interpolation knots is
+already in the smooth fourth-order Richardson regime.
+
+The binary null slice and its manifest, crossing table, mapped field slice,
+accepted-step ledger, and dense donor history are all recorded with the
+256-bit Secure Hash Algorithm (SHA-256).  A
+fresh EF run refuses to start without this solved-eikonal artifact and verifies
+the base initial condition (IC), realized Schwarzschild IC, sampling
+realization, grid, angular
+controls, marker identities, and all nested artifact hashes.
+
+\paragraph{Separated map worldtube and evolution boundary.}
+The outer radius is part of the characteristic initial-data problem, not a
+harmless output choice.  VENUS therefore distinguishes the exact mesh-face
+worldtube \(R_B\), set by \code{--ef-map-worldtube-radius}, where the numerical
+eikonal solve is normalized, from the full EF evolution boundary \(R_E\), set
+by \code{--high-r-max}.  They obey
+\[
+ 0<R_B\leq R_E,\qquad R_B>2M_{\rm null}.                \tag{IEF45c-6}
+\]
+The legacy case is \(R_B=R_E\).  When \(R_B<R_E\), every matter worldline has
+already crossed the selected null surface strictly inside \(R_B\), so the
+remainder of that \emph{initial null slice} is known analytically.  Define
+\[
+ \Delta r_\star(r;R_B,M)=
+ \begin{cases}
+ r-R_B, &M=0,\\[2pt]
+ (r-R_B)+2M\log\!\left(\dfrac{r-2M}{R_B-2M}\right),&M>0,
+ \end{cases}                                           \tag{IEF45c-7a}
+\]
+which is \(r_\star(r)-r_\star(R_B)\) without a logarithm of a dimensionful
+quantity.  If \(s=-\tau\), and \(s_B\) is the reverse-donor time at the
+worldtube, the exact extension for \(R_B<r\leq R_E\) is
+\begin{align}
+ s(r)&=s_B+\Delta r_\star(r;R_B,M_{\rm null}),&
+ \tau(r)&=-s_B-\Delta r_\star(r;R_B,M_{\rm null}),
+                                                               \tag{IEF45c-7b}\\
+ m(r)&=M_{\rm null},&
+ a(r)&=1-\frac{2M_{\rm null}}r,                       \tag{IEF45c-7c}\\
+ A(r)&=F(r)=b(r)=1,&
+ T_{ab}(r)&=S(r)=0.                                    \tag{IEF45c-7d}
+\end{align}
+In particular, \(F=1\), not \(1/a\).  The radial derivative of the inverse
+time map at fixed \(v\) is instead
+\[
+ \left.\frac{\partial\tau}{\partial r}\right|_v
+ =-\frac{F}{ab}=-\frac1a,                              \tag{IEF45c-7e}
+\]
+exactly as the vacuum tortoise relation requires.  The mass in this extension
+is \(M_{\rm null}\), the ADM mass on the extracted null slice; using
+\(M_{\rm family}\) or the independently deposited \(M_{\rm dep}\) would
+introduce a boundary inconsistency.
+
+The eikonal construction labels the extracted surface by \(v=-T_{\rm donor}\)
+at the normalized worldtube.  Runtime output shifts only the additive time
+origin:
+\[
+ \boxed{\ \widehat v:=v+T_{\rm donor}\ },
+ \qquad \widehat v=0\quad\hbox{on the imported initial null slice}.          \tag{IEF45c-7f}
+\]
+The manifest names the same quantity
+\(\code{v_bar=v+ef_v_offset}\), with
+\(\code{ef_v_offset}=T_{\rm donor}\).  No metric or momentum component is
+changed by this constant relabelling.
+
+This split is accepted only after all of the following fail-closed gates:
+\begin{enumerate}
+\item \(R_B\) is an exact non-inner edge of the full \(R_E\) mesh, so the
+      numerically mapped cells form one authenticated grid prefix;
+\item the last four donor cells below \(R_B\) have vanishing matter sources,
+      the discrete vacuum value \(e^{\lambda+\mu}=1\) satisfies its recorded
+      \(O(\Delta r_B^2)\) tolerance, and every donor worldline remains at
+      least four local cells inside \(R_B\);
+\item every persistent marker ID has one and only one surface crossing, each
+      crossing has four-cell clearance from \(R_B\), and no marker reaches
+      the finite evolution boundary first;
+\item the complete numerical surface lies inside the dense donor history,
+      \(A>0\), \(F>0\), \(a>0\) throughout the overlap, and the two separate
+      RK4 step-doubling errors in (IEF45c-2)--(IEF45c-4) pass;
+\item the analytic part has zero source, constant \(m=M_{\rm null}\),
+      \(A=F=b=1\), positive \(a\), and vanishing field and inverse-map
+      residuals at their recorded tolerance.
+\end{enumerate}
+The version-2 binary and JavaScript Object Notation (JSON) manifest record
+\(R_B\), \(R_E\), the analytic
+extension start index, separate prefix and full-grid fingerprints, both
+clearances, vacuum-source and \(b\)-normalization audits, and all analytic
+extension residuals.  These metadata and the slice, crossing table,
+accepted-step ledger, donor history, physical IC, and nested hashes are
+authenticated again on EF import and resume.
+
+The analytic continuation in (IEF45c-7a)--(IEF45c-7e) constructs only the
+vacuum part of the \emph{initial} characteristic surface.  It does not freeze
+the region \(R_B<r<R_E\) during evolution: after import the EF constraints and
+characteristics are evolved on the complete \(R_E\) grid.  Nor do values of
+\(R_B,R_E,T_{\rm donor}\), marker count, or grid resolution transfer from an
+older Gaussian-shell experiment.  The bound static-shell family below must
+derive all of them from its own local crossing/vacuum preflight before any
+long job is submitted.
+
+\paragraph{Slice caveat.}
+Equations (IEF39)--(IEF44) are an algebraic/radial map only for a static
+solution.  Dynamically, (IEF38a)--(IEF40e) must first determine which events
+correspond.  The pointwise momentum identity (IEF42) remains exact at those
+events, but the pointwise conversion helpers in the EF kernel neither solve
+the eikonal PDE nor resample a hypersurface; the separate authenticated
+coordinate-map pipeline described below performs those operations.  A
+\(\tau={\rm const}\) surface is spacelike whereas a
+\(v={\rm const}\) surface is null, and \(v=0\) generally samples different SC
+times at different radii.  A rigorous cross-coordinate validation should
+therefore use a transformed static state, an analytic worldline, or
+the same physical events in a dynamical spacetime.  Merely copying the same radial arrays
+into both modules does not create identical physical initial hypersurfaces.
+
+\paragraph{What equality of the two coordinate descriptions means.}
+This point is essential for interpreting any SC--EF comparison.  The
+distribution function is a scalar on the future mass shell, not an array
+whose entries may be compared at the same pair of numerical time and radial
+indices.  At one and the same event, with the momenta related by
+(IEF42)--(IEF44), scalar invariance is the statement
+\[
+ f_{\rm EF}\bigl(v(\tau,r),r,P,\eta\bigr)
+ =f_{\rm SC}\bigl(\tau,r,w,\eta\bigr).             \tag{IEF45d}
+\]
+There is no multiplicative Jacobian in (IEF45d).  A histogram density per
+coordinate momentum interval does carry one: if
+\(n_w\,\dd w=n_P\,\dd P\), then
+\[
+ n_P=n_w\left|\frac{\partial w}{\partial P}\right|,
+ \qquad
+ \frac{\partial w}{\partial P}
+ =\frac{\sqrt a}{2}\left(1+\frac{\chi}{aP^2}\right). \tag{IEF45e}
+\]
+WPIC marker rest weights are invariant particle-number weights and therefore
+remain unchanged; (IEF45e) is relevant only when the empirical measure is
+converted into a density in a chosen momentum coordinate.
+The forward Jacobian and the reduced invariant mass-shell measure make this
+distinction explicit:
+\[
+ \frac{\partial P}{\partial w}=\frac P\epsilon>0,
+ \qquad
+ \boxed{\;\frac{\dd P}{P}=\frac{\dd w}{\epsilon}\;},
+ \qquad
+ \dd\Pi_{\rm red}
+ =\frac{2\pi}{r^2}\frac{\dd w\,\dd\eta}{\epsilon}
+ =\frac{2\pi}{r^2}\frac{\dd P\,\dd\eta}{P}.      \tag{IEF45e-1}
+\]
+Thus substituting the scalar relation (IEF45d) and (IEF45e-1) into the
+stress integrals reproduces the same tensor without an ad hoc rescaling of
+\(f\).
+
+A finite WPIC realization does not provide a pointwise value of the smooth
+continuum function \(f\).  It represents an empirical mass-shell measure,
+defined transparently by its action on any smooth test function \(\psi\).
+Let \(\Sigma\) be the physical hypersurface being sampled, let the same symbol
+also denote the set of marker worldlines intersecting it, and let \(W_p\) be
+the invariant rest-number weight of marker \(p\).  Then
+\[
+ \widehat f_{\Sigma}[\psi]
+ :=\sum_{p\in\Sigma}W_p\,
+   \psi(r_p,\pi_p,\eta_p),                              \tag{IEF45e-1a}
+\]
+where \(\pi_p\) denotes the chosen radial momentum coordinate:
+\(\pi_p=w_p\) on an SC slice and \(\pi_p=P_p\) on an EF slice.  Equality
+of the sampled distribution means equality of this measure after each marker
+worldline is intersected with the same physical hypersurface and its momentum
+is transformed with (IEF42)--(IEF44).  The strict certificate therefore
+authenticates unique persistent identifiers (IDs) and source IDs, invariant
+\(W_p\) and
+\(\eta_p\), mapped event positions, and transformed momenta.  Equality of all
+of those atoms is equality of (IEF45e-1a) for every test function; the code
+does not pretend to reconstruct arbitrary pointwise probes from a finite
+marker set.  When a crossing or trajectory table supplies both
+\code{f_schwarzschild} and \code{f_eddington_finkelstein}, their scalar
+values are compared too, but explicit scalar-\(f\) columns are optional.
+Thus two noisy coordinate histograms are never treated as pointwise samples
+of \(f\).  A separately chosen smooth reconstruction may be compared using
+(IEF45d)--(IEF45e), but that is an additional diagnostic, not a replacement
+for empirical-measure identity.  Stress-tensor parity is checked independently
+from the deposited moments below; agreement of finitely many moments alone
+would not prove equality of the distribution.
+
+There is also a spatial Jacobian because the two distributions live on
+different hypersurfaces.  The reduced canonical phase measures are
+\[
+ \dd\Gamma_\tau=8\pi^2e^\lambda\,
+       \dd r\,\dd w\,\dd\eta,
+ \qquad
+ \dd\Gamma_v=8\pi^2\,
+       \dd r\,\dd P\,\dd\eta .                       \tag{IEF45e-2}
+\]
+Hamiltonian Liouville flow maps the first measure to the second when one
+follows each worldline from its \(\tau\)-slice intersection to its
+\(v\)-slice intersection.  The change in the intersection radius supplies
+the spatial factor that complements \(\partial P/\partial w\).  This is why
+a marker's represented particle number is copied unchanged; multiplying its
+weight by either momentum Jacobian would count that factor twice.
+
+The same distinction applies to moments.  Raw coordinate components of a
+tensor are not expected to have the same numbers.  In SC variables the radial
+stress-energy block reconstructed from the physical moments in (EWP10) is
+\[
+ T^{\rm SC}_{\tau\tau}=e^{2\mu}\rho,\qquad
+ T^{\rm SC}_{\tau r}=-e^{\mu+\lambda}j,\qquad
+ T^{\rm SC}_{rr}=e^{2\lambda}p_{\rm rad}.             \tag{IEF45f}
+\]
+The sign in the middle identity agrees with
+\(\lambda_\tau=-4\pi r e^{\lambda+\mu}j\).
+Let \(\zeta:=A h=v_r=(ab)^{-1}\), where \(\zeta\) is the forward null
+slope and the last equality follows from
+(IEF38d).  Pulling the EF tensor back with
+\(v_\tau=A\), \(v_r=\zeta\), and \(r_\tau=0\) gives
+\begin{align}
+ T^{\rm SC}_{\tau\tau}
+ &=A^2T^{\rm EF}_{vv},                                      \tag{IEF45g}\\
+ T^{\rm SC}_{\tau r}
+ &=A\bigl(\zeta T^{\rm EF}_{vv}+T^{\rm EF}_{vr}\bigr),   \tag{IEF45h}\\
+ T^{\rm SC}_{rr}
+ &=\zeta^2T^{\rm EF}_{vv}+2\zeta T^{\rm EF}_{vr}
+   +T^{\rm EF}_{rr}.                                      \tag{IEF45i}
+\end{align}
+The angular components are unchanged because the angular coordinates are
+unchanged.  Equivalently, the inverse formulas follow from
+\(\tau_v=F\), \(\tau_r=-F/(ab)=-h\).  These identities require all of
+\(T_{vv},T_{vr},T_{rr}\), not just the two source combinations used by the
+EF radial constraints.  Equations (IEF18)--(IEF20) specify how the diagnostic
+deposition must construct them.
+Writing the inverse formulas in terms of the polar physical moments exposes
+every sign and is useful for a direct code test.  The second line below
+repeats the source identity (IEF45i-2):
+\begin{align}
+ T^{\rm EF}_{vv}&=F^2e^{2\mu}\rho,&
+ T^{\rm EF}_{vr}&=-F e^{\lambda+\mu}(\rho+j)
+                 =-b(\rho+j),                        \tag{IEF45i-1}\\
+ T^{\rm EF}_{rr}&=e^{2\lambda}(\rho+2j+p_{\rm rad}),&
+ S&=-\frac2bT^{\rm EF}_{vr}-aT^{\rm EF}_{rr}
+   =\rho-p_{\rm rad}.                                    \notag
+\end{align}
+For one-direction tangential pressure
+\[
+ p_\perp=\frac{2\pi}{r^4}\int_0^\infty\!\!\int_0^\infty
+       \frac{\eta}{\epsilon}f\,
+       \dd\eta\,\dd w,
+ \qquad T_{\theta\theta}=r^2p_\perp,\qquad
+ T_{\phi\phi}=\sin^2\theta\,T_{\theta\theta}.       \tag{IEF45i-3}
+\]
+Equations (IEF45e-1) and (IEF42) turn (IEF18)--(IEF23) into
+(IEF45i-1)--(IEF45i-3) term by term.
+
+The coordinate Jacobian must likewise be applied to the metric.  The pullback
+of (IEF2) to \((\tau,r)\) is
+\begin{align}
+ (g_{\tau\tau})_{\rm pullback}&=-ab^2A^2,                 \tag{IEF45j}\\
+ (g_{\tau r})_{\rm pullback}&=-ab^2A\zeta+bA,            \tag{IEF45k}\\
+ (g_{rr})_{\rm pullback}&=-ab^2\zeta^2+2b\zeta.          \tag{IEF45l}
+\end{align}
+For an exact map these are respectively
+\(-e^{2\mu},0,e^{2\lambda}\).  Thus ``the metric is the same'' means that
+(IEF45j)--(IEF45l), evaluated at mapped events, agree with the SC tensor; it
+does not mean that the raw arrays \((a,b)\) equal \((\lambda,\mu)\).
+The areal radius, Misner--Sharp mass
+\(m=r(1-g^{ab}\partial_a r\partial_b r)/2=r(1-a)/2\), and scalar contractions
+of \(T_{ab}\) provide additional coordinate-independent comparisons.
+
+\paragraph{Solving the dynamical map numerically.}
+For a complete SC spacetime history, define
+\(h(\tau,r)=e^{\lambda-\mu}\), impose
+\(v(\tau,R_B)=\tau\) on the common outer vacuum worldtube, and solve
+the advanced eikonal equation (IEF38a), equivalently
+\[
+ \boxed{\ v_r-hv_\tau=0,\qquad v_\tau>0\ },            \tag{IEF45m}
+\]
+with the plus/ingoing root.  For one ingoing null slice labelled by its
+boundary value \(v_{\cal B}\), its SC time \(\tau_{v_{\cal B}}(r)\) and the
+inverse Jacobian factor \(F=\partial\tau/\partial v\) may be obtained without
+finite-differencing two nearly equal null labels:
+\begin{align}
+ \frac{\dd\tau_{v_{\cal B}}}{\dd r}
+ &=-h\bigl(\tau_{v_{\cal B}}(r),r\bigr),
+ &\tau_{v_{\cal B}}(R_B)&=v_{\cal B},                  \tag{IEF45n}\\
+ \frac{\dd F}{\dd r}
+ &=-\partial_\tau h\bigl(\tau_{v_{\cal B}}(r),r\bigr)F,
+ &F(R_B)&=1.                                             \tag{IEF45o}
+\end{align}
+Then \(A=F^{-1}\) and \(b=F e^{\lambda+\mu}\) on that slice.  Equations
+(IEF45n)--(IEF45o) are the characteristic form of (IEF38c), not an additional
+assumption.
+
+Conversely, an EF history determines the SC label from the inverse eikonal
+equation
+\[
+ \boxed{\ \tau_r+\frac{1}{ab}\tau_v=0,\qquad \tau_v>0\ },
+ \qquad \tau(v,R_B)=v .                                 \tag{IEF45p}
+\]
+Along a surface of constant boundary SC label \(\tau_{\cal B}\), its EF
+advanced time satisfies
+\[
+ \frac{\dd v_{\tau_{\cal B}}}{\dd r}
+ =\frac{1}{a(v_{\tau_{\cal B}}(r),r)
+             b(v_{\tau_{\cal B}}(r),r)},
+ \qquad v_{\tau_{\cal B}}(R_B)=\tau_{\cal B}.         \tag{IEF45q}
+\]
+The same-event comparator also carries the coordinate Jacobians.  Directly
+advancing a Jacobian sensitivity can give a negative number when an explicit
+RK stage is stiff, although the exact, future-oriented map cannot change its
+sign.  The comparator therefore advances logarithmic sensitivities.  Its
+forward trace starts at the sampled SC event \((\tau_*,r_*)\), not at the
+outer boundary:
+\begin{align}
+ \frac{\dd\tau_{\rm tr}}{\dd r}&=-h(\tau_{\rm tr},r),&
+ \tau_{\rm tr}(r_*)&=\tau_*,\notag\\
+ \frac{\dd\ell_A}{\dd r}&=-\partial_\tau h(\tau_{\rm tr},r),&
+ \ell_A(r_*)&=0,\qquad
+ A(\tau_*,r_*)=e^{\ell_A(R_B)}>0 .          \tag{IEF45q-1}
+\end{align}
+Here the subscript ``tr'' means the value being carried along the trace.
+Because \(v=\tau\) at \(R_B\), the endpoint
+\(\tau_{\rm tr}(R_B)\) is the advanced-time label \(v(\tau_*,r_*)\), up to
+the recorded constant time-origin offset.  The tangent equation for
+\(\ell_A\) is just the derivative of the ray endpoint with respect to its
+starting time.  The inverse trace starts instead at the sampled EF event
+\((v_*,r_*)\):
+\begin{align}
+ \frac{\dd v_{\rm tr}}{\dd r}&=\zeta_{\rm inv}(v_{\rm tr},r),&
+ v_{\rm tr}(r_*)&=v_*,\notag\\
+ \frac{\dd\ell_F}{\dd r}&=\partial_v\zeta_{\rm inv}(v_{\rm tr},r),&
+ \ell_F(r_*)&=0,\qquad
+ F(v_*,r_*)=e^{\ell_F(R_B)}>0,               \tag{IEF45q-2}\\
+ h&=e^{\lambda-\mu},&\zeta_{\rm inv}&:=(ab)^{-1}.      \tag{IEF45q-3}
+\end{align}
+At the inverse endpoint, \(v_{\rm tr}(R_B)\) gives the reconstructed SC time
+\(\tau(v_*,r_*)\), again after applying the recorded time-origin offset.
+Define the two terminal log Jacobians
+\(q_A:=\ell_A(R_B)=\log A(\tau_*,r_*)\) and
+\(q_F:=\ell_F(R_B)=\log F(v_*,r_*)\).  These are the values serialized by the
+comparator.  Advancing \(\ell_A\) and \(\ell_F\) is an exact change of
+variables, not an approximation or a sign repair.  A finite terminal value
+always gives a positive Jacobian; a value outside floating-point range makes
+the audit inconclusive and is never clipped.
+
+The signs look opposite if one writes differential equations for the
+Jacobian \emph{fields} with the outer-boundary value fixed, because the code
+instead propagates an identity sensitivity from the event outward.  Along
+the corresponding constant-label rays, the field equations are
+\[
+ \boxed{\quad
+ \left.\frac{\dd\ln A}{\dd r}\right|_{v}
+     =+\partial_\tau e^{\lambda-\mu},
+ \qquad
+ \left.\frac{\dd\ln F}{\dd r}\right|_{\tau}
+     =-\partial_v\!\left(\frac1{ab}\right)
+ \quad} .                                             \tag{IEF45q-3a}
+\]
+Thus (IEF45q-1)--(IEF45q-2) and (IEF45q-3a) describe the same derivatives
+with opposite integration orientations.  Each code trace initializes its
+sensitivity to one at \(r_*\), so its logarithm starts at zero.
+
+The comparator reconstructs the \emph{same spatial metric interpolant} used
+by the particle and null-map pushers.  Its comparison must therefore include
+both cell-center and face data, since together they determine the metric
+between stored points.  In one half-cell let \(x_0<x_1\)
+be the face and center radii (or the center and face radii), set
+\(\xi=(r-x_0)/(x_1-x_0)\), and attach subscripts \(0,1\) to the corresponding
+endpoint data.  The production SC sampler uses
+\begin{align}
+ \lambda(r)&=(1-\xi)\lambda_0+\xi\lambda_1,             \tag{IEF45q-3b}\\
+ \mu(r)&=(2\xi^3-3\xi^2+1)\mu_0
+ +(\xi^3-2\xi^2+\xi)\Delta r\,d_0 \notag\\
+ &\quad+(-2\xi^3+3\xi^2)\mu_1
+ +(\xi^3-\xi^2)\Delta r\,d_1,                         \tag{IEF45q-3c}
+\end{align}
+where \(\Delta r=x_1-x_0\) and \(d_0,d_1\) are the saved radial derivatives
+of \(\mu\).  Equation (IEF45q-3c) is an ordinary cubic joining the saved
+endpoint values and slopes.  Its slope limiter is also reproduced exactly:
+with secant \(\delta=(\mu_1-\mu_0)/\Delta r\), both slopes are set to zero if
+\(\delta\leq0\).  Otherwise negative slopes are replaced by zero; writing
+\(\alpha=d_0/\delta\) and \(\beta=d_1/\delta\), both remaining slopes are
+multiplied by \(3/\sqrt{\alpha^2+\beta^2}\) when
+\(\alpha^2+\beta^2>9\).  This prevents an interpolated lapse overshoot
+between two valid stored points.
+
+The code then forms
+\(h=\exp[\lambda(r)-\mu(r)]\) separately on the two saved time slices and
+linearly interpolates those two values in time.  The order matters:
+exponentiating node values first, or linearly joining center values across a
+whole cell, defines a different discrete spacetime.  On the EF side, the
+production sampler linearly joins face and center values of \(a\) and \(b\)
+on each half-cell; the comparator does the same before interpolating those
+values in \(v\) and differentiating the resulting piecewise-linear time
+history in (IEF45q-2).
+
+The SC profile therefore saves the left/right face radii, face values of
+\(\lambda,\mu,\mu_r\), and the center value of \(\mu_r\) beside every center
+row.  The EF profile saves the same face locations and the left/right face
+values of \(a,b\).  The authenticated \code{VENUSSCHIST1} version-2 donor
+history saves the full SC face reconstruction for every negative-\(\tau\)
+snapshot as well.  This last point is essential because an early same-event
+ray can enter the time-reversed donor segment.  A legacy center-only profile
+or version-1 donor may still be inspected diagnostically, but it is marked as
+using a different center-to-center interpolant and cannot issue a production
+parity certificate.  This fail-closed rule prevents a substep-independent
+interpolation floor from being mistaken for a failure of RK4 convergence.
+
+Let subscripts \(n\) and \(2n\) denote otherwise identical per-cell RK4
+traces.  The history-comparison gate uses
+\begin{align}
+ E_{\rm fwd}
+ &=\max\!\left(
+      |v_{2n}-v_n|,
+      |q_{A,2n}-q_{A,n}|
+    \right),                                           \tag{IEF45q-4}\\
+ E_{\rm inv}
+ &=\max\!\left(
+      |\tau_{2n}-\tau_n|,
+      |q_{F,2n}-q_{F,n}|
+    \right).                                           \tag{IEF45q-5}
+\end{align}
+Both must be at most \(2\times10^{-5}\).  No factor of \(15\) and no division
+by \(|q_A|\) or \(|q_F|\) is used here.  The absolute change in \(\log A\)
+directly measures the multiplicative change in \(A\); dividing it by a large
+\(|\log A|\) could hide a percent-level Jacobian error.  A Richardson factor
+would additionally presume a demonstrated smooth fourth-order regime, which
+piecewise-linear saved histories need not have when a ray crosses a time
+knot.  Increasing the substeps must make (IEF45q-4)--(IEF45q-5) converge at
+the unchanged ceiling before a coordinate certificate can pass.
+
+The implementation follows the displayed definition literally:
+\codesource{Dynamic SC--EF coordinate comparator}{\path{cpu/tools/compare_wpic_dynamic_coordinates.py}}{Forward and inverse eikonal step-refinement gate}
+\begin{lstlisting}[language=Python,basicstyle=\ttfamily\scriptsize]
+time_change = abs(time_2n - time_n)
+log_jacobian_change = abs(log_jacobian_2n - log_jacobian_n)
+step_refinement_error = max(time_change, log_jacobian_change)
+if step_refinement_error > eikonal_convergence_tolerance:
+    status = "forward_eikonal_not_converged"  # or inverse
+\end{lstlisting}
+The output records the two component changes, their maximum, the substep
+count, and the event with the largest error.  These values reproduce the
+acceptance decision directly from the saved comparison.
+
+For a production parity campaign, the integer \(n\) is not an implicit code
+default.  The submission helper requires one explicitly chosen positive value
+through \code{VENUS_EIKONAL_SUBSTEPS}.  That same value is passed to all four
+resolution--realization diagnostics, written into the convergence evidence,
+and required again by the terminal certificate.  Each diagnostic evaluates
+both \(n\) and \(2n\), tests their raw difference in
+(IEF45q-4)--(IEF45q-5), and keeps the more refined \(2n\) solution for the
+same-event comparison.  A missing, zero, or inconsistent value stops the
+chain; it is never replaced silently by a local default.
+
+The calculation records the source identities for its numerical evidence.  Its Slurm
+scripts and scientific Python tools are fixed under the staged
+\code{VENUS_SOURCE_ROOT}.  Their SHA-256 identities are measured at
+submission, checked before and after each dependent job, and carried into the
+convergence record and final certificate.  Environment variables cannot
+replace these production tools or Slurm scripts.  The hash checks bind each result to the comparator and convergence code
+that produced it.
+
+The two independently reconstructed maps must close:
+\(\tau_{\rm EF}(v_{\rm SC}(\tau,r),r)=\tau\).  Required numerical residuals
+are
+\begin{align}
+ R_v&=-e^{-2\mu}v_\tau^2+e^{-2\lambda}v_r^2,           \tag{IEF45r}\\
+ R_\tau&=\tau_r+(ab)^{-1}\tau_v,                       \tag{IEF45s}\\
+ R_{\rm inv}&=\tau_{\rm EF}(v_{\rm SC}(\tau,r),r)-\tau.\tag{IEF45t}
+\end{align}
+They must be reported, rather than assuming the static tortoise formula in a
+time-dependent region.
+The Jacobian part of the closure test is evaluated without subtracting two
+large products,
+\[
+R_{AF}=\left|\operatorname{expm1}(q_A+q_F)\right|
+       =|AF-1|,                                        \tag{IEF45t-1}
+\]
+Here \(\operatorname{expm1}(x)\) is the floating-point operation that
+evaluates \(e^x-1\) accurately when \(x\) is small.
+Any exponential overflow fails closed.  The comparator's dimensionless
+time-closure gate is exactly
+\[
+ E_{\rm comp}^{\tau}
+ =\frac{|\tau_{\rm EF}(v_{\rm SC}(\tau,r),r)-\tau|}
+        {\max(1,|\tau|,|\tau_{\rm EF}|)},
+ \qquad
+ \max(E_{\rm comp}^{\tau},R_{AF})\le5\times10^{-4}    \tag{IEF45t-2}
+\]
+by default.  Thus the raw eikonal step-refinement test
+(IEF45q-4)--(IEF45q-5) and the normalized map-composition test are distinct
+quantities and are reported separately.
+
+\paragraph{Dynamical initial data on an ingoing null surface.}
+The coordinate-neutral marker file currently used by the driver fixes the
+same random realization, weights, \(r,w,\eta\), and IDs.  That is valuable
+for controlling particle-in-cell (PIC) noise, but by itself it is
+\emph{not} a transformed
+dynamical initial data set: inserting it on both \(\tau=0\) and \(v=0\)
+places the markers at different spacetime events.  A production comparison of the same physical evolution requires
+characteristic extraction:
+\begin{enumerate}
+\item Evolve and densely checkpoint the SC metric and every marker worldline
+      over the time interval crossed by a chosen ingoing null surface.
+\item Solve (IEF45n)--(IEF45o) from the outer vacuum worldtube.  For every
+      marker ID, find the unique intersection of its timelike worldline with
+      \(\tau=\tau_{v_{\cal B}}(r)\).  A bracketed scalar root may be used:
+      \(G_p(\tau)=v(\tau,r_p(\tau))-v_{\cal B}\).  Since the SC
+      characteristic has
+      \(\dd r_p/\dd\tau=e^{\mu-\lambda}w_p/\epsilon_p\),
+      \[
+       \frac{\dd G_p}{\dd\tau}
+       =A\left(1+\frac{w_p}{\epsilon_p}\right)>0,     \tag{IEF45u}
+      \]
+      where \(\epsilon_p>|w_p|\) for a massive marker.  Hence a crossing,
+      once bracketed, is unique and future oriented.
+\item At each intersection retain its invariant rest weight, \(\eta\), and
+      IDs, and transform its covector using (IEF42).  Interpolate the SC metric
+      to the same null surface and construct \(a=e^{-2\lambda}\) and
+      \(b=F e^{\lambda+\mu}\).
+\item Deposit the extracted marker ensemble and require the EF constraint
+      solution to converge to those transformed metric and stress-tensor
+      data.  Only this extracted artifact is a valid EF initial state for the
+      dynamical parity run.
+\item In the common future, solve (IEF45m) and (IEF45p), intersect paired
+      marker worldlines with common physical slices, and compare marker
+      \((r,w,\eta)\), the scalar distribution via (IEF45d), all moments via
+      (IEF45f)--(IEF45i), and the metric via (IEF45j)--(IEF45l).
+\end{enumerate}
+The SC history must extend far enough that the entire null slice, including
+its innermost point, lies in the stored domain.  A surface truncated before
+all marker intersections is not valid characteristic data.
+
+\paragraph{Well-posedness and discretization domain.}
+On a smooth polar exterior, \(c=e^{\mu-\lambda}\) is positive and locally
+Lipschitz.  The ray equation in (IEF38c-1) then has unique solutions, so two
+radial ingoing characteristics cannot cross at \(r>0\).  The spherical
+congruence does focus at \(r=0\), which is its ordinary central caustic and
+the endpoint of this one-sided areal-radius map.  The other endpoint is a
+polar-coordinate horizon: the construction requires
+\[
+ a=e^{-2\lambda}>0,\qquad A=v_\tau>0,\qquad
+ \det\frac{\partial(v,r)}{\partial(\tau,r)}=A,        \tag{IEF45v}
+\]
+and becomes singular in the polar variables as \(a\to0^+\).  These are
+limitations of the overlap chart, not of the EF evolution.  Eventwise parity
+is required everywhere that (IEF45v) holds; after the EF run crosses
+\(a=0\), there is no SC chart against which to compare it.
+
+For a stored SC history, VENUS may integrate (IEF45n) with an adaptive
+ordinary differential equation (ODE)
+scheme and spacetime interpolation of \(h\).  Integrating
+\[
+ \frac{\dd\log F}{\dd r}=-\partial_\tau h,\qquad
+ \log F(R_B)=0                                           \tag{IEF45w}
+\]
+instead of \(F\) preserves \(F>0\) exactly.  An equivalent full-grid method
+evolves \(s=v_r>0\) with the conservative equation
+\[
+ s_\tau-\partial_r(cs)=0,\qquad A=cs,               \tag{IEF45x}
+\]
+using a positivity-preserving upwind flux.  In either formulation, the
+spacetime interpolation, marker dense output, and scalar root solve must be
+at least as accurate as the SC and EF discretizations being compared.
+Otherwise the coordinate mapper, rather than either Einstein--Vlasov solver,
+sets the observed parity error.
+
+No coverage percentage by itself establishes coordinate equivalence.  The
+implemented minimum certificate is a \(2\times2\) matrix: two jointly refined
+radial/time resolutions and two independent deterministic quiet-PIC
+realizations at each resolution.  The resolution pair estimates truncation
+change, while the realization pair exposes the sampled-measure floor; neither
+pair alone substitutes for the other.  A third resolution or additional
+realizations are strongly recommended near marginal tolerances, but are not
+silently claimed by the current automated gate.  The raw eikonal
+step-refinement changes and the inverse-closure errors must be smaller than
+the field interpolation error;
+the SC--EF differences in pulled-back metric, stress tensor,
+Misner--Sharp mass, and every available marker audit must decrease under
+refinement and become no larger
+than the authenticated truncation envelope plus the measured PIC floor.
+Cells with negligible matter are excluded from relative moment norms but
+retained in absolute and metric norms.  Passing only fingerprints, ADM mass,
+compactness milestones, one resolution, or one realization is a smoke test,
+not proof of dynamical coordinate parity.
+
+Here a PIC \emph{realization} means one deterministic choice of the
+Cranley--Patterson shifts in (IEF-S23).  It samples the same continuum family
+with different marker locations and weights; it is not a different physical
+model.  A \emph{resolution level} means one joint choice of radial spacing,
+maximum timestep, and marker count.  Coordinate convergence means that the
+same-event map, metric, stress/moment, and available empirical-measure errors
+decrease from the coarse level to the fine level until the change is no
+larger than the difference between the two realizations.  This explains why
+neither two grids with one realization nor two realizations on one grid are
+sufficient.
+
+\paragraph{Exact common-event domain.}
+The coordinate comparison covers the connected exterior in which both
+histories describe the same physical events.  Physical chart and data
+boundaries determine this domain.  A numerical map failure within it remains
+a failed comparison.  Let
+\begin{align}
+ r_-&=\max(r_{\min}^{\rm SC},r_{\min}^{\rm EF},r_{\min}^{\rm request}),&
+ r_+&=\min(r_{\max}^{\rm SC},r_{\max}^{\rm EF},R_B,
+           r_{\max}^{\rm request}).                    \tag{IEF45y}
+\end{align}
+The code samples ordered SC times \(\{\tau_i\}\) and ordered radii
+\(\{r_j\}\subset[r_-,r_+]\).  At a fixed \(\tau_i\), it scans inward from the
+largest sampled radius.  Only three physical or data boundaries may end the
+candidate exterior: the complete forward ray has left the stored SC history,
+the mapped event has left the stored EF history, or the overlap chart has
+reached
+\[
+ a_{\rm SC}(\tau,r)>a_{\min},\qquad
+ a_{\rm EF}(v(\tau,r),r)>a_{\min},\qquad
+ a_{\min}=10^{-3}\ \hbox{by default}.                  \tag{IEF45z}
+\]
+These boundaries have the machine-readable statuses
+\path{outside_sc_eikonal_domain}, \path{outside_ef_domain}, and
+\path{at_or_beyond_horizon}.  The radial candidate set \(D_i\) extends inward from the common outer
+worldtube to the first such boundary.  It therefore forms one unbroken
+exterior interval, fixed before the numerical errors are assessed.
+
+A failed integrator, failed inverse composition, or failed metric identity is
+\emph{not} an allowed boundary.  Such a sample remains inside \(D_i\) as an
+unexplained hole and fails the certificate.  In particular, an event whose
+raw forward step-doubling change (IEF45q-4) is too large keeps the status
+\path{forward_eikonal_not_converged}; it is never re-labelled as outside the
+EF history by using the time returned by that nonconverged trace.  Likewise,
+valid-looking samples that reappear inward of a non-horizon boundary are
+reported as disconnected support rather than being silently admitted.
+
+Let \(N_r\) be the number of sampled radii, and let \({\cal T}\) be the
+longest contiguous block of sampled times for which each exterior suffix
+covers at least 95 percent of those radii.  A tie is resolved in favour of
+the earlier block.  With \(N_i=|D_i|\), \(N_i^{\rm map}\) the number of
+successfully mapped events in that suffix, and \(N_{\rm full}\) the number
+of time slices with every event in their suffix mapped, the reported
+coverages are exactly
+\begin{align}
+ C_r&=\min_{i\in{\cal T}}\frac{N_i}{N_r},&
+ C_{\rm event}&=
+  \frac{\sum_{i\in{\cal T}}N_i^{\rm map}}
+       {\sum_{i\in{\cal T}}N_i},&
+ C_{\rm time}&=\frac{N_{\rm full}}{|{\cal T}|}.       \tag{IEF45y-1}
+\end{align}
+The strict defaults require
+\[
+ C_r\ge0.95,\qquad C_{\rm event}\ge0.95,\qquad
+ C_{\rm time}\ge0.95,\qquad
+ \sum_{i\in{\cal T}}N_i^{\rm map}\ge64,\qquad
+ N_{\rm full}\ge3,                                   \tag{IEF45y-2}
+\]
+\emph{and} zero unexplained holes.  The apparently redundant coverage
+fractions are retained in the certificate so that the sampled scope remains
+explicit if the sampling policy is extended later.  A gap followed by a
+later qualifying time slice, re-entry after a non-horizon radial boundary, or
+loss of common support before a chart/horizon endpoint all fail closed.
+Initial slices outside the overlap of the two outer clocks and terminal slices
+after a genuine chart cutoff are counted and reported, but are not presented
+as compared events.
+
+Only after \(D_i\) and \({\cal T}\) have been fixed does the comparator rebuild
+the metric, stress, moment, and marker accumulators.  Consequently every norm
+contains exactly the selected common-domain events.  The maximum forward and
+inverse eikonal changes and the inverse-composition errors used as gates are
+also reduced only on this declared domain.  Separate
+\path{all_attempted_maximum_*} fields and the \path{excluded} counters retain
+failures outside it, including outer-clock mismatch, eikonal-domain exits,
+forward or inverse nonconvergence, inverse-composition failure, the horizon
+cutoff, an SC metric-identity failure, and successfully mapped events outside
+the chosen maximal block.  This separation keeps errors within the declared comparison domain in its
+norms and records all excluded attempts separately.
+
+The final certified common time is therefore the end of \({\cal T}\), subject
+to all of (IEF45y-2) and the no-hole/topology tests.  It is never extended by
+copying the EF clock after the polar chart reaches its horizon barrier.
+Events with \(a\le a_{\min}\), and all post-horizon EF events, are explicitly
+outside the coordinate certificate.
+
+\paragraph{Saved-output cadence.}
+The eikonal map interpolates between saved times, so output cadence is part of
+the numerical evidence.  The strict default requirement is
+\[
+ \frac{\max\Delta\tau_{\rm save}}{\min\Delta r_{\rm SC}}\le0.75,
+ \qquad
+ \frac{\max\Delta v_{\rm save}}{\min\Delta r_{\rm EF}}\le0.75. \tag{IEF45aa}
+\]
+If every \(k\)-th accepted step is saved, the conservative setup check
+\(k\,\Delta t_{\max}/\min\Delta r\le0.75\) is sufficient.  A sparse
+science-output cadence can resolve horizon/halo trends while still failing
+(IEF45aa); such output must never be reused as a strict coordinate
+certificate.
+
+\paragraph{Paired-coordinate visualization and its provenance.}
+The tool
+\path{cpu/tools/render_weighted_einstein_vlasov_coordinate_pair_gif.py}
+builds the standard paired Graphics Interchange Format (GIF) animation.  It
+does not align equal printed clock values.  For every displayed overlap frame
+it authenticates the solved-null manifest and donor-v2 history, solves and
+checks both the forward and inverse event maps, and samples SC and EF curves
+at the same spacetime events.  Its three panels show
+\(\log_{10}\rho\) against \(\log_{10}r\), the logarithmic density slope
+against \(\log_{10}r\), and compactness \(2m/r\) against linear \(r\), where
+\(\log_{10}\) is the base-10 logarithm.
+
+After the SC chart ends, the renderer may continue with saved EF slices, but
+those frames are clearly labelled EF-only and are not presented as coordinate
+comparisons.  It writes Portable Network Graphics (PNG) preview frames, an
+exact frame-clock sidecar, and SHA-256 provenance sidecars for the inputs and
+animation.  Therefore the GIF is a reproducible visualization of the
+same-event audit and post-horizon continuation; it is not itself a substitute
+for the strict coordinate certificate.
+
+\paragraph{Output cadence for coordinate comparisons.}
+The coordinate comparison requires output dense enough to resolve the null
+map. For a linear field grid with \(R_E=24\), \(N_r=2048\), and
+\(\Delta t_{\max}=0.004\), the cell width is
+\(\Delta r=24/2048=0.01171875\). Equation (IEF45aa) then permits
+at most \(\code{high-output-steps}=2\). Saving every step satisfies
+this condition. A coarser pair with \(N_r=1024\) and
+\(\Delta t_{\max}=0.008\) has the same ratio. An outcome history may
+use a sparser cadence, while the coordinate comparison must satisfy its
+own sampling criterion.
+
+\paragraph{What is and is not proved about the evolving distribution.}
+The required, hashed marker-crossing table proves empirical-measure equality
+on the imported initial null surface.  Later same-event metric and all
+stress/moment components are tested throughout the common domain.  The
+certifier can additionally audit an authenticated
+\path{sampled_marker_trajectories} artifact on later mapped null surfaces, but
+the present production writer does not emit that optional artifact.  It
+therefore records
+\path{later_trajectory_evidence_present=false}; a passing current certificate
+must not be described as marker-by-marker or pointwise-\(f\) equality at later
+times.  Obtaining that stronger numerical statement requires implementing and
+hashing the later trajectory table.  This limitation does not weaken the
+later metric and moment comparisons that are actually performed.
+
+\subsubsection{Finite-volume WPIC deposition}
+
+The module stores a distinct marker record.  For example, an active marker is
+constructed through the public type and exact field names as follows:
+\codesource{EF marker data object}{\path{cpu/include/ev/weighted_einstein_vlasov_pic_eddington_finkelstein.hpp}}{Public marker fields, state, and validity convention}
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\scriptsize]
+namespace ef = ev::eddington_finkelstein;
+
+ef::Marker marker;
+marker.rest_weight = represented_rest_weight;
+marker.r = initial_areal_radius;
+marker.p_r = initial_canonical_p_r; // strictly positive
+marker.eta = initial_L_squared / 2.0;
+marker.id = persistent_id;
+marker.source_id = source_cell_id;
+marker.state = ef::MarkerState::active;
+\end{lstlisting}
+The conservative radial mesh uses the volume coordinate
+\[
+ \xi=\frac{r^3}{3},\qquad
+ \Delta V_i=4\pi\Delta \xi_i
+ =\frac{4\pi}{3}(r_{i+1}^3-r_i^3).                    \tag{IEF46}
+\]
+The corresponding public constructor is
+\codesource{EF finite-volume field grid}{\path{cpu/include/ev/weighted_einstein_vlasov_pic_eddington_finkelstein.hpp}}{Public grid constructor and origin-parity mesh convention}
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\scriptsize]
+namespace ef = ev::eddington_finkelstein;
+ev::WeightedPICFieldGrid grid =
+    ef::make_field_grid(params, radial_cells);
+\end{lstlisting}
+Let \(\omega_{pi}\) be the CIC or TSC cloud fraction deposited by active
+marker \(p\) into cell \(i\).  CIC (cloud in cell) is the two-cell linear
+shape, and TSC (triangular shaped cloud) is the smoother three-cell quadratic
+shape.  The fractions are nonnegative and sum to one over the receiving
+cells for a marker whose stencil is wholly on the mesh:
+\(\sum_i\omega_{pi}=1\).  Then the implemented shell-extensive sources
+are
+\begin{align}
+ {\cal W}_i&=\sum_p\omega_{pi}W_p,                     \tag{IEF47}\\
+ {\cal R}_i&=\sum_p\omega_{pi}W_pP_p,                  \tag{IEF48}\\
+ {\cal S}_i&=\sum_p\omega_{pi}W_p
+       \frac{1+2\eta_p/r_p^2}{P_p}.                    \tag{IEF49}
+\end{align}
+The cell sources are
+\[
+ (T_{rr})_i=\frac{{\cal R}_i}{\Delta V_i},\qquad
+ S_i=\frac{{\cal S}_i}{\Delta V_i}.                   \tag{IEF50}
+\]
+Unequal-weight sampling quality is reported as
+\[
+ N_{{\rm eff},i}
+ =\frac{(\sum_p\omega_{pi}W_p)^2}
+        {\sum_p(\omega_{pi}W_p)^2}.                    \tag{IEF51}
+\]
+Excised and escaped records remain in rest-weight diagnostics but do not
+deposit into \(T_{rr}\) or \(S\).  Parallel workers construct marker stencils,
+then the code accumulates them in deterministic marker-array order using
+long-double partial sums.  Consequently source arrays are independent of the
+requested thread count for a fixed marker ordering.
+
+The source application programming interface (API) is
+\codesource{EF WPIC source deposition}{\path{cpu/include/ev/weighted_einstein_vlasov_pic_eddington_finkelstein.hpp}}{Deterministic CIC/TSC deposition into \(T_{rr}\) and \(S\)}
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\scriptsize]
+namespace ef = ev::eddington_finkelstein;
+
+ef::DepositedSources sources = ef::deposit_sources_parallel(
+    markers,
+    grid.mesh,
+    ev::WeightedPICParticleShape::tsc,
+    threads);
+
+// sources.t_rr[i] and sources.s[i] are the cell-volume densities.
+// sources.shell_t_rr_numerator and shell_s_numerator are extensive.
+\end{lstlisting}
+
+\subsubsection{Finite-volume radial constraint integration}
+
+Within cell \(i\), VENUS holds \(T_{rr,i}\) and \(S_i\) constant.  Equation
+(IEF28) is then analytic:
+\[
+ b(r)=b(r_i)\exp\left[
+ 2\pi T_{rr,i}(r^2-r_i^2)\right],
+ \qquad r_i\le r\le r_{i+1}.                           \tag{IEF52}
+\]
+Starting from \(b(r_{\max})=1\), face values are integrated inward as
+\[
+ b_i=b_{i+1}\exp\left[-2\pi T_{rr,i}
+             (r_{i+1}^2-r_i^2)\right].                 \tag{IEF53}
+\]
+This exponential representation makes \(b>0\) manifest, including inside
+\(a=0\).
+
+The \(Y=mb\) source contains the exponential \(b(r)\).  VENUS integrates each
+left and right center--face segment with deterministic three-point
+Gauss--Legendre quadrature.  It first computes \(b\) from the outer boundary,
+then either integrates \(Y\) outward from zero on the regular first slice or
+inward from fixed \(M_{\rm ADM}\) thereafter.  Center and face values of
+\(m=Y/b\), \(a=1-2m/r\), \(a_r\), and \(b_r\) are then formed from
+(IEF5) and (IEF30).
+
+For one segment \([r_L,r_R]\) inside cell \(i\), let
+\(r_m=(r_L+r_R)/2\) and \(d=(r_R-r_L)/2\).  With nodes
+\(z_q=\{-\sqrt{3/5},0,\sqrt{3/5}\}\) and weights
+\(w_q=\{5/9,8/9,5/9\}\), the increment is
+\[
+ \Delta Y\simeq d\sum_{q=1}^3w_q\,
+ 2\pi(r_m+dz_q)^2 b(r_m+dz_q)(T_{rr,i}+S_i).
+                                                        \tag{IEF53a}
+\]
+This quadrature integrates the exponential \(b\) from (IEF52), so it
+uses the same within-cell source as the analytic \(b\) solve.
+\codesource{EF radial mass-source quadrature}
+{\path{cpu/include/ev/weighted_einstein_vlasov_pic_eddington_finkelstein.hpp}}
+{Evaluates the three-point Gauss--Legendre contribution to \(Y=mb\) on one center--face segment}
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\scriptsize]
+const double r = midpoint + half_width * node[q];
+const double b = b_inside_cell(
+    r, cell_left, cell_left_b, t_rr);
+integral += static_cast<long double>(weight[q])
+    * (2.0L * static_cast<long double>(PI))
+    * static_cast<long double>(t_rr + s)
+    * static_cast<long double>(r) * r
+    * static_cast<long double>(b);
+\end{lstlisting}
+The function returns \code{half_width * integral}; its variables
+\code{t_rr} and \code{s} are the constant cell sources.
+
+The public calls make the two boundary modes explicit:
+\codesource{EF radial constraint solver}{\path{cpu/include/ev/weighted_einstein_vlasov_pic_eddington_finkelstein.hpp}}{Reusable regular-center and fixed-ADM-mass library modes}
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\scriptsize]
+namespace ef = ev::eddington_finkelstein;
+
+// Regular first slice: infer ADM mass with the outward mb solve.
+ef::ConstraintOptions first_constraints;
+ef::Field first = ef::deposit_and_solve_field(
+    markers, grid, ev::WeightedPICParticleShape::tsc,
+    threads, first_constraints);
+const double conserved_M = first.metric.adm_mass;
+
+// Every continuation slice: fixed-M inward solve.
+ef::ConstraintOptions continuation;
+continuation.fixed_adm_mass = conserved_M;
+continuation.excision_a_threshold = -0.01;
+continuation.excision_buffer_cells = 4;
+continuation.excision_horizon_fraction = 0.1;
+ef::Field field = ef::deposit_and_solve_field(
+    markers, grid, ev::WeightedPICParticleShape::tsc,
+    threads, continuation);
+\end{lstlisting}
+
+For \(r\ge r_{\max}\), \code{sample_metric} returns the exact neutral vacuum
+continuation
+\[
+ a=1-\frac{2M_{\rm ADM}}r,\qquad b=1,\qquad
+ a_r=\frac{2M_{\rm ADM}}{r^2},\qquad b_r=0.             \tag{IEF54}
+\]
+
+\subsubsection{Interpolation, pusher, and self-consistent time coupling}
+
+The metric object stores center and face arrays for \(a,b,a_r,b_r,m\).  Inside
+a cell, \code{sample_metric} uses a piecewise-linear face-to-center or
+center-to-face interpolation, never an interpolation through a factor
+\(1/a\).  Outside the outer face it uses (IEF54).  The characteristic API is
+\codesource{EF metric sampler and characteristic RHS}{\path{cpu/include/ev/weighted_einstein_vlasov_pic_eddington_finkelstein.hpp}}{Face-aware metric interpolation and equations (IEF15)--(IEF16)}
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\scriptsize]
+namespace ef = ev::eddington_finkelstein;
+
+ef::CharacteristicState state{marker.r, marker.p_r};
+ef::MetricSample local = ef::sample_metric(state.r, grid, field.metric);
+ef::CharacteristicDerivative rhs = ef::characteristic_rhs(
+    state, marker.eta, local);
+\end{lstlisting}
+
+The public \code{CharacteristicState} continues to store \(P=p_r\), and
+\code{characteristic_rhs} returns \((\dot r,\dot P)\) from
+(IEF15)--(IEF16).  Internally, however, \code{rk4_advance} pushes
+\[
+ u:=\log P,\qquad P=e^u,\qquad
+ \dot r=\frac b2\left(a-\chi e^{-2u}\right),          \tag{IEF54a}
+\]
+and the exact quotient \(\dot u=\dot P/P\):
+\[
+ \boxed{
+ \dot u=-\frac12(ab_r+ba_r)
+        -\frac12 b_r\chi e^{-2u}
+        +\frac{2b\eta}{r^3}e^{-2u}.
+ }                                                     \tag{IEF54b}
+\]
+Equations (IEF54a)--(IEF54b) are algebraically identical to the continuum
+characteristics wherever \(P>0\); the logarithm is an implementation
+variable, not a change of physics or of the public marker format.
+
+Direct evaluation of the logarithmic right-hand side keeps the momentum
+factors in the algebraically reduced expression:
+\codesource{EF logarithmic-momentum characteristic}
+{\path{cpu/include/ev/weighted_einstein_vlasov_pic_eddington_finkelstein.hpp}}
+{Computes the exact quotient \(\dot P/P\) in the internal RK4 variable}
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\scriptsize]
+result.dlog_p_r =
+    -0.5 * (sampled.a * sampled.b_r
+        + sampled.b * sampled.a_r)
+    -0.5 * sampled.b_r * chi * inverse_p_squared
+    + 2.0 * sampled.b * eta * inverse_p_squared
+        / (radius * radius * radius);
+\end{lstlisting}
+Here \code{inverse_p_squared} is \(P^{-2}=e^{-2u}\) and
+\code{sampled} is the local metric from the current frozen field.
+
+Classical fourth-order Runge--Kutta is applied to \((r,u)\), optionally with
+multiple equal characteristic substeps, and \(P\) is reconstructed with
+\(\exp u\).  Every stage therefore remains on the future-directed \(P>0\)
+branch by construction, so an explicit stage cannot overshoot through the
+singular boundary \(P=0\).  The code rejects a stage if \(r<0\), if \(u\) is
+nonfinite or outside the logarithmic interval bounded by the smallest
+positive normal and largest finite \code{double}, or if either transformed
+right-hand side is nonfinite.
+This is a hard rejection; \code{rk4_advance} does not adaptively retry with a
+smaller substep.  The production driver catches a retryable characteristic,
+RK4, or logarithmic-state rejection at the self-consistent-step boundary,
+halves the whole \(\Delta v\), and retries at most 24 times. An explicit
+inner-field-boundary violation with excision enabled terminates the evolution.
+In the interior-evolution
+mode, inner-boundary and recognized constraint failures enter the same
+bounded retry procedure described in Section~\ref{sec:ef-interior-evolution}.
+
+The logarithmic variable preserves the momentum sign.  Accuracy still
+requires resolving the factors \(e^{-2u}=P^{-2}\), which become stiff as
+\(P\) becomes small.  Timestep, substep, and radial-resolution comparisons
+must therefore resolve this coordinate singularity.  Likewise, RK4 in \(u\) is not a
+symplectic integrator and is numerically different from applying RK4
+directly to \(P\), though both are fourth order for a smooth resolved
+characteristic.  The momentum timescale in (IEF55),
+\(P/|\dot P|=1/|\dot u|\), remains the relevant timestep control.
+
+\code{advance_frozen_metric_parallel} advances active markers in parallel
+while checking that rest weight, \(\eta\), ID, and source ID are unchanged.
+Each batch validates the radial mesh and its agreement with the metric's
+cell centers and faces before advancing any marker. A \code{MetricSampler}
+then reuses this fixed mesh and metric for all particles and Runge--Kutta
+stages. The standalone sampling and characteristic routines also validate
+their inputs at entry. Reusing the validated sampler keeps the mesh checks
+outside the particle loop:
+\codesource{Sampling a fixed EF metric within a particle batch}
+{\path{cpu/include/ev/weighted_einstein_vlasov_pic_eddington_finkelstein.hpp}}
+{Validates the mesh once and retains the same center/face interpolation}
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\scriptsize]
+const ef::MetricSampler sample(grid, metric);
+const auto local = sample(marker.r);
+\end{lstlisting}
+The referenced grid and metric remain unchanged throughout that batch.
+
+One self-consistent interval is a midpoint field coupling:
+\begin{enumerate}
+\item deposit the old markers and solve the old field;
+\item push a copy by \(\Delta v/2\) in the old field;
+\item deposit that copy and solve the midpoint field with fixed ADM mass;
+\item push the original markers by \(\Delta v\) in the midpoint field;
+\item deposit the endpoint and solve the endpoint field with fixed ADM mass;
+\item apply any newly available causal excision and recompute the endpoint
+      field without the excised marker sources.
+\end{enumerate}
+The frozen characteristic is fourth order, but the coupled particle--field
+update is second order in time.
+
+The reusable library can infer the ADM mass on a regular first slice; that
+result must seed every later library call.  This example exercises that
+library mode.  A fresh production EF run instead sets
+\code{options.fixed_adm_mass=M_null} before its first call.
+\codesource{EF self-consistent library step}{\path{cpu/include/ev/weighted_einstein_vlasov_pic_eddington_finkelstein.hpp}}{Midpoint particle--field coupling; production supplies \(M_{\rm null}\) immediately}
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\scriptsize]
+namespace ef = ev::eddington_finkelstein;
+
+ef::EvolutionOptions options;
+options.shape = ev::WeightedPICParticleShape::tsc;
+options.threads = threads;
+options.characteristic_substeps = 2; // production value
+options.enable_excision = true;
+options.excision_a_threshold = -0.01;
+options.excision_buffer_cells = 4;
+options.excision_horizon_fraction = 0.1;
+
+// options.fixed_adm_mass is empty only for this regular first call.
+ef::StepResult step = ef::advance_self_consistent(
+    markers, dt, grid, options);
+options.fixed_adm_mass = step.conserved_adm_mass;
+
+// Reuse options, now carrying fixed M, on every later call.
+step = ef::advance_self_consistent(markers, next_dt, grid, options);
+\end{lstlisting}
+
+\subsubsection{Timestep selection}
+
+The public estimator \code{choose_timestep} examines every active marker.
+For the containing cell width \(\Delta r_i\), it limits the requested
+\(\Delta v_{\max}\) by
+\[
+ \Delta v\le C_{\rm CFL}\frac{\Delta r_i}{|\dot r|},
+ \qquad
+ \Delta v\le C_{\rm CFL}\frac{P}{|\dot P|},            \tag{IEF55}
+\]
+and by the additional conservative acceleration heuristic
+\[
+ \Delta v\le
+ \sqrt{\frac{2C_{\rm CFL}\Delta r_i}{|\dot P|}}.       \tag{IEF56}
+\]
+Zero denominators simply omit the corresponding bound.  The implementation
+requires \(0<C_{\rm CFL}\le1\) and a positive finite maximum step.
+\(C_{\rm CFL}\) is the Courant--Friedrichs--Lewy safety factor: it limits how
+large a fraction of a cell or local momentum-change time one step may cover.
+Before an excision surface is applied, an inward-moving marker also obeys
+\[
+ \Delta v\le C_{\rm CFL}\frac{r-r_{\rm in}}{|\dot r|},
+ \qquad \dot r<0,                                      \tag{IEF56a}
+\]
+where \(r_{\rm in}\) is the inner field face and dots denote derivatives
+with respect to advanced time \(v\). This bound resolves the distance to
+the inner boundary even within the first cell. Equations (IEF55)--(IEF56a)
+set the numerical timestep.
+
+\codesource{EF timestep estimator}{\path{cpu/include/ev/weighted_einstein_vlasov_pic_eddington_finkelstein.hpp}}{Public CFL, momentum-timescale, and acceleration bounds}
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\scriptsize]
+const double dt = ef::choose_timestep(
+    markers, grid, field.metric, 0.20, dt_max);
+\end{lstlisting}
+The production driver uses \(C_{\rm CFL}=0.20\) and two characteristic
+substeps.  These are production controls, not universal library constants.
+The resolution study must vary the CFL factor, maximum step, and RK4
+substeps independently of radial and marker resolution.
+
+\subsubsection{Apparent horizon, excision, and origin handling}
+
+The metric solver searches all face intervals for a negative-to-positive
+zero of \(a\), retaining the outermost one.  It linearly interpolates
+\(r^2a\) between the two faces and records
+\code{apparent_horizon_radius} and
+\[
+ m_H=\frac{r_H}{2}.                                     \tag{IEF57}
+\]
+This is an apparent-horizon diagnostic based on equation (IEF8), not an event
+horizon finder.
+
+Once an outer cell center satisfies
+\[
+ a<a_{\rm ex}<0,                                        \tag{IEF58}
+\]
+the implementation searches inward for a cell center with a fully trapped
+outward buffer and radius
+\[
+ r_{\rm ex}\le F r_H,\qquad 0<F\le1.                    \tag{IEF-I1}
+\]
+Here \(F\) is the maximum excision-radius fraction selected by
+\code{--ef-excision-horizon-fraction}; its default is \(0.1\).
+The other defaults are \(a_{\rm ex}=-0.01\) and four outward buffer cells.
+Every center and intervening face from the candidate boundary through the
+buffer must satisfy (IEF58), with finite positive \(b\) at each knot.
+The metric sampler interpolates linearly between these knots, so the same
+conditions hold throughout the buffer.  The near-horizon choice is obtained with \(F=1\), while
+the trapped-buffer condition applies to every value.  If the cap lies in an
+untrapped inner cavity, excision waits for a qualifying trapped center.
+The mesh must resolve the radius cap and its buffer.
+
+Removing markers changes the stress deposited in the endpoint constraint
+solve.  The retained boundary is therefore checked again in that recomputed
+metric.  This includes a boundary used during the midpoint push and one
+introduced by endpoint excision.  The larger retained radius must obey the
+trapped-buffer condition and the cap \(F r_H\).  An unsuccessful check
+rejects the step before committing the marker state.
+\codesource{Recheck the retained excision surface}
+{\path{cpu/include/ev/weighted_einstein_vlasov_pic_eddington_finkelstein.hpp}}
+{Validate the actual endpoint metric after removing excised sources}
+\begin{lstlisting}[language=C++]
+retain_causal_excision_boundary(
+    result.endpoint_field.metric, applied_excision_radius,
+    fixed_constraints);
+\end{lstlisting}
+
+Only active markers at or inside the selected surface change to
+\code{MarkerState::excised}. Their records and invariant rest weights remain
+in the accounting. The active exterior sources and trajectories continue to
+evolve, and the fixed outer mass in (IEF36) retains the gravitational mass
+inside the removed region. The stored metric extension inside that boundary
+serves the numerical scheme; physical interior plots use the retained cells.
+
+Because \(a<0\) makes both future radial null rays move toward decreasing
+areal radius, an excision boundary placed strictly inside the trapped region
+is causal: no physical inner boundary data should be supplied.  Excision must
+not be triggered from a merely small positive \(a\), and the result must be
+checked under changes of \(a_{\rm ex}\), buffer width, radius fraction
+\(F\), and radial resolution. Sensitivity comparisons hold the other
+controls and physical initial data fixed.
+
+The EF outer boundary uses \code{outflow_vacuum}. The production driver
+sets \path{require_vacuum_outer_boundary=true}: a trial in which a
+positive-weight marker escapes rejects the entire step and saves the last
+accepted state. The summary records
+\code{ef_outer_boundary_evolution_limit}, together with the final time
+and \code{vacuum_outer_boundary_limit} as its cause. This applies with
+excision enabled or disabled. The requested reflecting EF wall is rejected
+when the field grid is constructed.
+
+This domain condition follows from the fixed outer mass and normalization.
+Once matter crosses the finite outer face, its enclosed mass and the exterior
+stress must be evolved consistently. Increasing the domain keeps the isolated
+vacuum boundary applicable. The reusable frozen-field particle routines can
+record escaped markers and retain their weights for bookkeeping. A library
+caller can select that behavior with
+\path{require_vacuum_outer_boundary=false}; a physical self-consistent
+outflow calculation also requires a model for the exterior field.
+
+The ingoing-null coordinate chart is delicate at the true spherical origin.
+Andr\'easson and Rein note that its naive Cartesian form is not regular there.
+The present implementation starts with shell support away from \(r=0\).
+Excision, when enabled, removes interior markers only after the local trapped
+region satisfies the conditions above.  When \code{using_origin_parity_inner(params)} is true,
+\code{make_field_grid} deliberately constructs a linear mesh with a true
+\(r=0\) face even if the configured phase-space \code{r_min} is positive;
+otherwise it retains the configured finite-radius inner face.  This is a mesh
+convention. EF characteristics follow their ingoing-null equations through
+positive radii. An attempted inner crossing rejects the trial state, and
+\(r=0\) is singular for \(\eta>0\). The Schwarzschild module uses a
+separate Cartesian continuation at the origin.
+
+\paragraph{Retaining matter inside the horizon.}
+\label{sec:ef-interior-evolution}
+The characteristic equations remain finite at \(a=0\) for finite positive
+\(P\) and \(b\). A horizon therefore permits continued evolution of the
+interior matter. With \code{--ef-evolve-interior}, every old, midpoint, and
+endpoint field solve retains the active markers and sets its applied
+excision radius to zero. The library controls are
+\codesource{Retain the interior markers}
+{\path{cpu/include/ev/weighted_einstein_vlasov_pic_eddington_finkelstein.hpp}}
+{Select the same mode in standalone constraints and self-consistent evolution}
+\begin{lstlisting}[language=C++]
+ef::ConstraintOptions constraints;
+constraints.enable_excision = false;
+ef::EvolutionOptions evolution;
+evolution.enable_excision = false;
+\end{lstlisting}
+The evolution routine propagates its setting to each constraint solve.
+An active marker may move below the first cell center, subject to (IEF56a).
+Resolving its trajectory still requires resolving the stress and metric that
+determine that trajectory. In particular, the first-cell metric interpolates
+the regular-origin face value \(a(0)=1\). Matter concentrated within that
+cell requires radial refinement before its density profile can be interpreted.
+
+The driver retries a failed characteristic, inner crossing, or recognized
+nonfinite constraint solve with half the timestep, for at most 24 halvings.
+If the trial still fails, or advanced time cannot increase in floating-point
+arithmetic, it saves the complete last accepted state. The summary records
+\path{interior_evolution_limit}, its cause, the final accepted time,
+and the requested end time. Use \code{--expected-outcome any} for this
+investigation. An incomplete calculation retains its measured horizon
+history and explicitly records the evolution limit.
+
+The \code{ef_evolution_status} record also gives the last accepted and
+failed trial timesteps, the smallest active radius, the first cell center
+and outer face, and the active rest weight inside these resolution scales.
+The raw inner-face values of \(m\), \(mb\), and \(b\) expose the residual
+left by the inward constraint solve. An empty central vacuum has \(m=0\)
+while the center is regular. A growing residual there must be tested under
+radial and temporal refinement. A fixed outer ADM mass alone does not
+establish local accuracy.
+
+For an unexcised regular origin, the summary reports the dimensionless
+residual \( |m(0)|/M_{\rm ADM} \). When this residual reaches unity,
+\path{spatial_resolution_assessment} records
+\path{spatial_resolution_lost}. The inferred central error then equals
+the entire ADM mass, although regularity requires \(m(0)=0\).
+\codesource{Assessing the regular-origin mass residual}
+{\path{cpu/src/drivers/einstein_vlasov_wpic.cpp}}
+{Reports an order-unity spatial failure separately from the termination cause}
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\scriptsize]
+const long double fraction = std::abs(
+    static_cast<long double>(field.metric.face_m.front()))
+    / field.metric.adm_mass;
+summary.ef_spatial_resolution_assessment = fraction >= 1.0L
+    ? "spatial_resolution_lost" : "requires_convergence";
+\end{lstlisting}
+This assessment preserves the accepted state, the evolution equations,
+the termination cause, and the \path{interior_evolution_limit}
+outcome. Residuals below unity retain the label
+\path{requires_convergence}; quantitative accuracy is determined by the
+radial and timestep comparisons appropriate to the physical observable.
+The same summary gives the smallest active radius divided by the first
+radial-cell width. It also reports the radius and contiguous half-maximum
+width, in radial cells, of the retained density peak. This density is the
+energy density measured by the inward observer defined below. Together,
+these quantities show when the contracting matter occupies too few cells
+for its density profile to be resolved. The regular-origin assessment
+applies when excision is disabled and the ADM mass is positive.
+
+Restart version 2 includes the excision mode in its binary payload and
+integrity fingerprint. The interior-controls file also records the mode.
+A resume uses the same setting. Version-1 restarts describe enabled excision.
+A comparison between modes starts from the same solved null initial slice,
+which supplies all trajectories before any excision.
+
+
+\subsubsection{Density measured by an observer crossing the horizon}
+\label{sec:ef-interior-density}
+
+A density is an energy measurement made by a specified observer. The
+static observer has density \(T_{vv}/(ab^2)\) in the exterior \(a>0\).
+For interior output VENUS instead uses the future radial observer
+\[
+ u^v=\frac1b,\qquad u^r=\frac{a-1}{2},\qquad
+ u^\theta=u^\phi=0.                                    \tag{IEF-I2}
+\]
+Substitution in the line element gives
+\(g_{ab}u^a u^b=-a+(a-1)=-1\), including at \(a=0\) and in \(a<0\).
+This defines a local unit timelike observer; a freely falling trajectory
+requires a separate geodesic calculation. Its measured particle energy is
+\[
+ E_u=-p_a u^a=\frac12\left(P+\frac\chi P\right)>0.       \tag{IEF-I3}
+\]
+The equality follows by substituting (IEF12) and (IEF-I2). Both terms are
+positive, which keeps the numerical evaluation well behaved at the horizon.
+If marker \(p\) has invariant rest weight \(W_p\), deposits fraction
+\(s_{ip}\) in cell \(i\), and that cell has volume \(\Delta V_i\), the output is
+\[
+ \rho_{{\rm infall},i}
+ =\frac1{\Delta V_i}\sum_{p\ {\rm active}}
+           s_{ip}W_p\frac{E_{u,p}^2}{P_p}.              \tag{IEF-I4}
+\]
+This follows from the same null-slice stress measure as (IEF18)--(IEF23),
+contracted with \(u^a u^b\). Particle energies are evaluated at marker
+positions before the shape weights deposit them into cells.
+
+\codesource{Horizon-crossing observer energy}{\path{cpu/include/ev/weighted_einstein_vlasov_pic_eddington_finkelstein.hpp}}{Positive particle-energy expression used by the interior density deposition}
+\begin{lstlisting}[language=C++]
+const double energy = 0.5 * (p_r + (1.0 + 2.0 * eta / (radius * radius)) / p_r);
+\end{lstlisting}
+
+The profile columns \code{rho_infall} and \code{excision_mask} identify this
+observable and its retained region. A center at or inside \(r_{\rm ex}\)
+has \code{excision_mask=1}; a particle cloud may still overlap that cell.
+Physical plots use \code{excision_mask=0}. History records
+\code{active_marker_count}, \code{active_trapped_rest_weight}, and
+\code{active_min_radius}. The trapped weight counts active markers with
+\(a<0\) at their current positions. A density comparison between coordinate
+modules uses the same observer at the same physical events.
+
+\codesource{EF interior visualization}{\path{cpu/tools/render_ef_interior_gif.py}}{Render saved retained-interior density, slope, compactness, and weight budgets}
+\begin{lstlisting}[language=bash]
+python3 cpu/tools/render_ef_interior_gif.py --run RUN_DIRECTORY \
+  --output output/ef_interior.gif --frames 72 --fps 10
+\end{lstlisting}
+
+The file \path{ef_interior_controls.txt} records the threshold, buffer, and
+fraction used by each fresh run. A restart requires the identical record:
+previously removed trajectories determine which interior can still be
+evolved. CSV headers are checked before appending. The accepted-step audit
+is a separate evidence file with the step and time of the checkpoint.
+Its completeness determines which later certification checks are available.
+
+Finite component validation checks observer normalization and stress
+contraction, horizon crossing, retained interior trajectories, the trapped
+buffer, untrapped-cavity rejection and fixed mass after excision. Synthetic
+infall into a prescribed central black hole and collapse from a regular
+shell test their respective initial and boundary conditions.
+
+\subsubsection{Bound static energy-cutoff shell initial data}
+\label{sec:ef-static-energy-cutoff-shell}
+
+The threshold family starts from a neutral equilibrium with finite radial
+support.  Its continuum solver is
+\path{cpu/include/ev/weighted_einstein_vlasov_static_shell.hpp}, in namespace
+\code{ev::static_einstein_vlasov}.  The distribution uses a single angular-momentum magnitude and a cutoff
+exponent \(1\le k\le8\). The default \(k=1\) is the neutral shell in
+East's static-data construction; \(k>1\) makes the distribution approach
+its support edge more smoothly:
+\begin{align}
+ E(r,w,L)&=e^{\mu(r)}
+   \sqrt{1+w^2+\frac{L^2}{r^2}},                    \tag{IEF-S1}\\
+ f(E,L)&=C\left(1-\frac{E}{E_0}\right)_+^k
+                  \delta(L-L_0),
+ \qquad C>0,\quad L_0>0,\quad0<E_0<1.               \tag{IEF-S2}
+\end{align}
+Here \(L_0\) is the fixed angular-momentum magnitude in the shell, \(C\) is the positive
+distribution amplitude, \(E_0\) is the cutoff energy, and \(\delta\) is the
+Dirac delta distribution.  The subscript \(+\) means
+\(x_+=\max(x,0)\).  The energy here is the
+dimensionless particle Killing energy per unit rest mass in the static
+asymptotically normalized polar metric.  It is not the Newtonian diagnostic
+energy and is distinct from the frozen-metric proxy in (IEF58c).
+In ordinary language, every particle in the continuum shell has the same
+angular-momentum magnitude \(L_0\). The factor \((1-E/E_0)^k\)
+sets the fall toward zero at the energy cutoff \(E_0\), and the distribution
+has support at \(E<E_0\). The exponent \(k\) stays fixed during the
+continuum mass rescaling and each comparison of the same solution in both coordinates.  The delta function in
+(IEF-S2) expresses the single value \(L=L_0\), rather than a finite
+angular-momentum width.
+
+Set
+\begin{align}
+ y(r)&:=\log E_0-\mu(r),& z(r)&:=e^{y(r)},              \tag{IEF-S3a}\\
+ W(r)^2&:=z(r)^2-1-\frac{L_0^2}{r^2},&
+ \epsilon(r,w)&:=\sqrt{1+w^2+\frac{L_0^2}{r^2}}.   \tag{IEF-S3b}
+\end{align}
+Matter is present exactly where \(W^2>0\), and then
+\[
+ |w|<W(r),\qquad
+ \Phi(r,w):=1-\frac{\epsilon}{z}
+ =\frac{W^2-w^2}{z(z+\epsilon)}>0.                    \tag{IEF-S4}
+\]
+The second expression for \(\Phi\) is algebraically identical to the first
+and avoids subtractive cancellation at the cutoff.
+
+\paragraph{Delta-function Jacobian and continuum sources.}
+The Schwarzschild equations integrate over \(\eta=L^2/2\).
+Since \(\dd\eta=L\,\dd L\), a shell with \(L_0>0\) satisfies
+\[
+ \delta(L-L_0)
+ =L_0\,\delta(\eta-\eta_0),\qquad \eta_0=\frac{L_0^2}{2}.                  \tag{IEF-S5}
+\]
+The factor \(L_0\) is essential; omitting it changes every source and the
+normalization.  Define
+\(p_{t,\Sigma}:=p_\theta+p_\phi=2p_t\) as the sum of the two tangential
+pressures and \(n_0\) as the local orthonormal rest-number density.
+Substituting (IEF-S2)--(IEF-S5) into the spherical Vlasov moments gives the
+complete nonzero orthonormal sources
+\begin{align}
+ \rho(r)&=\frac{2\pi CL_0}{r^2}
+    \int_{-W}^{W}\Phi^k\,\epsilon\,\dd w,                \tag{IEF-S6}\\
+ p_{\rm rad}(r)&=\frac{2\pi CL_0}{r^2}
+    \int_{-W}^{W}\Phi^k\,\frac{w^2}{\epsilon}\,\dd w,   \tag{IEF-S7}\\
+ p_{t,\Sigma}(r)&=\frac{2\pi CL_0}{r^2}
+    \int_{-W}^{W}\Phi^k\,
+       \frac{L_0^2}{r^2\epsilon}\,\dd w,            \tag{IEF-S8}\\
+ n_0(r)&=\frac{2\pi CL_0}{r^2}
+    \int_{-W}^{W}\Phi^k\,\dd w,                          \tag{IEF-S9}\\
+ j(r)&=\frac{2\pi CL_0}{r^2}
+    \int_{-W}^{W}\Phi^k\,w\,\dd w=0.                    \tag{IEF-S10}
+\end{align}
+Equations (IEF-S6)--(IEF-S10) include both
+signs of \(w\); the current vanishes because the unperturbed ansatz is even.
+The implementation evaluates these one-dimensional integrals with a fixed
+16-point Gauss--Legendre rule on \([-W,W]\).
+
+\paragraph{Static field equations, support edges, and lapse normalization.}
+In equilibrium, the enclosed mass grows outward with local energy density,
+the lapse gradient supplies the inward relativistic gravitational force, and
+the rest-number equation counts invariant particle weight.  The support ends
+where the allowed radial-momentum interval shrinks to zero.  With
+\(a=e^{-2\lambda}=1-2m/r\), the coupled continuum system is
+\begin{align}
+ \frac{\dd m}{\dd r}&=4\pi r^2\rho,                    \tag{IEF-S11}\\
+ \frac{\dd y}{\dd r}&=-\frac{m/r^2+4\pi r p_{\rm rad}}
+                              {1-2m/r}=-\mu_r,          \tag{IEF-S12}\\
+ \frac{\dd M_0}{\dd r}&=4\pi r^2 e^\lambda n_0,       \tag{IEF-S13}\\
+ \lambda&=-\frac12\log\left(1-\frac{2m}{r}\right).
+                                                               \tag{IEF-S14}
+\end{align}
+The input \code{central_y}, denoted \(y_c>0\), is constant through the exact
+inner vacuum.  The angular barrier places its first support edge at
+\[
+ R_{\rm in}=\frac{L_0}{\sqrt{e^{2y_c}-1}},
+ \qquad m(R_{\rm in})=M_0(R_{\rm in})=0,
+ \qquad y(R_{\rm in})=y_c.                            \tag{IEF-S15}
+\]
+The ODE is integrated outward with adaptive step-doubled RK4 until the next
+root \(W(R_{\rm out})=0\).  Let \(M=m(R_{\rm out})\) and
+\(M_0=M_0(R_{\rm out})\).  Matching to an asymptotically normalized
+Schwarzschild exterior fixes the otherwise arbitrary lapse offset and the
+cutoff energy:
+\[
+ \boxed{\ \log E_0=y(R_{\rm out})
+       +\frac12\log\left(1-\frac{2M}{R_{\rm out}}\right)\ }.
+                                                               \tag{IEF-S16}
+\]
+Thus \(E_0\) is an output of the normalized solution, not an independently
+imposed number.  A finite bound branch must have
+\(R_{\rm out}>2M\), \(0<E_0<1\), and
+\[
+ E_{\rm bind}=M_0-M>0,\qquad
+ f_{\rm bind}=\frac{M_0-M}{M_0}>0.                    \tag{IEF-S17}
+\]
+In the exact inner vacuum,
+\(m=M_0=0,\lambda=0,\mu=\log E_0-y_c\).  In the exact exterior,
+\begin{align}
+ m&=M,&M_0&=\hbox{constant},&
+ e^{2\mu}&=1-\frac{2M}{r},&e^{2\lambda}&=
+       \left(1-\frac{2M}{r}\right)^{-1}.              \tag{IEF-S18}
+\end{align}
+The continuum solution also checks (IEF58i) directly.  Its reported
+constraint defect and relative Jeans residual are numerical errors, not
+additional equations used to close the system.
+
+\paragraph{Exact scaling family.}
+If \(s>0\), a solved equilibrium can be rescaled without re-shooting:
+\begin{align}
+ (r,m,M,M_0,L_0,R_{\rm in},R_{\rm out})
+ &\longmapsto
+ s(r,m,M,M_0,L_0,R_{\rm in},R_{\rm out}),           \tag{IEF-S19}\\
+ C&\longmapsto C/s,\notag\\
+ (\rho,p_{\rm rad},p_{t,\Sigma},n_0)&\longmapsto
+ s^{-2}(\rho,p_{\rm rad},p_{t,\Sigma},n_0).           \tag{IEF-S20}
+\end{align}
+The dimensionless functions \(y,\mu,\lambda\), \(E_0\), compactness, and
+\(f_{\rm bind}\) are unchanged.  The public
+\code{rescale_to_adm_mass} routine uses \(s=M_{\rm target}/M\).  This
+continuum rescaling selects the physical length/mass scale of the baseline;
+the later marker-level fixed-ADM normalization in (IEF59a) separately removes
+finite-sampling and perturbed-family mass changes.
+
+\paragraph{Invariant WPIC weights and quiet sampling.}
+The reduced invariant phase measure can be written
+\[
+ \dd\Gamma_{\rm inv}
+ =8\pi^2e^\lambda\,\dd r\,\dd w\,\dd\eta.
+                                                               \tag{IEF-S21}
+\]
+After applying (IEF-S5), a positive-\(w\) quadrature point representing
+\(\Delta r\,\Delta w\) receives
+\[
+ W_p=8\pi^2 CL_0 e^{\lambda(r_p)}
+       \Phi(r_p,w_p)^k\,\Delta r\,\Delta w,              \tag{IEF-S22}
+\]
+and an adjacent \(-w_p\) marker receives exactly the same weight, radius, and
+\(\eta=L_0^2/2\).  These are already the invariant weights of (EWP3):
+passing them through
+\path{canonicalize_weighted_einstein_vlasov_pic_initial_weights}
+again would multiply by \(e^\lambda\) twice and is forbidden.
+
+The library supplies two sampling rules.  Tensor Gauss--Legendre quadrature
+is used for deterministic convergence tests.  The driver uses a dedicated
+shifted rank-one rule with exactly
+\(N_{\rm marker}=2N_{\rm pair}\) markers.  For deterministic
+Cranley--Patterson shifts \((\Delta_r,\Delta_w)\), a generator \(g\) coprime
+to \(N_{\rm pair}\), and fractional part \(\{\cdot\}\), it samples
+\begin{align}
+ u_{r,k}&=\left\{\frac{k+1/2}{N_{\rm pair}}+\Delta_r\right\},&
+ u_{w,k}&=\left\{\frac{(gk\bmod N_{\rm pair})+1/2}
+                         {N_{\rm pair}}+\Delta_w\right\},       \tag{IEF-S23}\\
+ r_k&=R_{\rm in}+(R_{\rm out}-R_{\rm in})u_{r,k},&
+ w_k&=W(r_k)u_{w,k},                                    \tag{IEF-S24}\\
+ \Delta r\,\Delta w&=
+ \frac{(R_{\rm out}-R_{\rm in})W(r_k)}{N_{\rm pair}}.
+                                                               \tag{IEF-S25}
+\end{align}
+Each \(k\) emits adjacent \((+w_k,-w_k)\) records.  Their persistent
+\code{id} and \code{source_cell} are unique and equal record by record, so
+the coordinate-map manifest can authenticate the empirical measure without
+confusing a source identity with a radial deposition bin.
+
+Changing \code{--high-sampling-realization} changes both shifts and therefore
+the locations and unequal quadrature weights, while retaining exact pairwise
+current cancellation before a kick.  Lattices with different
+\(N_{\rm pair}\) are not nested, and two shifts are only the implemented
+minimum PIC-discreteness cross-check; they are not a calibrated statistical
+confidence interval.  Tensor-rule quadrature orders do not control a
+fixed-size shifted lattice and are consequently not exposed by the
+production driver.  The full continuum support must also leave at least four
+vacuum mesh cells at each radial boundary so the TSC stencil never clips the
+shell.
+
+The essential library calls are:
+\codesource{Static Einstein--Vlasov shell construction}{\path{cpu/include/ev/weighted_einstein_vlasov_static_shell.hpp}}{Continuum solve, exact mass rescaling, and shifted-stratified marker sampling}
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\scriptsize]
+namespace static_ev = ev::static_einstein_vlasov;
+
+static_ev::Parameters p;
+p.amplitude = C;
+p.angular_momentum = ell0;
+p.central_y = y_c;
+p.cutoff_power = k;  // 1 <= k <= 8; choose 2 for a smoother support edge.
+auto continuum = static_ev::solve(p);
+continuum = static_ev::rescale_to_adm_mass(continuum, target_M);
+
+static_ev::MarkerSamplingOptions sampling;
+sampling.rule = static_ev::MarkerSamplingRule::shifted_stratified;
+sampling.shifted_pair_count = marker_count / 2;
+sampling.realization = realization;
+auto sampled = static_ev::sample_markers(continuum, sampling);
+// sampled.markers already carry invariant Schwarzschild WPIC weights.
+\end{lstlisting}
+
+\paragraph{Controlled inward perturbation.}
+The exact equilibrium baseline has \(s_L=1\) and zero inward kick.  To ask a
+collapse-versus-halo question without starting from an unbound Gaussian
+cloud, the production family applies one fixed nonnegative kick after the
+continuum quadrature:
+\[
+ w_p\longmapsto w_p-\kappa\,{\cal K}(r_p),\qquad
+ {\cal K}(r)=
+ \begin{cases}
+ 1,&r_c=0,\\[2pt]
+ r^2/(r^2+r_c^2),&r_c>0.
+ \end{cases}                                           \tag{IEF-S26}
+\]
+The controls are \code{--high-radial-infall} \(=\kappa\) and
+\code{--high-infall-core-radius} \(=r_c\).  Each adjacent pair then has exact
+mean radial momentum \(-\kappa{\cal K}(r)\); weights, radii, \(\eta\), and IDs
+are unchanged.  A nonzero kick, or a subsequent \(s_L\ne1\) rescaling, is
+deliberately nonequilibrium and must not be described as the original static
+solution.  The same fixed \((\kappa,r_c)\) is used at every \(s_L\), and the
+common weight factor in (IEF59a) is applied only after both perturbations.
+
+The corresponding driver interface is
+\codesource{Static-shell production interface}{\path{cpu/src/drivers/einstein_vlasov_wpic.cpp}}{High-compactness initial-condition, kick, angular-scale, and target-mass options}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+--high-initial-condition energy_cutoff_shell
+--high-energy-cutoff-amplitude C
+--high-energy-cutoff-ell0 ELL0
+--high-energy-cutoff-central-y Y_C
+--high-energy-cutoff-power K
+--high-markers N_EVEN
+--high-sampling-realization REALIZATION
+--high-radial-infall KAPPA
+--high-infall-core-radius R_C
+--high-angular-momentum-scale S_L
+--high-target-initial-adm-mass M_TARGET
+\end{lstlisting}
+For this IC, \code{--high-markers} must be even and
+\code{--high-specific-angular-momentum} is rejected: the baseline
+\(L_0\) comes from \code{--high-energy-cutoff-ell0}, and only
+\code{--high-angular-momentum-scale} defines the scan.  A saved physical IC
+is regenerated from its continuum, sampler, kick, and realization controls
+and fingerprint-compared before reuse, including on resume.
+
+The JSON summary keeps the configured and rescaled \(C,L_0,y_c\), unscaled
+and continuum ADM masses, \(E_0,R_{\rm in},R_{\rm out},M_0\), binding energy
+and fraction, central lapse, maximum compactness, constraint/Jeans residuals,
+pair count, represented rest weight, rest-weight quadrature error, and maximum
+\(E/E_0\).  Component validation checks source normalization, finite support and both
+vacuum regions, scale covariance, constraint and Jeans residuals, marker
+support and IDs, exact zero-current pairs, sampling/deposition refinement,
+independent shifted realizations and a short self-consistent equilibrium
+evolution. Long-time nonlinear stability requires evolution over several
+dynamical times together with resolution, realization, timestep and domain
+comparisons.
+
+\subsubsection{Diagnostics and scientific acceptance checks}
+
+Every production run should record at least:
+\begin{itemize}
+\item \(M_{\rm ADM}\), total represented rest weight, active, excised, and
+      escaped rest weights, and deposition roundoff;
+\item \(\min a\), \(\max(2m/r)\), the radius of that maximum, and the
+      outermost apparent-horizon radius;
+\item \(\min b\) and \(\min P\), which must remain strictly positive;
+\item the first advanced time at which \(a=0\), post-horizon evolution time,
+      and excision radius;
+\item Lagrangian radii, density and mass profiles versus areal radius, and
+      the mass-weighted mean, root-mean-square (RMS), and maximum specific
+      angular momentum;
+\item independent residuals of (IEF28)--(IEF31) when a dedicated validation
+      or post-processing artifact supplies the needed derivatives; these are
+      not ordinary production-history columns;
+\item the authenticated null-map analytic-extension error for (IEF54); the
+      ordinary evolved profile does not currently emit a generic exterior
+      vacuum-error column;
+\item thread-count reproducibility and convergence with radial cells, marker
+      count, particle shape, timestep, and characteristic substeps.
+\end{itemize}
+No arbitrary floor should replace \(a\), \(b\), or \(P\) in the equations.
+Loss of \(b>0\), \(P>0\), finite fields, or fixed-\(M\) bookkeeping is a failed
+evolution, not a physical black-hole signal.
+
+\paragraph{Fail-closed black-hole candidate and certificate.}
+An apparent-horizon flag by itself is deliberately not the final
+black-hole classification.  Let \(v_H\) be the first saved advanced time at
+which the outer apparent horizon is found, let \(v_f\) be the last saved
+advanced time, and let \(M_f=M_{\rm family}\) be the fixed-family ADM mass.
+Define
+\begin{align}
+ \Delta v_{\rm post}&=v_f-v_H,&
+ N_{>H}&=\#\{i:v_i>v_H\},&
+ N_H&=\#\{i:v_i\ge v_H\ \hbox{and}\ r_H(v_i)>0\}.
+                                                               \tag{IEF57c}
+\end{align}
+The symbol \(\#\) counts the saved rows satisfying the condition in braces.
+The configured floors cannot be weakened below their defaults.  The intrinsic
+post-horizon duration and sampling gates are
+\[
+ \boxed{\ \Delta v_{\rm post}/M_f\ge5,\qquad N_{>H}\ge3,
+         \qquad N_H\ge1\ }.                            \tag{IEF57d}
+\]
+The independently stored value of \(\Delta v_{\rm post}\) must agree with
+\(v_f-v_H\) to the configured end-time tolerance.  The run must use ingoing
+EF coordinates, report a finite \(v_H\ge0\), set both
+\path{horizon_formed} and \path{evolved_past_horizon}, report the raw driver
+outcome \path{black_hole}, and reach
+\(\max_i{\cal C}_{\max}(v_i)\ge0.99\) by default.  These conditions prevent
+a single marginal output row from being called a resolved continuation.
+
+Output cadence alone is too sparse to show that the characteristic equations
+remained regular between saved rows.  The driver therefore audits the initial
+state and every accepted EF step.  If \({\cal A}\) is that set of audited
+states, it records
+\begin{align}
+ P_{\min}^{\rm acc}
+  &=\min_{k\in{\cal A}}\min_p P_{p,k}>0,&
+ b_{\min}^{\rm acc}
+  &=\min_{k\in{\cal A}}\min_{i,\,x\in\{\mathrm{center},\mathrm{face}\}}
+       b_{i,x,k}>0.                                    \tag{IEF57e}
+\end{align}
+Every marker value and every stored metric, metric-derivative, mass,
+compactness, and source array must be finite at those states.  At each audit
+the radial constraint must also have used the fixed EF ADM anchor
+\(M_{\rm EF}=M_{\rm null}\) imported with the null slice and satisfy
+\[
+|M_{\rm metric,k}-M_{\rm EF}|
+ \le4096\,\epsilon_{\rm mach}\max(1,|M_{\rm EF}|).    \tag{IEF57f}
+\]
+Here \(M_{\rm metric,k}\) is the ADM mass stored by the metric solve at
+audited state \(k\), and \(\epsilon_{\rm mach}\) is the unit roundoff of the
+double-precision floating-point type.
+The complete extrema and Boolean checks are persisted atomically in
+\path{ef_post_horizon_audit.state}, together with the exact accepted step and
+advanced time.  Sidecar version 2 includes the cumulative local metric check
+\code{causal_excision_valid_throughout}.  A version-1 file can restore its
+other extrema; its weaker excision record marks the accumulated audit
+incomplete.  A resume accepts the sidecar only when those two values match
+the restart.  A missing, stale, or old-format sidecar marks the audit
+incomplete and makes black-hole promotion impossible.  Despite the sidecar's
+name, these extrema cover the whole EF evolution, not merely the saved
+post-horizon rows; this is what establishes that positivity and finite fields
+were maintained \emph{through} horizon formation.
+The summary must expose schema
+\path{venus_wpic_ef_post_horizon_evidence_v1}, set
+\path{available=true} and \path{accepted_step_audit_complete=true}, and report
+a strictly positive \path{accepted_step_audit_samples}; absent fields fail
+closed.
+
+The accepted-step call is deliberately inside the advance loop, before the
+optional output-cadence branch:
+\codesource{EF accepted-step audit}{\path{cpu/src/drivers/einstein_vlasov_wpic.cpp}}{Per-accepted-state positivity, finiteness, mass-anchor, and excision evidence}
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\scriptsize]
+field = result.endpoint_field;
+advanced_time += result.accepted_dt;
+++step;
+update_ef_post_horizon_audit(
+    post_horizon_audit, markers, field, conserved_adm_mass,
+    true, evolution.excision_a_threshold,
+    evolution.excision_buffer_cells);
+// Restart and audit sidecar are written together at checkpoints.
+\end{lstlisting}
+Thus increasing \path{high_output_steps} cannot make a failed intermediate
+state invisible to the candidate gate.
+
+The analyzer separately verifies four positive mass anchors:
+\(M_{\rm target}\), the requested family mass; \(M_f\), the realized fixed
+family mass; \(M_{\rm null}\), the imported null-slice mass; and
+\(M_{\rm dep}\), the mass reconstructed from the initial EF deposition.  It
+then forms
+\begin{align}
+ \delta_T&=\frac{|M_f-M_{\rm target}|}{M_{\rm target}},&
+ \delta_D&=\frac{|M_{\rm null}-M_f|}{M_f},&
+ \delta_{\rm map}&=\frac{|M_{\rm dep}-M_{\rm null}|}{M_{\rm null}},
+                                                               \tag{IEF57g}\\
+ \delta_H^M&=\max_i\frac{|M_{\rm ADM}(v_i)-M_f|}{M_f},&
+ \delta_H^W&=\max_i
+ \frac{|W_{\rm tot}-W_{\rm active}-W_{\rm exc}-W_{\rm esc}|_i}
+      {\max(|W_{\rm tot,i}|,10^{-300})}.              \tag{IEF57h}
+\end{align}
+In (IEF57h), \(W_{\rm tot}\), \(W_{\rm active}\), \(W_{\rm exc}\), and
+\(W_{\rm esc}\) are respectively the total, active, excised, and escaped
+invariant rest weights at a saved state.
+The default bounds are
+\(\delta_T\le10^{-8}\),
+\(\delta_D,\delta_{\rm map},\delta_H^M\le10^{-2}\), and
+\(\delta_H^W\le10^{-12}\), in addition to the analyzer's ordinary strict
+summary-quality checks.  Thus excised rest weight is accounted for rather
+than discarded, while the ADM anchor is not redefined after excision.
+Those ordinary summary checks are also explicit:
+\[
+ \frac{|M_{\rm final}-M_{\rm initial}|}{M_{\rm initial}}<10^{-2},
+ \qquad
+ \frac{|W_{\rm final}-W_{\rm initial}|}{W_{\rm initial}}<10^{-12}.
+                                                               \tag{IEF57h-1}
+\]
+The strict inequalities here match the general run-quality gate; they are in
+addition to, not substitutes for, the all-history bounds in (IEF57h).  A
+mapped EF candidate must also pass the authenticated null-map preflight and
+the fixed-ADM/IC provenance checks described above.
+
+The excision controls must be explicit, with
+\(a_{\rm ex}<0\) and an integer buffer \(n_{\rm buf}\ge1\).  Every saved row
+with a positive excision radius must obey
+\[
+ r_{\rm ex}(v_i)>0\quad\Longrightarrow\quad
+ v_i>v_H\ \hbox{and}\ 0<r_{\rm ex}(v_i)<r_H(v_i),    \tag{IEF57i}
+\]
+and at least one such causal row must have \(W_{\rm exc}>0\).  The
+accepted-step audit must independently record that a causal excision was
+seen, that positive interior rest weight was actually excised, and that
+\code{causal_excision_valid_throughout} remains true.  At every audited
+state with excision, this last condition evaluates (IEF58), positive finite
+\(b\), and the entire outward buffer in the reconstructed metric.  A nominal
+excision setting that never removes matter therefore supplies no
+post-horizon evidence.
+
+Passing all the preceding tests gives only the machine classification
+\path{black_hole_candidate}.  It is independent of the positive-binding
+condition used for a halo: binding is part of the chosen campaign family, not
+a logical prerequisite for recognizing a trapped region.  A candidate is
+promoted to \path{black_hole_certified} only by a separate, SHA-256
+authenticated
+\path{venus_wpic_excision_sensitivity_certificate_v1}.  The analyzer hashes
+and re-reads every referenced summary instead of trusting the certificate's
+claimed conclusion.  At least two distinct repeats are required; every repeat
+must itself pass the complete intrinsic candidate gate and retain the same
+physical-IC hash, base and realized IC fingerprints, coordinate-map-manifest
+hash, angular momentum, and fixed-family ADM mass.  The primary run and every
+repeat must also carry independently verified \path{binary.sha256} and
+\path{source.sha256} records.  The certificate names the expected executable
+and source-manifest hashes, and the analyzer recomputes them from disk and
+requires exact agreement.  In plain language, an excision-sensitivity repeat
+cannot certify a result obtained with a different compiled program or source
+tree.  At least one repeat must
+differ in \(a_{\rm ex}\) while holding \(n_{\rm buf}\) fixed, and at least
+one must differ in \(n_{\rm buf}\) while holding \(a_{\rm ex}\) fixed.  The
+scientific repeat protocol holds every other run control fixed; the analyzer
+directly authenticates the physical, map, executable, and source provenance
+listed above.
+
+For the primary run plus all authenticated repeats, the sensitivity agreement
+conditions are
+\begin{align}
+ \frac{\max v_H-\min v_H}{M_f}&\le1,&
+ \frac{\max r_H-\min r_H}{\operatorname{median}(r_H)}&\le0.05,
+                                                               \tag{IEF57j}
+\end{align}
+Here each \(v_H\) is the run's first trapped time, whereas each \(r_H\) is the
+positive \path{apparent_horizon_radius} reported by that run's final summary;
+the analyzer does not silently substitute a radius from another output row.
+Command-line choices may make these bounds tighter but not looser.  Missing
+authentication, a missing independent
+variation, changed physical provenance, a repeat that is not itself a
+candidate, or failure of either spread test leaves the primary run a candidate
+only.  The final angular-momentum bracket accepts
+\path{black_hole_certified}, never a bare candidate; a candidate plus a halo
+is reported as
+\path{inconclusive_due_to_uncertified_black_hole_candidate}.
+
+The analyzer keeps that promotion explicit:
+\codesource{Black-hole certification analyzer}{\path{cpu/tools/analyze_einstein_vlasov_wpic.py}}{Candidate classification and authenticated excision-sensitivity promotion}
+\begin{lstlisting}[language=Python,basicstyle=\ttfamily\scriptsize]
+classification = "black_hole_candidate"  # intrinsic gate passed
+sensitivity = excision_sensitivity_gate(summary_path, record, args)
+if sensitivity["certifies_black_hole"]:
+    classification = "black_hole_certified"
+\end{lstlisting}
+
+The frequently used ``Lagrangian radii'' are rest-weight quantiles, not new
+coordinates.  At a saved time \(t\), sort the active markers by radius and
+define \(r_q(t)\) as the smallest marker radius satisfying
+\[
+ \sum_{p\,{\rm active}:\,r_p\le r_q}W_p
+ \ge q\sum_{p\,{\rm active}}W_p,
+ \qquad q\in\{0.1,0.5,0.9\}.                           \tag{IEF57a}
+\]
+Thus \(r_{50}\) encloses half of the active rest weight and \(r_{90}\)
+encloses 90 percent.  The saved maximum compactness is
+\[
+ {\cal C}_{\max}(t):=\max_r\frac{2m(t,r)}r.           \tag{IEF57b}
+\]
+These definitions are identical in the SC and EF drivers wherever the two
+descriptions overlap.
+
+\paragraph{Initially bound family diagnostic and mass schema.}
+The angular scan is defined on the normalized Schwarzschild \(\tau=0\)
+family, not on the later extracted null slice.  Let \(W_p\) be the invariant
+rest weight of marker \(p\).  VENUS records
+\begin{align}
+ M_0&=\sum_p W_p,
+ &E_{\rm bind}&=M_0-M_{\rm ADM}^{\rm family},             \tag{IEF58a}\\
+ f_{\rm bind}&=\frac{E_{\rm bind}}{M_0}
+ =\frac{M_0-M_{\rm ADM}^{\rm family}}{M_0}.              \tag{IEF58b}
+\end{align}
+Here \(M_0\) is
+\code{fixed_family_rest_weight} and \(f_{\rm bind}\) is
+\code{fixed_family_binding_fraction}.  Both total rest weight and ADM mass
+are invariant under the asymptotically normalized SC--EF coordinate change,
+so the SC and mapped-EF summaries must contain the same values.  The driver
+stores the numbers in the comma-separated-value (CSV) file
+\path{fixed_family_initial_bound_diagnostics.csv}; a resume reads and
+algebraically validates that immutable one-row sidecar instead of inferring
+the family from the evolved checkpoint.  The condition \(f_{\rm bind}>0\) is
+necessary global positive-binding-energy evidence for a halo label, but is
+not sufficient for virialization: a globally bound system may undergo broad
+breathing oscillations, lose a component, or remain unresolved on the saved
+time interval.  Accordingly the summary boolean is conservatively named
+\code{fixed_family_positive_binding_energy}, not ``all particles bound.''
+
+For additional transparency the code evaluates, on this same SC \(\tau=0\)
+slice,
+\begin{align}
+ \epsilon_p&=\sqrt{1+w_p^2+2\eta_p/r_p^2},
+ &E_{p,\mathrm{proxy}}&=e^{\mu(0,r_p)}\epsilon_p,          \tag{IEF58c}\\
+ \langle E_{\mathrm{proxy}}\rangle_{W}
+ &=\frac{1}{M_0}\sum_pW_pE_{p,\mathrm{proxy}},
+ &F_{E\ge1}&=\frac{1}{M_0}\sum_pW_p
+       \mathbf 1[E_{p,\mathrm{proxy}}\ge1].              \tag{IEF58d}
+\end{align}
+The indicator \(\mathbf 1[\mathcal P]\) equals one when proposition
+\(\mathcal P\) is true and zero otherwise.
+It reports \(\min_pE_{p,\mathrm{proxy}}\),
+\(\max_pE_{p,\mathrm{proxy}}\), the weighted mean in (IEF58d), and
+\(F_{E\ge1}\).  In a static Schwarzschild spacetime
+\(-u_\tau=e^\mu\epsilon\) is the Killing energy per unit rest mass.  The
+collapse data are dynamical and have no such timelike Killing symmetry, so
+(IEF58c) is only an instantaneous frozen-metric energy-at-infinity proxy; it
+is not conserved and \(F_{E\ge1}\) is reported but never used as a hard halo
+cut.  Likewise the history column called \code{virial_ratio} is the Newtonian
+proxy \(2K/|W|\), not a relativistic virial identity.  The sustained radius,
+metric, general-relativistic (GR) stress-balance, escape, and time-series
+tests therefore remain
+essential, and an unresolved breathing state remains \code{undetermined}.
+
+Three distinct ADM quantities appear in every mapped run and must not be
+collapsed into one field:
+\begin{align}
+ M_{\rm family}&=M_{\rm ADM}(\tau=0),                    \tag{IEF58e}\\
+ M_{\rm null}&=M_{\rm ADM}\text{ at the extracted null slice},\tag{IEF58f}\\
+ M_{\rm dep}&=M_{\rm ADM}\text{ reconstructed from EF markers at }\widehat v=0.
+                                                               \tag{IEF58g}
+\end{align}
+Their exact schema mapping is \(M_{\rm family}\leftrightarrow\)
+\path{fixed_family_adm_mass}, \(M_{\rm null}\leftrightarrow\)
+\path{null_slice_conserved_adm_mass}, and \(M_{\rm dep}\leftrightarrow\)
+\path{initial_deposited_adm_mass}.
+The family-to-null donor conservation error and null-to-deposition map error
+are reported separately as
+\begin{equation*}
+ \delta_{\rm donor}=\frac{|M_{\rm null}-M_{\rm family}|}{M_{\rm family}},
+ \qquad
+ \delta_{\rm map}=\frac{|M_{\rm dep}-M_{\rm null}|}{M_{\rm null}}.\tag{IEF58h}
+\end{equation*}
+Their schema names are
+\path{null_slice_adm_relative_drift_from_family} and
+\path{initial_deposition_adm_relative_error_from_null_slice}.
+Neither numerical mismatch redefines the fixed-ADM family.
+
+\paragraph{Relativistic late-time balance diagnostic.}
+A stationary, spherically symmetric anisotropic distribution in Schwarzschild
+variables obeys the radial Einstein--Vlasov anisotropic
+Tolman--Oppenheimer--Volkoff (TOV), or Jeans, balance
+equation
+\begin{equation*}
+ {\cal R}_{J}(r)
+ =\frac{d p_{\rm rad}}{dr}+(\rho+p_{\rm rad})\mu_r
+  -\frac{p_{t,\Sigma}-2p_{\rm rad}}{r}=0,
+ \qquad p_{t,\Sigma}=p_\theta+p_\phi=2p_t .              \tag{IEF58i}
+\end{equation*}
+The three terms are the radial pressure gradient, gravitational force
+density, and force density from pressure anisotropy.  Their cancellation in
+(IEF58i) gives the instantaneous GR static-balance test.  The Newtonian
+\code{virial_ratio} measures a different approximation.  A small balance
+residual over a sustained interval is necessary for stationarity, while
+nonlinear stability also requires following perturbations over the relevant
+dynamical times.
+
+For cell centers \(r_i\), VENUS uses the centered nonuniform-grid derivative
+\((p_{{\rm rad},i+1}-p_{{\rm rad},i-1})/(r_{i+1}-r_{i-1})\).
+Denote this discrete radial derivative by \(D_r\).  The code records
+\begin{align}
+ {\cal J}_{1}
+ &=\frac{\displaystyle\sum_{i\in\Omega}\Delta V_i
+                       |{\cal R}_{J,i}|}
+        {\displaystyle\sum_{i\in\Omega}\Delta V_i
+          \left(\left|D_rp_{{\rm rad},i}\right|
+          +\left|(\rho_i+p_{{\rm rad},i})\mu_{r,i}\right|
+          +\left|\frac{p_{t,\Sigma,i}-2p_{{\rm rad},i}}{r_i}\right|\right)},
+                                                               \tag{IEF58j}\\
+ \Delta V_i&=\frac{4\pi}{3}
+       \left(r_{i+1/2}^{3}-r_{i-1/2}^{3}\right).              \tag{IEF58k}
+\end{align}
+The common volume weight makes \({\cal J}_1\) dimensionless; zero is exact
+balance, while a value of order unity means that the uncancelled residual is
+comparable to the magnitudes of the force terms.  The support set \(\Omega\)
+excludes the first and last derivative cells, any cell whose three-point
+stencil is invalid, and cells with
+\(\rho_i\le10^{-6}\max_j\rho_j\).  At least three supported cells are
+required.  Otherwise the history records \(-1\), explicitly meaning
+``unavailable,'' never zero.
+
+SC outputs supply \(\rho,p_{\rm rad},p_{t,\Sigma},\mu_r\) directly.  Before
+a horizon,
+an EF output reconstructs the same-event Schwarzschild quantities as
+\begin{equation*}
+ \rho=\frac{T_{vv}}{ab^2},\qquad
+ p_{\rm rad}=\rho-S,\qquad
+ p_{t,\Sigma}=\frac{2T_{\theta\theta}}{r^2},\qquad
+ \mu_r=\frac{m+4\pi r^3p_{\rm rad}}{r^2a},
+ \qquad a=1-\frac{2m}{r}.                                  \tag{IEF58l}
+\end{equation*}
+These are the same local tensor pullbacks used by the coordinate-parity
+audit.  The pressure derivative used in an ordinary EF output, however,
+follows its constant-\(v\) radial array.  The map in (IEF38c-6) gives
+\[
+ \left.\partial_rp_{\rm rad}\right|_v
+ =\left.\partial_rp_{\rm rad}\right|_\tau
+  -h\,\partial_\tau p_{\rm rad},\qquad
+ h=e^{\lambda-\mu}.                                    \tag{IEF58l-1}
+\]
+Thus the native EF residual approaches the Schwarzschild static-balance
+residual in a stationary state.  During time-dependent motion it also
+contains the null-slice pressure variation, so it is used as a stationarity
+proxy together with the radius and metric histories.  An exact dynamical
+cross-coordinate residual requires reconstructing a common spacelike slice
+or including the time derivative in (IEF58l-1).
+Formula (IEF58l) is evaluated
+only where \(a>0\) and \(b>0\); once the polar chart fails at a trapped surface,
+the EF Jeans value is unavailable even though the EF evolution itself remains
+regular and continues through the horizon.
+
+The implementation mirrors the displayed terms without a hidden floor:
+\codesource{Relativistic Jeans diagnostic}{\path{cpu/src/drivers/einstein_vlasov_wpic.cpp}}{Profile-gradient, gravity, anisotropy, and normalized residual calculation}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+dp_dr      = (p_r[i+1] - p_r[i-1]) / (r[i+1] - r[i-1]);
+gravity    = (rho[i] + p_r[i]) * mu_r[i];
+anisotropy = (p_t_sum[i] - 2*p_r[i]) / r[i];
+R_J        = dp_dr + gravity - anisotropy;
+J1         = sum(dV*abs(R_J))
+           / sum(dV*(abs(dp_dr)+abs(gravity)+abs(anisotropy)));
+\end{lstlisting}
+\paragraph{Exact time-series halo gates.}
+The halo classifier tests the decrease in half-rest-mass radius, sustained
+radius and metric behavior, and relativistic stress balance.  The following definitions specify its
+complete default criteria.  Let
+\({\cal S}_{\rm hist}:=\{t_i\}\) be the complete
+saved history, let \(t_0,t_f\) be its first and last times, and let
+\(T_{\rm cfg}\) be the requested end time.  The late set \({\cal L}\) is
+\[
+ t_i\in{\cal L}
+ \quad\Longleftrightarrow\quad
+ t_i\ge t_f-0.30(t_f-t_0),
+ \qquad N_{\cal L}\ge5.                                \tag{IEF58m}
+\]
+The history must contain at least two strictly time-ordered samples; every
+\(r_{50},r_{90}\) must be positive and every saved compactness and Jeans
+value must be finite.  A Jeans value of \(-1\) remains a finite, explicit
+``unavailable'' marker and is excluded only from the Jeans subset below.
+
+For any saved scalar series \(x_i\), write \(Q_p[x]\) for its linearly
+interpolated percentile after sorting: its zero-based sorted position is
+\(p(N-1)\).  Write
+\[
+ B_{\cal I}[x]
+ =\frac{\sum_{i\in{\cal I}}(t_i-\bar t_{\cal I})
+                             (x_i-\bar x_{\cal I})}
+        {\sum_{i\in{\cal I}}(t_i-\bar t_{\cal I})^2},
+ \qquad
+ \Delta t_{\cal I}=\max_{i\in{\cal I}}t_i-
+                    \min_{i\in{\cal I}}t_i,           \tag{IEF58n}
+\]
+where bars are ordinary sample means.  Thus \(B\) is the least-squares
+straight-line slope and \(B\Delta t\) is its fitted change across the stated
+window.
+
+Before any late-time shape test, all of the following gates must pass:
+\begin{align}
+ t_f&\ge(1-10^{-6})T_{\rm cfg},&
+ f_{\rm bind}&>0,&
+ \hbox{no apparent horizon},                           \tag{IEF58o}\\
+ \frac{W_{\rm escaped}}{W_{\rm initial}}&\le0.05,&
+ \min_{t_i\in{\cal S}_{\rm hist}}r_{50}(t_i)&<0.95r_{50}(t_0),&
+ \max_{t_i\in{\cal S}_{\rm hist}}{\cal C}_{\max}(t_i)&<0.99. \tag{IEF58p}
+\end{align}
+Here \(W_{\rm escaped}\) and \(W_{\rm initial}\) are escaped and initial
+invariant rest weights.  The compression test requires the perturbed object
+to contract measurably before settling; it prevents an almost unevolved
+initial state from being called a newly formed halo.  The last condition
+prevents a Schwarzschild run that merely stalls next to its coordinate
+singularity from being mislabeled as a halo.
+
+With \(\delta=10^{-300}\) used only to make a formally safe denominator, the
+late radius and metric gates are exactly
+\begin{align}
+ Q_{0.5}[r_{50}]&\le1.50r_{50}(t_0),&
+ \frac{Q_{0.9}[r_{50}]-Q_{0.1}[r_{50}]}
+      {\max(Q_{0.5}[r_{50}],\delta)}&\le0.75,          \tag{IEF58q}\\
+ \left|B_{\cal L}[r_{50}]\frac{\Delta t_{\cal L}}
+                                  {r_{50}(t_0)}\right|&\le0.25,&
+ \left|B_{\cal L}[r_{90}]\frac{\Delta t_{\cal L}}
+                                  {r_{90}(t_0)}\right|&\le0.25,\tag{IEF58r}\\
+ Q_{0.9}[{\cal C}_{\max}]-Q_{0.1}[{\cal C}_{\max}]&\le0.05,&
+ \left|B_{\cal L}[{\cal C}_{\max}]\Delta t_{\cal L}\right|&\le0.05.
+                                                               \tag{IEF58s}
+\end{align}
+In plain language, the inner half-mass radius must remain bounded, neither
+the half-mass nor 90-percent radius may show sustained growth or shrinkage,
+and the strong-field geometry must stop drifting.
+
+Let \({\cal L}_J\subseteq{\cal L}\) contain only samples with
+\({\cal J}_1\ge0\).  The balance gates are
+\begin{align}
+ N_{{\cal L}_J}&\ge
+ \max\!\left(3,\left\lceil0.75N_{\cal L}\right\rceil\right),&
+ Q_{0.5}[{\cal J}_1]&\le0.25,&
+ Q_{0.9}[{\cal J}_1]&\le0.25,                         \tag{IEF58t}\\
+ B_{{\cal L}_J}[{\cal J}_1]\Delta t_{{\cal L}_J}&\le0.05.&&
+                                                               \tag{IEF58u}
+\end{align}
+The final gate limits an \emph{increase}; it deliberately has no absolute
+value, so an improving (negative-slope) balance residual is allowed.  A
+horizonless state that fails any gate is ``undetermined'' or ``dispersal'' as
+appropriate, never a certified halo.
+
+The SC and EF drivers call the same implementation in
+\path{include/ev/weighted_einstein_vlasov_halo_classifier.hpp}; at run
+finalization it reads the complete saved history and applies all of the cuts
+above.  The complete audit is written under the
+\path{high_compactness.halo_classifier} summary object, including every
+threshold, late-window statistic, Boolean gate, and stable
+\path{failed_checks} name.  Only an empty failed-check list sets
+\path{virialized_halo=true}, emits \path{outcome=virialized_halo}, and allows
+\code{--expected-outcome halo} to return success.  The Python threshold
+analyzer independently recomputes the time-series evidence and verifies that
+its result is consistent with this driver audit.  Analyzer options may impose
+additional sensitivity cuts, but cannot turn a driver-rejected state into a
+halo.  Every numeric cut still requires resolution and static-baseline
+sensitivity tests: these numbers are conservative analysis choices, not new
+laws of relativistic dynamics.  No band in \(2K/|W|\) is a halo gate.
+
+\subsubsection{Validation hierarchy and Schwarzschild overlap experiment}
+
+Component validation covers continuum identities, momentum maps,
+constraints, characteristics, horizons and excision. A scientific calculation
+extends these checks through the following hierarchy:
+\begin{enumerate}
+\item \textbf{Minkowski deposition and characteristics.}
+      Verify (IEF47)--(IEF50), \(a=b=1\), exact radial characteristics, and
+      conservation of the flat-space Hamiltonian for \(L\ne0\).
+\item \textbf{Momentum-map round trip.}
+      Check (IEF42)--(IEF44) from strongly inward to strongly outward \(w\),
+      including cancellation-prone inward data.
+\item \textbf{Vacuum Schwarzschild.}
+      With fixed \(M\) and no active markers, recover (IEF54), locate
+      \(r_H=2M\), and verify finite characteristic derivatives at and inside
+      \(r=2M\).
+\item \textbf{Constraint and parallel identities.}
+      Verify (IEF30), \(b>0\), fixed outer \(Y=M\), deterministic deposition,
+      and identical frozen pushes for different thread counts.
+\item \textbf{Horizon and excision bookkeeping.}
+      Cross \(a=0\), excise only behind the horizon, retain total rest weight,
+      and retain fixed ADM mass after source removal.
+\item \textbf{Static cross-coordinate solution.}
+      Transform one equilibrium Schwarzschild marker ensemble
+      using (IEF40)--(IEF43).  Compare Misner--Sharp mass, stress tensor,
+      areal density, and stationary orbits at increasing resolution.
+\item \textbf{Dynamical same-event coordinate equivalence.}
+      Generate the EF initial state by solving (IEF45m) on the dense SC donor
+      history and by intersecting every marker worldline with that solved null
+      surface.  Solve the inverse eikonal (IEF45p) as an independent check.
+      On the imported null surface, compare the scalar distribution with the
+      measure (IEF45e-1), including all marker IDs and invariant weights.
+      Throughout the common future, compare every covariant stress component
+      (IEF45g)--(IEF45i-3), and both the metric and inverse metric under the
+      Jacobian pullback (IEF45j)--(IEF45l).  Later empirical-\(f\) comparison
+      additionally requires the optional trajectory artifact described above.
+      Require the forward and inverse maps to compose to the identity within
+      the discretization error.  Equal coordinate timestamps or equal raw
+      radial arrays are not a test of coordinate equivalence.
+\item \textbf{Post-horizon EF continuation.}
+      Continue only the EF evolution through \(a=0\), demonstrate active
+      markers at \(r<r_H\), and pass the intrinsic accepted-step,
+      post-horizon-duration, mass-accounting, and causal-excision tests
+      (IEF57c)--(IEF57i).  This establishes a candidate only.  Vary the
+      excision trigger and buffer independently, authenticate the repeats,
+      and require (IEF57j) before calling the endpoint certified.  Outer-domain
+      variation remains a separate convergence check and is not replaced by
+      the excision certificate.
+\end{enumerate}
+
+The Schwarzschild calculation cannot reach \(a=0\) at finite Schwarzschild
+coordinate time.  ``Agreement up to horizon formation'' therefore means that
+the same-event, tensorially transformed inter-coordinate difference converges
+to zero over the common exterior domain and through increasingly compact
+pre-horizon slices.  Compactness milestones are useful for selecting slices,
+but they are not a substitute for solving the event map.  A passing certificate
+requires at least two radial/time resolutions and two independent quiet-PIC
+realizations; missing map metadata, inverse closure, matter-support coverage,
+full moments, or convergence evidence makes the result
+\code{inconclusive}, never \code{pass}.
+
+\subsubsection{Angular-momentum threshold protocol}
+
+There is no universal critical angular momentum for neutral
+Einstein--Vlasov collapse.  It depends on the rest-mass profile, radial
+momentum distribution, angular-momentum distribution, compactness, and on
+which quantity is held fixed as angular momentum changes.  East's value
+\(L_c/M\simeq0.67\) belongs to his charged (\(q_0=1.25\)), near-extremal family and
+must not be used as the expected neutral VENUS answer.
+
+\paragraph{One bound family and one fixed perturbation.}
+The production scan begins with one validated static energy-cutoff shell from
+Section~\ref{sec:ef-static-energy-cutoff-shell}.  The continuum parameters
+\((C,L_0,y_c)\), target ADM mass, one even marker count, quiet-sampling
+realization, and the inward-kick parameters \((\kappa,r_c)\) in (IEF-S26) are
+fixed before the scan.  The kick is applied once and identically at every
+scan point.  No Gaussian radial tail, radial-temperature retuning, or
+point-dependent kick is permitted.
+
+The resulting coordinate-neutral base artifact fixes every marker ID, source
+ID, relative invariant rest weight, radius, and kicked radial momentum.
+Introduce only the deterministic angular scale \(s_L>0\),
+\[
+ L_p(s_L)=s_LL_0,\qquad
+ \eta_p(s_L)=\frac{s_L^2L_0^2}{2}.                 \tag{IEF59}
+\]
+For this delta-angular-momentum shell, all markers have the same magnitude at
+a fixed \(s_L\), while their isotropic angular directions still give zero net
+spacetime angular momentum.  The driver interface is therefore
+\codesource{Angular-family production interface}{\path{cpu/src/drivers/einstein_vlasov_wpic.cpp}}{Authenticated angular rescaling at fixed target ADM mass}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+--high-initial-condition energy_cutoff_shell
+--high-energy-cutoff-ell0 ELL0
+--high-angular-momentum-scale S_L
+--high-target-initial-adm-mass M_TARGET
+\end{lstlisting}
+The bare \code{--high-specific-angular-momentum} replacement is deliberately
+rejected for this IC, because it would erase the authenticated continuum
+provenance.
+
+Changing \(L\) at fixed rest weight changes particle energy and hence the
+gravitating mass.  To isolate the centrifugal control, VENUS applies (IEF59),
+then multiplies all invariant marker weights by one common positive
+\(\alpha(s_L)\), leaves their phase-space locations and relative weights
+unchanged, solves the Schwarzschild radial constraint, and uses bracketed
+bisection to impose
+\[
+ M_{\rm ADM}\!\left[\alpha(s_L),s_L\right]
+       =M_{\rm ADM}^{\rm target}.                       \tag{IEF59a}
+\]
+The solve fails if the target cannot be reached on the exterior Schwarzschild
+branch; it never clips the metric or accepts a supercritical initial SC slice.
+Both \(\alpha\), the realized rest weight, the target and measured initial ADM
+masses, and \(L/M_{\rm ADM}\) are written to the run summary.  Positive
+binding is re-evaluated from the \emph{realized} fixed-ADM markers at every
+\(s_L\): a continuum baseline that is bound at \(s_L=1,\kappa=0\) does not by
+itself prove that every kicked/rescaled member is bound.
+
+For an initially bound family the centrifugal barrier makes a virialized or
+long-lived halo the expected sufficiently high-\(L\) outcome, whereas reducing
+\(L\) favors collapse.  This is the physical ordering to test, not a label to
+impose.  A scan that finds an unbound/dispersing high-\(L\) endpoint has not
+measured the requested black-hole--halo threshold and must be redesigned or
+reported as such.
+
+\paragraph{Preflight before long jobs.}
+No final values of \((C,L_0,y_c,\kappa,r_c,M_{\rm ADM}^{\rm target})\),
+\(R_B,R_E,T_{\rm donor}\), end time, or scan bracket are hard-coded by this
+manual.  They are frozen only after local tests establish all of the
+following:
+\begin{enumerate}
+\item the zero-kick \(s_L=1\) baseline reproduces the continuum sources,
+      constraints, binding, current cancellation, and stable Lagrangian
+      radii under radial/time/marker refinement;
+\item the selected fixed kick remains positively bound and exterior on its
+      initial SC slice, and a high-\(L\) endpoint shows bounded breathing and
+      sustained Jeans/radius/profile stability rather than escape;
+\item a lower-\(L\) endpoint forms an EF apparent horizon and continues for a
+      resolved post-horizon interval without violating fixed-\(M\), \(b>0\),
+      \(P>0\), or causal excision, thereby passing the intrinsic candidate
+      gate; its independent excision-threshold and buffer repeats must then
+      pass (IEF57j) before it is a certified threshold endpoint;
+\item the chosen \(R_B,R_E,T_{\rm donor}\) pass every vacuum, TSC-clearance,
+      crossing, eikonal, analytic-extension, and donor-history gate stated
+      above for the largest production marker realization; and
+\item short initialize-only and short dynamic runs produce complete,
+      internally consistent IC, summary, restart, and map provenance before
+      the cluster wall time is increased.
+\end{enumerate}
+
+First perform a coarse logarithmic or monotone scan to find one intrinsic
+black-hole candidate at low \(s_L\) and one genuinely virialized, positively
+bound halo case at high \(s_L\).  The candidate may guide the scout but does
+not yet close a scientific bracket.  Monotonicity must be checked from the
+outcomes rather than assumed.  Only then bisect the same marker realization,
+and certify the low endpoint before reporting the final bracket:
+\begin{enumerate}
+\item label a run \path{black_hole_candidate} only after the outer \(a=0\)
+      crossing and every intrinsic condition (IEF57c)--(IEF57i) pass; label it
+      \path{black_hole_certified} only after the authenticated independent
+      sensitivity test (IEF57j) also passes;
+\item classify a virialized halo only when the global family diagnostic has
+      \(f_{\rm bind}>0\), bound Lagrangian radii and time-averaged profiles
+      remain stable for several dynamical times; missing or nonpositive
+      \(f_{\rm bind}\) fails this halo gate, while black-hole classification
+      remains independent of it;
+\item distinguish a dispersing high-\(L\) cloud from a virialized halo using
+      escaped rest weight and growing Lagrangian radii;
+\item retain an ``undetermined'' class for runs whose near-critical dwell time
+      exceeds the integration window;
+\item repeat the terminal bracket at increased marker, radial, temporal, and
+      domain resolution, and with the second authenticated quiet realization;
+\item quote a converged bracket, not more digits than the resolution and PIC
+      noise support.
+\end{enumerate}
+Near a type-I threshold the dwell time can increase strongly as the bracket
+narrows.  Failure to form a horizon by a fixed short time is not, by itself,
+evidence for a stable halo.
+
+\paragraph{Which outputs decide the threshold.}
+For a horizon-penetrating campaign, the threshold classifier consumes the EF
+scan directory at each \(s_L\).  The associated SC calculation is the
+physical, forward-time incoming solution used to build that point's null
+initial data; it also provides pre-horizon comparison data.  Inside the
+extractor, a separate scratch copy with reversed radial momenta is evolved
+forward only to supply the negative-\(\tau\) part of the donor history, as
+explained in (IEF45c-1).  The physical SC evolution is never replaced by that
+scratch copy.  If a paired long SC run is retained, it may support the halo
+diagnosis while \(a>0\), but the EF run alone decides post-horizon black-hole
+candidate evidence; the independent excision repeats decide whether that
+candidate is certified.
+
+An initial multi-\(s_L\) scout is only a search for a possible low-\(L\)
+black-hole/high-\(L\) halo bracket.  It is not a coordinate-equivalence
+certificate, even though every EF point has an authenticated donor map.  The
+separate \(2\times2\) parity workflow must already have issued the strict
+certificate that authorizes the scout.  A scout bracket is likewise not a
+final threshold until its black-hole endpoint has the separate authenticated
+excision sensitivity certificate and nearby points have been repeated at
+finer resolution and with another quiet-PIC realization.  A bare
+\path{black_hole_candidate} never closes the bracket.
+
+For the required paired-coordinate cluster experiment, the Schwarzschild job
+first writes a dense donor history and an authenticated solved-eikonal null
+artifact.  The following is a symbolic template: every upper-case shell
+variable is a value fixed by the successful local preflight, not a shipped
+production default.
+\codesource{SC donor and solved-null export interface}{\path{cpu/src/drivers/einstein_vlasov_wpic.cpp}}{Symbolic physical SC run and authenticated EF null-artifact export}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+--coordinates schwarzschild
+--physical-ic common_ic.bin
+--high-initial-condition energy_cutoff_shell
+--high-energy-cutoff-amplitude "$STATIC_C"
+--high-energy-cutoff-ell0 "$STATIC_ELL0"
+--high-energy-cutoff-central-y "$STATIC_YC"
+--high-energy-cutoff-power "$STATIC_K"
+--high-radial-infall "$FIXED_KICK"
+--high-infall-core-radius "$FIXED_KICK_CORE"
+--high-angular-momentum-scale "$PARITY_S_L"
+--high-target-initial-adm-mass "$TARGET_ADM"
+--high-sampling-realization "$REALIZATION"
+--export-ef-null-initial-data ingress_null.bin
+--ef-null-donor-duration "$DONOR_DURATION"
+--ef-map-worldtube-radius "$R_B"
+--high-r-max "$R_E"
+--high-radial-cells "$N_R"
+\end{lstlisting}
+The EF job must consume that artifact; giving it only the spacelike IC is a
+hard error:
+\codesource{EF solved-null import interface}{\path{cpu/src/drivers/einstein_vlasov_wpic.cpp}}{Symbolic EF production run consuming the authenticated null artifact}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+--coordinates eddington_finkelstein
+--physical-ic common_ic.bin
+--high-initial-condition energy_cutoff_shell
+--high-energy-cutoff-amplitude "$STATIC_C"
+--high-energy-cutoff-ell0 "$STATIC_ELL0"
+--high-energy-cutoff-central-y "$STATIC_YC"
+--high-energy-cutoff-power "$STATIC_K"
+--high-radial-infall "$FIXED_KICK"
+--high-infall-core-radius "$FIXED_KICK_CORE"
+--high-angular-momentum-scale "$PARITY_S_L"
+--high-target-initial-adm-mass "$TARGET_ADM"
+--high-sampling-realization "$REALIZATION"
+--ef-null-initial-data ingress_null.bin
+--high-r-max "$R_E"
+--high-radial-cells "$N_R"
+\end{lstlisting}
+The production parity directed acyclic graph (DAG), meaning the dependency
+graph that orders extraction, paired runs, comparisons, and certification,
+repeats this mapping for two resolutions and two
+independent deterministic quiet-sampling realizations, builds convergence
+evidence, and certifies the fine realization only after the same-event tests
+above pass.  Only then is the angular scan released.  The coordinate-specific
+realized marker hashes are expected to differ; equivalence is authenticated by
+the common base IC plus the map-manifest graph, invariant marker data, and the
+initial-null-slice empirical-measure audit and same-event tensor pullbacks.
+After the shared exterior
+comparison, only the EF run is continued into the trapped region.  The final
+scientific result is a resolution- and realization-supported interval in
+\(L/M_{\rm ADM}^{\rm target}\), together with the complete fixed-family
+definition and outcome diagnostics, never a universal number.  Its low-\(L\)
+endpoint must be \path{black_hole_certified}; an intrinsic candidate without
+the authenticated threshold/buffer repeats is reported as inconclusive.

@@ -1,0 +1,68 @@
+[
+  {
+    "actual_time": 0,
+    "native_sha256": "1967589c72d411ed2a61c1d4ca3e3094941dc2525e9e2c1c4584bac96fe54bc9",
+    "field_sha256": null,
+    "step": 0
+  },
+  {
+    "actual_time": 10,
+    "native_sha256": "aebc90e1ea8b2a01b67d2f8bb9585f081bc65d00dc0652d3d2a3da531ef0822a",
+    "field_sha256": "f3d330f9367e9a15114f3d429eddc5500cb2ad36515710d84047ccc60f1623b5",
+    "step": 1335
+  },
+  {
+    "actual_time": 20,
+    "native_sha256": "2df58787f03b76e6d147356016fc6633f114c3f4e7af886d944e64d4bf600923",
+    "field_sha256": "8751f10ffe33a68c6cc25cd6b5336c9138240c3cebf59ad8782156251608034c",
+    "step": 2670
+  },
+  {
+    "actual_time": 30,
+    "native_sha256": "a8c0c164f33f12753b99e6c394ef922abcd5d1e2225151be3de4254c7c1ed1b5",
+    "field_sha256": "04ef6f05ca800a924d4d8044ae843b793fb2ff1f9b58ebb3a6eb17f98d9be373",
+    "step": 4005
+  },
+  {
+    "actual_time": 50,
+    "native_sha256": "54a981f64ffd38ee199f66f2271c047e9a64b08a273ac9b500d38de4c77b7663",
+    "field_sha256": "28a4b77ba3ea39b85e53e7033988f9375e48ebdf2020aed44dcdca4d13a26852",
+    "step": 6675
+  },
+  {
+    "actual_time": 100,
+    "native_sha256": "6a8f953a40cfb92dcb17f85a395ff1faaba2a165e002f866b6bf73151b8bc29f",
+    "field_sha256": "b5bf73466fd7b8c1383ec4edf58eccc30e80c9056a1f4cd99dd5a808d1c5a56d",
+    "step": 13350
+  },
+  {
+    "actual_time": 300,
+    "native_sha256": "5fb4994b21f0a28204a5423165fc08e7d5f93316d71e2ddb0f13dc9f15190ef0",
+    "field_sha256": "587bdf5fa3c57d9248a390abc318c79a61d277a63a7f1fa0943a320a269617fd",
+    "step": 40050
+  },
+  {
+    "actual_time": 800,
+    "native_sha256": "7aca1ba2177c3c9e29a6e7c28a9a85df2e0cffca0a6552183a96259493dae5b3",
+    "field_sha256": "3c2d6445e9d9be60ca5d010adb468c348a8a6c4c84f34813e1f4568ad3e8d0d0",
+    "step": 106800
+  },
+  {
+    "actual_time": 2000,
+    "native_sha256": "823647d8fb9846afa510622642726d55aadf3ad13a5c4b486346dde74c70eba3",
+    "field_sha256": "69795fd19cdc1635e4e2f0114605777fa7381b2e656ab15d53fdb04227a36806",
+    "step": 267000
+  },
+  {
+    "actual_time": 5000,
+    "native_sha256": "ae794a4c5d4979c851f1ffad7431e9d08c3780bc898cfc42708890081bcbb070",
+    "field_sha256": "4de91375c75ed6a26a771e51f76eb7d1aeb5f7cf0a01881a0bd4e02063172b80",
+    "step": 667500
+  },
+  {
+    "actual_time": 10000,
+    "native_sha256": "f07d552726c35869a881bb0fe97b94a48038fb5458ec89267f27dbbda1593c8a",
+    "field_sha256": "455d4bc074a428bf3c044e3f758be48e3d3fbae52202ee4157542cd857802227",
+    "step": 1335000
+  }
+]

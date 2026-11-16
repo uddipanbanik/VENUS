@@ -1,0 +1,59 @@
+{
+  "case": "static_g05_vp",
+  "model": "VP",
+  "physical_time": [
+    0,
+    10000
+  ],
+  "native_distinct_frames": 1001,
+  "encoded_frames": 1058,
+  "fps": 24,
+  "duration_seconds": 44.083333333333336,
+  "pixel_size": [
+    1920,
+    864
+  ],
+  "axes": {
+    "log10_radius": [
+      -1.0,
+      2.05
+    ],
+    "log10_density": [
+      -9.2,
+      0.2
+    ],
+    "signed_slope": [
+      -4.65,
+      0.3
+    ]
+  },
+  "positive_density_samples": 251915,
+  "finite_centered_slopes": 231895,
+  "sampling": "Every positive density bin and finite centered21-cell logarithmic slope. Heavy segments have effective marker count at least 32. All density bins in each slope window are positive.",
+  "time_scope": "Every distinct saved profile is present in chronological order. Initial frame once, next actual saved state immediately after it. Early Gaussian states are held for visibility, and the actual compression state for one second. The final state is held2.4seconds.",
+  "cache_sha256": "ae32e1353eca9931931699de8e37bd583a63313b4a8acad986eb11760fec2e60",
+  "source_ledger_sha256": "91225a74b508d3800ad6ba9b2bba2e71f9a6184f883cdfde78bbfdf4af1c3cf3",
+  "frame_ledger_sha256": "6a57345fa1f1c42bd62e4579e26955084c89d8559729368bdd9c1254434d4685",
+  "renderer_sha256": "a1a5fe345db26e4b2e921203d67c64acb97c3b130a734d286f47d69cff88e7a5",
+  "artifacts": {
+    "static_g05_vp.mp4": {
+      "sha256": "f4a2f7fa4f20e0899977bcd576e4e4df9171b9d0b12635409e1f95c127c6f492",
+      "bytes": 3464058
+    }
+  },
+  "render_seconds": 5.082423791754991,
+  "time_color": {
+    "colormap": "plasma_r",
+    "normalization": [
+      0.0,
+      10000.0
+    ],
+    "early": "yellow",
+    "late": "dark blue"
+  },
+  "range_source": "Example expanding gamma=0.5 BP/VP density/slope comparison: analysis/scripts/reproduce_figures.py, density[-9.2,.2], slope[-4.65,.3], log10r[-1,2.05].",
+  "outside_visible_ordinates": {
+    "positive_density_samples": 32154,
+    "finite_slope_samples": 11541
+  }
+}

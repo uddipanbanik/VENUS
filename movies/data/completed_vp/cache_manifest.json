@@ -1,0 +1,101 @@
+{
+  "schema": "VENUS_COMPLETED_VP_MOVIE_CACHE_1",
+  "derivative": "Centered quadratic fit to log10density in21adjacent native radial cells. The full window has positive density.",
+  "effective_count": "Squared deposited mass divided by the sum of squared deposited marker contributions. Heavy curves require at least32.",
+  "native_saved_times": "Each case retains its actual chronological saved clocks, including off-grid restart endpoints. Initial time0 occurs once.",
+  "derivative_source": {
+    "path": "analysis/scripts/reproduce_figures.py",
+    "sha256": "10f28f59d0aeae1840aac8023c471b81bdfc7e031ffb2db19dd66d3b1937198f"
+  },
+  "cases": [
+    {
+      "case": "gaussian_static_vp",
+      "cache": "gaussian_static_vp.npz",
+      "cache_sha256": "f7210ee60367e2c595051bd89d2db71dfb7339c40802657e4cfa71e9c85aff37",
+      "frame_ledger": "gaussian_static_vp_sources.json",
+      "frame_ledger_sha256": "3f6fa941f4004e241f8f173b3d5b572633f67dfb86fc6e0d4917d4073d9bdc9b",
+      "native_frames": 5004,
+      "physical_time": [
+        0,
+        10000
+      ],
+      "actual_time_spacing": "Nominal2-unit profile cadence plus actual restart endpoints",
+      "positive_density_samples": 2325304,
+      "finite_centered_slopes": 2157062,
+      "distinct_native_radius_grids": 1,
+      "model": "VP",
+      "encounter_strength": 0,
+      "background": "static",
+      "final_native_sha256": "2044ba99a5870a638dc8d4afb5650f5fa90ff5a2a13eb10347e95525c0c2aff7",
+      "density_scope": "Complete active population on the native radial mesh.",
+      "native_rows": 512,
+      "first_time": 0.0,
+      "last_time": 10000.0,
+      "scenario_id": "narrow_gaussian_shell_vp",
+      "derivative_source": {
+        "path": "movies/scripts/reduce_gaussian_vp_cache.py",
+        "sha256": "678195c46d83054f982344184f08f4c67826babe5631eaaaae5b63a3f4c7d14f",
+        "scope": "Same 21-cell positive-window quadratic derivative; all valid saved columns solved together."
+      }
+    },
+    {
+      "case": "gaussian_expanding_vp",
+      "cache": "gaussian_expanding_vp.npz",
+      "cache_sha256": "d5af1207ad7da381ea0b373691dc226a4df57fa0f22c80b12714001bc99a9ea3",
+      "frame_ledger": "gaussian_expanding_vp_sources.json",
+      "frame_ledger_sha256": "bb7f5ae2fbdbbc8a4107121f0fb7cd658d38f33aeabf88b3cbc4b3a02b561493",
+      "native_frames": 5002,
+      "physical_time": [
+        0,
+        10000
+      ],
+      "actual_time_spacing": "Nominal2-unit profile cadence plus actual restart endpoints",
+      "positive_density_samples": 2230560,
+      "finite_centered_slopes": 2066285,
+      "distinct_native_radius_grids": 1,
+      "model": "VP",
+      "encounter_strength": 0,
+      "background": "expanding",
+      "final_native_sha256": "f07d552726c35869a881bb0fe97b94a48038fb5458ec89267f27dbbda1593c8a",
+      "density_scope": "Complete active population on the native radial mesh.",
+      "native_rows": 512,
+      "first_time": 0.0,
+      "last_time": 10000.0,
+      "scenario_id": "narrow_gaussian_shell_vp",
+      "derivative_source": {
+        "path": "movies/scripts/reduce_gaussian_vp_cache.py",
+        "sha256": "678195c46d83054f982344184f08f4c67826babe5631eaaaae5b63a3f4c7d14f",
+        "scope": "Same 21-cell positive-window quadratic derivative; all valid saved columns solved together."
+      }
+    },
+    {
+      "case": "static_g05_vp",
+      "cache": "static_g05_vp.npz",
+      "cache_sha256": "ae32e1353eca9931931699de8e37bd583a63313b4a8acad986eb11760fec2e60",
+      "frame_ledger": "static_g05_vp_sources.json",
+      "frame_ledger_sha256": "91225a74b508d3800ad6ba9b2bba2e71f9a6184f883cdfde78bbfdf4af1c3cf3",
+      "native_frames": 1001,
+      "physical_time": [
+        0,
+        10000
+      ],
+      "actual_time_spacing": 10,
+      "positive_density_samples": 251915,
+      "finite_centered_slopes": 231895,
+      "distinct_native_radius_grids": 1,
+      "model": "VP",
+      "encounter_strength": 0,
+      "background": "static",
+      "final_native_sha256": "ce0c3adc5126cce0e212d94a478cca3128f8fadcbbd6d82edbffe7e6da3a478e",
+      "density_scope": "Complete active population on the native radial mesh.",
+      "gamma_i": 0.5,
+      "initial_native_sha256": "cde5012be03de69234fb215e655ef26a97ac5901252ddb806c6ce0f866d250c2",
+      "initial_physical_velocity_scope": "Physical initial velocities, positions, angular momenta and masses retained from the expanding gamma0.5VP halo. H=0."
+    }
+  ],
+  "narrow_gaussian_derivative_source": {
+    "path": "movies/scripts/reduce_gaussian_vp_cache.py",
+    "sha256": "678195c46d83054f982344184f08f4c67826babe5631eaaaae5b63a3f4c7d14f",
+    "scope": "Same 21-cell positive-window quadratic derivative; all valid saved columns solved together."
+  }
+}

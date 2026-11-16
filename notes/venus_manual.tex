@@ -1,0 +1,2791 @@
+\documentclass[11pt]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[margin=0.85in]{geometry}
+\usepackage{amsmath,amssymb,bm,mathtools}
+\usepackage{array}
+\usepackage{booktabs,longtable,tabularx}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{tikz}
+\usepackage{xcolor}
+\usepackage{xurl}
+\usepackage[colorlinks=true,linkcolor=blue,urlcolor=blue,citecolor=blue]{hyperref}
+\usetikzlibrary{arrows.meta,positioning}
+
+\setlength{\emergencystretch}{3em}
+\raggedbottom
+\renewcommand{\topfraction}{0.85}
+\renewcommand{\bottomfraction}{0.7}
+\renewcommand{\textfraction}{0.1}
+\renewcommand{\floatpagefraction}{0.7}
+\setlist[itemize]{leftmargin=*}
+\setlist[enumerate]{leftmargin=*}
+\setcounter{tocdepth}{3}
+
+\newcommand{\dd}{\mathrm d}
+\newcommand{\ee}{\mathrm e}
+\newcommand{\Ph}{\Phi}
+\newcommand{\sigT}{\sigma_{\rm T}}
+\newcommand{\CB}{\mathcal C_{\rm B}}
+\newcommand{\CFP}{\mathcal C_{\rm FP}}
+\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+\newcommand{\codesource}[3]{%
+  \par\smallskip\noindent
+  \textbf{Listing ownership.}\space
+  \textbf{Task or tool:} #1.\space
+  \textbf{Implementation:} #2.\space
+  \textbf{Role:} #3.
+  \par\nopagebreak\smallskip
+}
+\newif\ifvenusfullcpu
+% Select the complete CPU grid/canonical branch; the WPIC and SphDSMC chapters
+% are included separately below.
+\venusfullcputrue
+
+\definecolor{codebg}{gray}{0.965}
+\definecolor{coderule}{gray}{0.70}
+\definecolor{flowborder}{RGB}{42,92,128}
+\definecolor{flowfill}{RGB}{239,247,252}
+\tikzset{
+  physicsflow/.style={
+    draw=flowborder,
+    fill=flowfill,
+    rounded corners=2pt,
+    line width=0.6pt,
+    text width=0.84\linewidth,
+    align=center,
+    inner xsep=7pt,
+    inner ysep=5pt,
+    font=\small
+  },
+  physicsarrow/.style={
+    -{Latex[length=2.2mm,width=1.5mm]},
+    draw=flowborder,
+    line width=0.8pt
+  }
+}
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  columns=fullflexible,
+  keepspaces=true,
+  breaklines=true,
+  frame=single,
+  rulecolor=\color{coderule},
+  backgroundcolor=\color{codebg},
+  xleftmargin=0.5em,
+  xrightmargin=0.5em,
+  aboveskip=0.6em,
+  belowskip=0.6em
+}
+
+\title{Vlasov--Einstein NUmerical Solver (VENUS) 1.0\\
+\large Physics, Algorithms, and Computing Manual}
+\author{Developed by Uddipan Banik, Frank van den Bosch, and Sachiet Kapur}
+\date{November 12, 2026}
+\hypersetup{
+  pdftitle={VENUS 1.0: Physics, Algorithms, and Computing Manual},
+  pdfauthor={Uddipan Banik, Frank van den Bosch, and Sachiet Kapur},
+  pdfsubject={Einstein--Boltzmann, Einstein--Vlasov, Vlasov--Poisson, Boltzmann--Poisson, WPIC, SphDSMC, CUDA and MPI},
+  pdfkeywords={VENUS, Einstein--Boltzmann, kinetic gravity, Einstein--Vlasov, Vlasov--Poisson, Boltzmann--Poisson, WPIC, SphDSMC, CUDA, MPI}
+}
+
+\begin{document}
+\maketitle
+
+\begin{center}\small
+The code was developed with assistance from the AI models GPT-Sol and Astra.
+\end{center}
+
+\begin{abstract}
+This manual follows the physical equations implemented in VENUS through
+their discretization, numerical update, and software operation.  The production marker methods come first:
+weighted particle-in-cell (WPIC) and persistent-marker spherical direct
+simulation Monte Carlo (SphDSMC).  Relativistic collisionless evolution is
+then derived in Schwarzschild and ingoing Eddington--Finkelstein coordinates,
+followed by the covariant material collision operator and its SC and EF
+sampling algorithms. The Newtonian chapters develop Vlasov--Poisson and
+Boltzmann--Poisson dynamics.  Exact
+finite-angle collision physics precedes small-angle approximations and the
+grid and orbit-based methods.  The later computing part distinguishes the central
+processing unit (CPU) implementation from graphics-processing-unit (GPU)
+acceleration through NVIDIA's CUDA platform, the OpenMP shared-memory model,
+and the Message Passing Interface (MPI) process model.  It also covers initial
+conditions, input and output (I/O), restarts, plotting, Graphics Interchange
+Format (GIF) animations, checks, and failure modes.  Every method states its
+implementation owner, maturity, conservation and locality requirements,
+coordinate or boundary limits, and the evidence needed before a result may be
+interpreted scientifically.
+\end{abstract}
+
+\tableofcontents
+
+\input{sections/foundations_and_notation}
+
+\part{Physics and Numerical Methods}
+
+\section{Production Marker Methods}
+
+The manual begins with the two mature persistent-marker families.  Weighted
+particle-in-cell (WPIC) alternates marker motion with mesh-based gravity;
+persistent-marker spherical direct simulation Monte Carlo (SphDSMC) instead
+computes spherical gravity from the sorted markers themselves.  Their chapters derive the gravitational and collision updates, then explain
+the initial data, source implementation, diagnostics, and accuracy checks.
+The computing chapters use that foundation to introduce build and launch
+commands.
+
+\input{sections/cpu/weighted_vlasov_pic_manual_section}
+
+\input{sections/cpu/spherical_dsmc_manual_section}
+
+\section{Einstein--Vlasov in Schwarzschild and Ingoing EF Coordinates}
+
+The next two chapters describe the same relativistic collisionless matter in
+two coordinate systems.  The Schwarzschild formulation provides the exterior
+reference and the ingoing Eddington--Finkelstein (EF) formulation supplies the
+horizon-penetrating evolution.  Coordinate comparison always identifies the
+same spacetime event before comparing fields or markers.
+
+\ifvenusfullcpu
+\input{sections/cpu/weighted_einstein_vlasov_pic_manual_section}
+
+\input{sections/cpu/ingoing_eddington_finkelstein_wpic_manual_section}
+\fi
+
+\input{sections/cpu/relativistic_boltzmann_manual_section}
+
+\input{sections/cpu/grid_equation_guide}
+
+\section{Grid and Orbit-Based Numerical Methods}
+
+This section follows the production marker chapters with grid-based reference,
+verification, and orbit-based methods.  Each module begins with the physical
+problem and the meaning of its phase-space variables.  It then gives the
+continuum equations, the numerical representation, and the update in source-
+code order.  Only after those ideas are established does a shortened code
+excerpt connect the algorithm to its implementation owner.  A shaded
+flowchart is included wherever several dependent stages would otherwise be
+hard to follow.
+
+The maturity label matters here.  The nodal EV and VP solvers are maintained
+reference calculations; the dense finite-angle Boltzmann operator is a small-
+problem verification oracle; the Fokker--Planck operator is a maintained
+small-angle approximation; and the canonical-orbit, reversible/sampled/
+streamed collision, and SLDG branches require the method-specific convergence checks
+stated in their chapters.  Reaching the requested final time establishes completion. Predictive
+accuracy also requires the method-specific convergence and conservation
+checks described in each chapter.
+
+\ifvenusfullcpu
+The algorithms appear in the following order:
+\begin{enumerate}
+\item common phase-space grids and numerical integration rules;
+\item the nodal grid Einstein--Vlasov reference evolution;
+\item collisionless Vlasov--Poisson evolution, including the nodal and
+      explicit finite-volume reference updates;
+\item the exact finite-angle Boltzmann collision operator, followed by its
+      reversible, sampled, streamed, and Fokker--Planck alternatives;
+\item the fully kinetic canonical-orbit Boltzmann--Poisson research solver;
+\item cell-integrated conservative and Hamiltonian SLDG transport;
+\item common mass, energy, and escape diagnostics.
+\end{enumerate}
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}[
+  >=Latex,
+  flow/.style={
+    draw,
+    rounded corners=2pt,
+    align=center,
+    inner sep=6pt,
+    text width=0.38\textwidth,
+    minimum height=2.35cm
+  },
+  state/.style={
+    draw,
+    rounded corners=2pt,
+    align=center,
+    inner sep=5pt,
+    text width=0.36\textwidth
+  },
+  choice/.style={
+    draw,
+    rounded corners=2pt,
+    align=center,
+    inner sep=4pt,
+    text width=0.40\textwidth,
+    fill=yellow!10
+  }
+]
+  \node[state,fill=gray!10] (initial) at (0,6.75)
+    {initial physical state\\[2pt]
+     phase-space grid or marker ensemble};
+
+  \node[choice] (choice) at (0,4.55)
+    {choose one task-specific solver family\\
+     \footnotesize(four independent numerical representations)};
+
+  \node[flow,fill=blue!8] (nodal) at (-3.8,2.4)
+    {\textbf{EV/VP nodal grid}\\[4pt]
+     1. trace each target point backward\\
+     2. interpolate the instantaneous \(f\)\\
+     3. store the new nodal values};
+
+  \node[flow,fill=violet!8] (sldg) at (3.8,2.4)
+    {\textbf{VP cell-mass SLDG grid}\\[4pt]
+     1. reconstruct each source cell\\
+     2. map and clip arrival polygons\\
+     3. close grid/carrier/escape mass};
+
+  \node[flow,fill=red!8] (kinetic) at (-3.8,-0.8)
+    {\textbf{Orbit atlas or WPIC carriers}\\[4pt]
+     1. advance orbit phase or WPIC markers\\
+     2. sample collisions when an event is due\\
+     3. rebuild the field only when required};
+
+  \node[flow,fill=green!10] (dsmc) at (3.8,-0.8)
+    {\textbf{Persistent SphDSMC markers}\\[4pt]
+     1. retain a persistent marker ensemble\\
+     2. kick--drift--sort--kick in gravity\\
+     3. scatter pairs in local radial shells};
+
+  \node[state,fill=gray!10] (output) at (0,-3.65)
+    {common output contract\\[2pt]
+     profiles\\[2pt]
+     conservation budgets\\[2pt]
+     restart data};
+
+  % The central spine fans out through the open gaps between boxes.  In
+  % particular, no connector passes through another representation family.
+  \coordinate (topfork) at (0,3.72);
+  \coordinate (lowerfork) at (0,1.00);
+  \draw[->,thick] (initial.south) -- (choice.north);
+  \draw[thick] (choice.south) -- (topfork) -- (lowerfork);
+  \draw[->,thick] (topfork) -| (nodal.north);
+  \draw[->,thick] (topfork) -| (sldg.north);
+  \draw[->,thick] (lowerfork) -| (kinetic.north);
+  \draw[->,thick] (lowerfork) -| (dsmc.north);
+
+  % Each branch returns through an outside gutter before entering the common
+  % output box.  The gutters make the fan-in explicit without crossing boxes.
+  \coordinate (leftmerge) at (-7.25,-2.30);
+  \coordinate (rightmerge) at (7.25,-2.30);
+  \draw[thick,gray!70!black,rounded corners=3pt]
+    (nodal.west) -- (-7.25,2.4) -- (leftmerge);
+  \draw[thick,gray!70!black] (kinetic.west) -- (-7.25,-0.8);
+  \draw[->,thick,gray!70!black,rounded corners=3pt]
+    (leftmerge) |- (output.west);
+  \draw[thick,gray!70!black,rounded corners=3pt]
+    (sldg.east) -- (7.25,2.4) -- (rightmerge);
+  \draw[thick,gray!70!black] (dsmc.east) -- (7.25,-0.8);
+  \draw[->,thick,gray!70!black,rounded corners=3pt]
+    (rightmerge) |- (output.east);
+\end{tikzpicture}
+\caption{Four alternative numerical representation families in the CPU tree.
+A task-specific executable selects exactly one colored branch: nodal EV/VP
+evaluates \(f\) at departure points, cell-integrated SLDG maps source-cell
+mass, orbit/WPIC solvers carry persistent phase-space carriers, and SphDSMC
+carries persistent spherical markers.  The numbered lines give the update
+order within a branch.  The branches meet only at their common diagnostic and
+restart products; there is no numerical flow from one colored box to another.}
+\label{fig:venus-algorithm-overview}
+\end{figure}
+\else
+The persistent-marker algorithms are:
+\begin{enumerate}
+\item Newtonian WPIC, including collisionless transport, elastic self-
+interaction and Plummer gravitational scattering, unequal-weight subhalo
+scattering/capture, event clocks, restarts, and marker-resolution limits;
+\item persistent-marker SphDSMC, including radial sorting, enclosed gravity,
+orbit integration, mean-free-path shells, parallel radix sorting, and local
+finite-angle scattering;
+\item the common physical mass, energy, locality, and escape diagnostics.
+\end{enumerate}
+The flowchart at the start of each module is the recommended first overview.
+The governing equations and numerical update come next, followed by the run
+block and then the detailed source excerpts used to interpret or modify the
+calculation.
+\fi
+
+\subsection{Common Phase-Space Layout, Quadrature, and Grids}
+
+The basic phase-space array is stored in row-major order as
+\[
+  f_{ijk}=f(r_i,w_j,L_k),\qquad
+  q(i,j,k)=(iN_w+j)N_L+k .
+\]
+Here \(i\), \(j\), and \(k\) label the radial, radial-momentum, and angular-
+momentum nodes; \(N_w\) and \(N_L\) are the total numbers of nodes in the last
+two directions.  The function \(q(i,j,k)\) is the zero-based, one-dimensional
+storage offset of \(f_{ijk}\) in the flattened array.
+The indexing function is in \path{cpu/include/ev/grids.hpp}:
+\codesource{All CPU grid EV, VP, and BP task executables}
+  {\path{cpu/include/ev/grids.hpp}}
+  {Row-major phase-space indexing used by the shared solver kernels}
+\begin{lstlisting}[language=C++]
+inline std::size_t idx(int i, int j, int k,
+                       const Params& p) {
+  return (static_cast<std::size_t>(i) * p.Nw + j) * p.NL + k;
+}
+\end{lstlisting}
+
+The radial grid can be logarithmic, linear, piecewise-linear, or a custom grid
+read from binary initial data.  The code stores the physical coordinate
+\(r_i\) together with trapezoid weights. These weights assign each node the
+width of its neighboring half-intervals. Applying the same rule to radial
+integrals and \(w,L\) moment integrals keeps the density, enclosed mass,
+and other moments on a consistent quadrature.  For
+any ordered one-dimensional grid \(x_0,\ldots,x_{N-1}\), \(N\) is the number
+of nodes and \(Q_i\) is the integration weight multiplying the value at node
+\(x_i\):
+\[
+  Q_0=\frac{1}{2}(x_1-x_0),\quad
+  Q_i=\frac{1}{2}(x_{i+1}-x_{i-1}),\quad
+  Q_{N-1}=\frac{1}{2}(x_{N-1}-x_{N-2}).
+\]
+The implementation is in \path{cpu/include/ev/grids.hpp}:
+\codesource{All CPU grid EV, VP, and BP task executables}
+  {\path{cpu/include/ev/grids.hpp}}
+  {Shared trapezoidal-quadrature implementation excerpt}
+\begin{lstlisting}[language=C++]
+inline std::vector<double> trapezoid_weights(
+    const std::vector<double>& x) {
+  const int n = static_cast<int>(x.size());
+  std::vector<double> q(n, 0.0);
+  q.front() = 0.5 * (x[1] - x[0]);
+  q.back() = 0.5 * (x[n - 1] - x[n - 2]);
+  for (int i = 1; i + 1 < n; ++i) {
+    q[i] = 0.5 * (x[i + 1] - x[i - 1]);
+  }
+  return q;
+}
+\end{lstlisting}
+
+\ifvenusfullcpu
+The adaptive \(w\)-grid option uses a conservative remap.  When active matter
+approaches either \(w\)-edge, the code chooses a larger symmetric interval,
+constructs the new grid, and remaps each \((r,L)\) slice by conserving the
+cell integral in \(w\).  The schematic displays the trigger and expansion.
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}[x=0.95cm,y=0.82cm,>=Latex]
+  \draw[->] (-4.3,1.15) -- (4.5,1.15) node[right] {\(w\)};
+  \draw (-3.1,1.02) -- (-3.1,1.28);
+  \draw (3.1,1.02) -- (3.1,1.28);
+  \draw[dashed] (-2.25,0.62) -- (-2.25,1.58);
+  \draw[dashed] (2.25,0.62) -- (2.25,1.58);
+  \draw[red,very thick] (-1.35,1.43) -- (1.35,1.43);
+  \node at (0.0,0.72) {initial momentum box};
+
+  \draw[->] (-4.3,-0.55) -- (4.5,-0.55) node[right] {\(w\)};
+  \draw (-4.0,-0.68) -- (-4.0,-0.42);
+  \draw (4.0,-0.68) -- (4.0,-0.42);
+  \draw[red,very thick] (-1.35,-0.25) -- (1.35,-0.25);
+  \draw[blue,->] (-3.1,1.02) .. controls (-3.65,0.62) and (-4.0,0.08) .. (-4.0,-0.42);
+  \draw[blue,->] (3.1,1.02) .. controls (3.65,0.62) and (4.0,0.08) .. (4.0,-0.42);
+  \node[blue] at (0.0,-1.02) {expanded momentum box};
+\end{tikzpicture}
+\caption{Adaptive expansion of the radial-momentum domain.  The red interval
+marks the occupied part of the distribution above the active-cell cutoff.  When
+it passes the dashed trigger line, VENUS enlarges the \(w\)-box and remaps the
+same distribution onto the new grid.}
+\label{fig:adaptive-w}
+\end{figure}
+Every \(\code{adaptive_w_every}\) steps, VENUS computes
+\[
+  w_{\rm act}
+  =
+  \max\{|w_j|:\exists(i,k)\ {\rm with}\ f_{ijk}>f_{\rm cut}\},
+  \qquad
+  f_{\rm cut}=\max(f_{\rm floor}^{\rm abs},
+                  f_{\rm floor}^{\rm rel}\max f).
+\]
+Expansion is triggered when
+\[
+  w_{\rm act}\ge \code{adaptive_w_trigger}\,w_{\max},
+\]
+and the proposed new half-width is
+\[
+  w_{\max}^{\rm new}
+  =
+  \max\!\left(
+    \code{adaptive_w_growth}\,w_{\max},
+    \code{adaptive_w_margin}\,w_{\rm act}
+  \right),
+\]
+clipped to \(\code{adaptive_w_max}\) when that cap is positive.
+The remap and trigger live in \path{cpu/include/ev/advection.hpp}.  The essential
+mass-preserving form is:
+\codesource{Grid EV, VP, and BP solvers with adaptive radial momentum}
+  {\path{cpu/include/ev/advection.hpp}}
+  {Shortened conservative momentum-remap excerpt}
+\begin{lstlisting}[language=C++]
+const double before = distribution_mass(f, g, p, local_L0);
+conservative_energy_remap_w(f, g.w, w_new, p, local_L0);
+const double after = distribution_mass(f, g_new, p, local_L0);
+if (after > 0.0 && before > 0.0) {
+  const double corr = before / after;
+  for (double& value : f) value *= corr;
+}
+\end{lstlisting}
+Adaptive \(w\) is useful for EV collapse or VP infall tests where the occupied
+radial velocity range grows.  It should be disabled for tracer runs and for
+carefully calibrated VP/BP comparisons where the output grids must
+remain identical between runs.
+\fi
+
+\ifvenusfullcpu
+\input{sections/cpu/cpu_grid_solver_reference}
+
+\subsection{Einstein--Vlasov Equations}
+
+\begin{figure}[htbp]
+\centering
+\textbf{Physics flow: grid-based Einstein--Vlasov semi-Lagrangian module}
+\par\smallskip
+\begin{tikzpicture}[node distance=0.22cm]
+\node[physicsflow] (ev1) {Read or construct the spherical particle distribution on the phase-space grid};
+\node[physicsflow,below=of ev1] (ev2) {Integrate the distribution to obtain matter density, radial pressure, tangential pressure, and radial current};
+\node[physicsflow,below=of ev2] (ev3) {Solve the spherical Einstein constraints to reconstruct the spacetime metric};
+\node[physicsflow,below=of ev3] (ev4) {Choose a timestep from the fastest occupied particle trajectories and the stopping conditions};
+\node[physicsflow,below=of ev4] (ev5) {Trace each arrival-grid point backward along a relativistic particle trajectory};
+\node[physicsflow,below=of ev5] (ev6) {Interpolate the old distribution at the traced departure point and apply the physical boundary rule};
+\node[physicsflow,below=of ev6] (ev7) {Recompute the matter moments and metric from the transported distribution};
+\node[physicsflow,below=of ev7] (ev8) {Check compactness, mass, escape, and positivity; then write output or a restart and continue};
+\draw[physicsarrow] (ev1) -- (ev2);
+\draw[physicsarrow] (ev2) -- (ev3);
+\draw[physicsarrow] (ev3) -- (ev4);
+\draw[physicsarrow] (ev4) -- (ev5);
+\draw[physicsarrow] (ev5) -- (ev6);
+\draw[physicsarrow] (ev6) -- (ev7);
+\draw[physicsarrow] (ev7) -- (ev8);
+\end{tikzpicture}
+\end{figure}
+
+The EV module uses the Schwarzschild metric
+\[
+  \dd s^2=-e^{2\mu(\tau,r)}\dd\tau^2
+           +e^{2\lambda(\tau,r)}\dd r^2+r^2\dd\Omega^2 .
+\]
+Here \(\tau\) is Schwarzschild time, \(r\) is areal radius, \(\mu\) is the
+lapse potential, and \(\lambda\) is the radial metric potential.  This use of
+\(\tau\) follows the manual-wide convention and distinguishes Schwarzschild
+time from the EF advanced time \(v\).
+The distribution is spherically symmetric in \((r,w,L)\), and the particle
+energy is
+\[
+  \epsilon(r,w,L)=\sqrt{1+w^2+L^2/r^2}.
+\]
+The moments integrated from \(f\) are
+\[
+\begin{aligned}
+  \rho_i &= \frac{2\pi}{r_i^2}\int\!\!\int
+     \epsilon f\,L\,dL\,dw,\\
+  p_i &= \frac{2\pi}{r_i^2}\int\!\!\int
+     \frac{w^2}{\epsilon} f\,L\,dL\,dw,\\
+  p_{T,i} &= \frac{2\pi}{r_i^2}\int\!\!\int
+     \frac{L^2/r_i^2}{\epsilon} f\,L\,dL\,dw,\\
+  j_i &= \frac{2\pi}{r_i^2}\int\!\!\int
+     w f\,L\,dL\,dw .
+\end{aligned}
+\]
+Here \(\rho\) is energy density, \(p\) is radial pressure, \(p_T\) is the
+sum of the two tangential pressure components, and \(j\) is radial momentum
+density.  The symbol \(\epsilon\) is the relativistic particle energy per unit
+rest mass; the code uses units with particle rest mass and the speed of light
+equal to one.
+The local implementation, including the OpenMP reduction over the flattened
+\((r,w,L)\) cell set, is in \path{cpu/include/ev/moments.hpp}:
+\codesource{\code{venus_cpu_einstein_vlasov_eulerian}}
+  {\path{cpu/include/ev/moments.hpp}}
+  {Shortened relativistic-moment kernel excerpt}
+\begin{lstlisting}[language=C++]
+const double eps =
+    std::sqrt(1.0 + w[j] * w[j] + (LL / r[i]) * (LL / r[i]));
+const double weight = wq[j] * Lq[k] * LL * f[idx(i, j, k, p)];
+srho += eps * weight;
+sp   += (w[j] * w[j] / eps) * weight;
+sj   += w[j] * weight;
+out.rho[i] = 2.0 * pi / (r[i] * r[i]) * srho;
+out.p[i]   = 2.0 * pi / (r[i] * r[i]) * sp;
+out.j[i]   = 2.0 * pi / (r[i] * r[i]) * sj;
+\end{lstlisting}
+\subsection{Einstein--Vlasov Metric Reconstruction}
+
+At each step, the matter moments supply the radial Einstein constraints.
+Integrating the density outward gives the enclosed mass, which determines
+the radial metric. The radial pressure then enters the lapse equation.  With \(m_r=4\pi r^2\rho\),
+\[
+  m(r_i)\simeq \frac{4\pi}{3}\rho_0 r_0^3
+    +4\pi\int_{r_0}^{r_i} r^2\rho(r)\,dr ,
+\]
+\[
+  e^{-2\lambda}=1-\frac{2m}{r},\qquad
+  \mu_r=e^{2\lambda}\left(\frac{m}{r^2}+4\pi r p\right).
+\]
+Let \(M=m(r_{\max})\) denote the total mass enclosed by the outer radial grid
+point.  The outer boundary condition is asymptotically Schwarzschild:
+\[
+  \mu(r_{\max})=\frac{1}{2}\log\!\left(1-\frac{2M}{r_{\max}}\right),
+\]
+and \(\mu\) is integrated inward by the trapezoid rule.  The implementation is
+in \path{cpu/include/ev/metric.hpp}:
+\codesource{\code{venus_cpu_einstein_vlasov_eulerian}}
+  {\path{cpu/include/ev/metric.hpp}}
+  {Shortened Schwarzschild metric reconstruction excerpt}
+\begin{lstlisting}[language=C++]
+m[i] = m[i - 1] + 4.0 * pi * 0.5 *
+    (y[i - 1] + y[i]) * (r[i] - r[i - 1]);
+const double gap = 1.0 - 2.0 * m[i] / r[i];
+lambda[i] = -0.5 * std::log(gap);
+mu_r[i] = std::exp(2.0 * lambda[i]) *
+    (m[i] / (r[i] * r[i]) + 4.0 * pi * r[i] * mom.p[i]);
+mu[p.Nr - 1] = 0.5 * std::log(std::max(1.0 - 2.0 * m[p.Nr - 1] / r.back(), tiny));
+for (int i = p.Nr - 2; i >= 0; --i) {
+  mu[i] = mu[i + 1] - 0.5 * (mu_r[i + 1] + mu_r[i]) *
+      (r[i + 1] - r[i]);
+}
+\end{lstlisting}
+The compactness gap \(1-2m/r\) is monitored in \code{history.csv}.  A small
+gap is the numerical signal of approach to trapped-surface or horizon
+formation in this coordinate system.
+
+The polar-time derivative of the radial metric potential is reconstructed
+from the radial current:
+\[
+ \lambda_\tau=-4\pi r\,e^{\lambda+\mu}j.
+\]
+This quantity enters the momentum characteristic during the frozen step and
+supplies the relativistic momentum change caused by time-dependent geometry.
+The C++ member \code{lambda_t} stores this \(\lambda_\tau\); its historical
+\code{_t} suffix does not introduce a different time coordinate.
+
+\subsection{Einstein--Vlasov Characteristics and Leap-Frog Step}
+\label{sec:ev-semi-lagrangian}
+
+The EV transport equation is solved by following characteristics.  In the
+variables used by the code,
+\[
+  \frac{dr}{d\tau}=e^{\mu-\lambda}\frac{w}{\epsilon},
+\]
+\[
+  \frac{dw}{d\tau}= -\lambda_\tau w
+  -e^{\mu-\lambda}\mu_r\epsilon
+  +e^{\mu-\lambda}\frac{L^2}{r^3\epsilon}.
+\]
+The timestep limits the distance a characteristic crosses in radius and
+momentum during one update. A CFL safety factor reduces the corresponding
+crossing times, and optional user ceilings can shorten the result.  The scan is in \path{cpu/include/ev/timestep.hpp}:
+\codesource{\code{venus_cpu_einstein_vlasov_eulerian}}
+  {\path{cpu/include/ev/timestep.hpp}}
+  {Shortened characteristic-speed timestep scan}
+\begin{lstlisting}[language=C++]
+const double vr = std::exp(met.mu[i] - met.lambda[i]) * w[j] / eps;
+const double accel = -met.lambda_t[i] * w[j]
+  - std::exp(met.mu[i] - met.lambda[i]) * met.mu_r[i] * eps
+  + std::exp(met.mu[i] - met.lambda[i]) * LL * LL /
+      (r[i] * r[i] * r[i] * eps);
+local_min = std::min(local_min, cfl * dr / std::max(std::abs(vr), tiny));
+local_min = std::min(local_min, cfl * dw / std::max(std::abs(accel), tiny));
+\end{lstlisting}
+With the metric frozen over one timestep, define
+\[
+  v(r,w,L)=e^{\mu-\lambda}\frac{w}{\epsilon},\qquad
+  a(r,w,L)=
+  -\lambda_\tau w-e^{\mu-\lambda}\mu_r\epsilon
+  +e^{\mu-\lambda}\frac{L^2}{r^3\epsilon}.
+\]
+For the default \code{semi_lagrangian_kick_drift_kick} integrator, the
+backward footpoint for target cell \((r_i,w_j,L_k)\) is
+\begin{align}
+  w_{1/2} &= w_j-\frac{\Delta\tau}{2}a(r_i,w_j,L_k),\\
+  r_{\rm dep} &= r_i-\Delta\tau\,v(r_i,w_{1/2},L_k),\\
+  w_{\rm dep} &= w_{1/2}
+    -\frac{\Delta\tau}{2}a(r_{\rm dep},w_{1/2},L_k).
+\end{align}
+Radial reflection is applied after the drift and after the second kick.  The
+metric in the second kick is sampled at \(r_{\rm dep}\).  The distribution is
+then pulled back by fixed-\(L\) interpolation.  Here
+\(I_{r,w}[f](r_*,w_*;L_k)\) denotes the configured two-dimensional
+interpolation of \(f\) at \((r_*,w_*)\) on the fixed \(L_k\) slice; the
+bilinear form used by the direct nodal path is written explicitly below.
+\[
+  f^{n+1}_{ijk}
+  =
+  I_{r,w}\!\left[f^n(\cdot,\cdot,L_k)\right]
+  (r_{\rm dep},w_{\rm dep}).
+\]
+These explicit kicks and drift form a first-order characteristic method for
+the general relativistic equations, whose radial speed and momentum rate
+both depend on \(r,w\).  The familiar second-order KDK result applies when
+the kick and drift are exact subflows of a separable Hamiltonian, as in the
+Newtonian construction above.  Freezing the old metric over a full
+self-consistent grid step also gives first-order time coupling.  Selecting
+a higher-order characteristic solver improves the frozen-field trajectory;
+time-centering the evolving field is a separate requirement.  The code
+writes mass and boundary-loss diagnostics to measure its interpolation
+transport budget.
+The implementation is in \path{cpu/include/ev/advection.hpp}:
+\codesource{\code{venus_cpu_einstein_vlasov_eulerian}}
+  {\path{cpu/include/ev/advection.hpp}}
+  {Shortened backward-characteristic pullback excerpt}
+\begin{lstlisting}[language=C++]
+const CharacteristicState dep = trace_ev_characteristic_footpoint(
+    r[i], w[j], Lk, x_r, r, metric, dt, p, integrator_plan);
+f_new[idx(i, j, k, p)] =
+    std::max(0.0, interpolate_slice(f, dep.r, dep.w, k, x_r, r, w, p));
+\end{lstlisting}
+The radial origin and outer boundary are treated with reflection/escape logic
+depending on the configured boundary mode.  The same file contains the escape
+diagnostic written to \code{history.csv}.
+
+\subsubsection{What ``semi-Lagrangian'' means in the EV solver}
+
+The collisionless Vlasov equation states that the scalar distribution is
+constant along a particle characteristic:
+\[
+ \frac{\dd f}{\dd \tau}
+ =\partial_\tau f+\dot r\,\partial_r f+\dot w\,\partial_w f=0,
+ \qquad \dot L=0.
+\]
+Consequently, a target point \((r_i,w_j,L_k)\) at \(\tau^{n+1}\) has the
+value carried from its departure point at \(\tau^n\):
+\[
+ f^{n+1}(r_i,w_j,L_k)
+ =f^n(r_{\rm dep},w_{\rm dep},L_k).
+\]
+The term \emph{Lagrangian} refers to following the orbit; the prefix
+\emph{semi} indicates that the distribution is still stored on a fixed grid
+and is interpolated at the off-grid departure point.  No particle-marker state
+is used by this existing Einstein--Vlasov solver.
+
+The angular momentum \(L\) is conserved exactly by spherical symmetry, so
+each \(L_k\) slice can be transported independently.
+
+\subsubsection{Metric and distribution time levels}
+
+At the beginning of one EV step, VENUS computes moments from \(f^n\) and solves
+the radial Einstein constraints for
+\[
+ {\cal G}^n=\{\mu^n,\lambda^n,\mu_r^n,\lambda_\tau^n\}.
+\]
+The metric set \({\cal G}^n\) is frozen while every target point traces
+backward over \(\Delta\tau\).  Once the pullback has produced \(f^{n+1}\), time
+and step are advanced; moments and a new metric are computed at the top of the
+next loop.  In code order:
+\codesource{\code{venus_cpu_einstein_vlasov_eulerian}}
+  {\path{cpu/include/ev/solver_evolution.hpp} with kernels in
+   \path{cpu/include/ev/moments.hpp}, \path{cpu/include/ev/metric.hpp},
+   \path{cpu/include/ev/timestep.hpp}, and \path{cpu/include/ev/advection.hpp}}
+  {Abbreviated macrostep pseudocode; it is not a literal contiguous source block}
+\begin{lstlisting}[language=C++]
+Moments moments = compute_global_moments(f_n, ...);
+Metric metric_n = solve_metric(moments, r, p);
+double dt = choose_dt(f_n, r, w, L, metric_n, ...);
+f_np1 = advect(f_n, x_r, r, w, L, metric_n, dt, p);
+\end{lstlisting}
+The characteristic solve uses one metric during a macrostep. Reconstructing
+the metric from the transported matter at the next step supplies the
+self-consistent time evolution of the spacetime.
+
+\subsubsection{Radial coordinate interpolation}
+
+The numerical radial coordinate is
+\[
+ x_r=
+ \begin{cases}
+  \ln r,&\code{radial_grid = log},\\
+  r,&\text{linear or piecewise-linear coordinate}.
+ \end{cases}
+\]
+Metric profiles are linearly interpolated in \(x_r\), not necessarily in
+physical radius.  For a departure radius \(r_{\rm dep}\), let
+\(x_{\rm dep}=x_r(r_{\rm dep})\), and let
+\[
+ \xi=\frac{x_{\rm dep}-x_i}{x_{i+1}-x_i},
+ \qquad
+ \zeta=\frac{w_{\rm dep}-w_j}{w_{j+1}-w_j}.
+\]
+The fixed-\(L_k\) bilinear pullback is
+\[
+ \begin{split}
+ I_{r,w}[f]={}&(1-\xi)(1-\zeta)f_{i,j,k}
+ +\xi(1-\zeta)f_{i+1,j,k}\\
+ &+(1-\xi)\zeta f_{i,j+1,k}
+ +\xi\zeta f_{i+1,j+1,k}.
+ \end{split}
+\]
+If the departure point lies outside an outflow radial or momentum boundary,
+the interpolated value is zero.  The final value is protected by
+\(\max(0,I_{r,w}[f])\), which prevents a tiny negative roundoff value but is
+not a conservative positivity redistribution.
+
+\subsubsection{Inner and outer radial boundaries}
+
+The boundary choices distinguish a finite reflecting wall, the regular
+spherical origin, vacuum outflow, and prescribed Newtonian inflow.  The
+conservative grid solver also supports delayed return through an unresolved
+central region, as described in its transport section.
+
+A finite wall has a fixed physical radius \(R\).  For the Newtonian solver,
+the physical radial velocity is \(\dot r=Hr+w\), where \(w\) is the stored
+peculiar velocity.  Specular reflection reverses \(\dot r\) at the wall.
+It therefore gives
+\begin{equation}
+ r=R:\qquad w_{\rm out}=-w_{\rm in}-2H(t_{\rm hit})R,
+ \qquad HR+w_{\rm out}=-(HR+w_{\rm in}),
+ \label{eq:fixed-physical-wall}
+\end{equation}
+Here \(t_{\rm hit}\) is the wall-crossing time. The KDK orbit solver locates
+this crossing within its free angular drift, reverses the physical radial
+velocity there, and advances the remaining interval. Its implementation is
+derived in Section~\ref{sec:wpic-expanding-kdk}. In a static
+Newtonian calculation \(H=0\).  For the Schwarzschild-coordinate solver,
+\(w\) is radial momentum in the local orthonormal frame and the finite-wall
+reflection also changes its sign.
+
+For boundary interpolation and stage projection, the extended radius
+\(r'=2R-r\) and velocity \(w'=-w-2HR\) obey
+\(Hr'+w'=-(Hr+w)\). The shared outer-wall extension is
+\codesource{Fixed physical radial wall}
+{\path{cpu/include/ev/advection.hpp}}
+{Extend a boundary value by reflecting radius and physical radial velocity}
+\begin{lstlisting}[language=C++]
+if (rp > r_max) {
+    rp = r_max - (rp - r_max);
+    wp = -wp - 2.0 * hubble * r_max;
+}
+\end{lstlisting}
+The inner wall uses the same map with \(R=r_{\min}\).  Multiple crossings
+are permitted within the bounded reflection loop.  An endpoint that remains
+outside the permitted radial domain raises an error and requires a shorter
+step.
+
+At the true origin the parity map is
+\begin{equation}
+ r<0:\qquad r\leftarrow-r,\qquad w\leftarrow-w.
+ \label{eq:origin-parity-map}
+\end{equation}
+The regular distribution obeys \(f(-r,-w,L)=f(r,w,L)\).  At a positive
+radius, it can have a nonzero radial current.  The pointwise pullback
+therefore symmetrizes the first radial plane only for a finite reflecting
+wall.  Its incoming velocity is paired with \(-w-2Hr_{\min}\).  With
+\code{inner_boundary=origin_parity}, the characteristic crossing supplies
+the parity condition at \(r=0\).
+
+Vacuum outflow permits an outgoing characteristic to leave the radial or
+momentum domain.  Its escaped mass is part of the conservation budget.
+The Newtonian prescribed-inflow option supplies the configured distribution
+to incoming outer characteristics.  The Eddington--Finkelstein solver uses
+vacuum outflow at its outer boundary; its inner excision condition is
+determined by the local null directions, as described in the relativistic
+WPIC section.
+
+\paragraph{Prescribed incoming mass.}
+For a Newtonian inflow pulse, let \(s>0\) be its prescribed inward mean
+speed, \(\sigma\) its radial velocity dispersion, and
+\(u=Hr+w\) the physical radial velocity.  The radial Gaussian is centered
+at \(u=-s\).  Only its incoming half crosses the outer face.  Its flux is
+therefore normalized by
+\begin{equation}
+ \int_{-\infty}^{0}(-u)\,
+ \frac{e^{-(u+s)^2/(2\sigma^2)}}{\sqrt{2\pi}\sigma}\,du
+ =\frac{s}{2}\operatorname{erfc}\!\left(-\frac{s}{\sqrt{2}\sigma}\right)
+  +\frac{\sigma}{\sqrt{2\pi}}e^{-s^2/(2\sigma^2)}.
+ \label{eq:incoming-gaussian-flux}
+\end{equation}
+The Gaussian pulse in time is truncated at the configured number of standard
+deviations \(c\).  Dividing it by \(\operatorname{erf}(c/\sqrt{2})\)
+preserves its unit time integral.  The prescribed shell mass divided by
+\(4\pi R^2\) and the right-hand side of
+ equation~\eqref{eq:incoming-gaussian-flux} then gives the density amplitude.
+The tangential distribution is normalized separately with the spherical
+velocity measure.  Integrating the incoming flux over the full pulse gives
+the requested shell mass.  A finite velocity grid or a time interval covering
+only part of the pulse supplies the corresponding partial mass.
+\codesource{Incoming Gaussian flux normalization}
+{\path{cpu/include/ev/vlasov_poisson.hpp}}
+{Normalize the incoming radial flux and the truncated time envelope}
+\begin{lstlisting}[language=C++]
+const double z = speed / sigma_u;
+const double incoming_speed =
+    0.5 * speed * std::erfc(-z / std::sqrt(2.0))
+    + sigma_u * std::exp(-0.5 * z * z)
+      / std::sqrt(2.0 * PI);
+const double time_normalization =
+    std::erf(p.vp_inflow_time_cutoff / std::sqrt(2.0));
+\end{lstlisting}
+
+\subsubsection{CFL limit in logarithmic and linear radius}
+
+Let \(v_r=\dot r\) and \(a_w=\dot w\).  On a logarithmic radial coordinate,
+the characteristic speed is
+\[
+ \dot x_r=\frac{\dot r}{r};
+\]
+on a linear coordinate it is simply \(\dot r\).  VENUS scans only cells with
+\[
+ f_{ijk}>
+ \max\!\left(f_{\rm active,abs},
+ f_{\rm active,rel}\max f\right).
+\]
+If \(\Delta x_{r,\min}\) and \(\Delta w_{\min}\) are the smallest coordinate
+spacings, the selected step is
+\[
+ \Delta\tau=\min\left[
+ \Delta\tau_{\max},
+ C_{\rm CFL}\frac{\Delta x_{r,\min}}{\max|\dot x_r|},
+ C_{\rm CFL}\frac{\Delta w_{\min}}{\max|\dot w|}
+ \right].
+\]
+The maxima and active-cell count are reduced over threads and MPI ranks.
+Cells below the activity floor do not set the timestep, but their mass is not
+removed from the distribution.
+
+\subsubsection{Transport budget and current numerical limitations}
+
+Bilinear nodal pullback is not locally conservative.  VENUS therefore reports
+the quadrature mass before and after transport and separately estimates mass
+whose forward characteristic reaches the outer \(r\) or \(w\) boundaries.
+The escape estimate is a warning based on active nodal cells; it is not an
+exact finite-volume face flux.  Adaptive \(w\)-grid remapping can recover a
+growing occupied velocity range, but its explicit mass normalization is also
+a numerical remap and must be included in convergence studies.
+
+The existing EV semi-Lagrangian path has these present properties:
+\begin{itemize}
+\item relativistic spherical characteristics with a freshly constrained metric
+at the start of every macrostep;
+\item KDK, explicit Runge--Kutta (RK), extrapolated midpoint, and
+Adams--Bashforth (AB) characteristic solvers;
+\item bilinear interpolation on each fixed-\(L\) slice;
+\item finite-wall, origin-parity, reflecting-outer, and vacuum-outflow logic;
+\item OpenMP/std::thread target-cell parallelism and MPI \(L\)-slab
+decomposition;
+\item distributed restarts, adaptive-\(w\) support for compatible workflows,
+and phase/profile/escape diagnostics.
+\end{itemize}
+Its main numerical limitations are the nonconservative nodal interpolation,
+first-step frozen metric rather than a time-centred metric predictor, and
+reduced accuracy when a characteristic crosses a reflection or a strong
+force variation within one large step.  These limitations are why mass,
+boundary occupancy, compactness gap, timestep, and resolution refinement must
+be monitored together.  The distinct weighted-marker Einstein--Vlasov WPIC
+implementation, its relativistic marker equations, runner, restart contract,
+tests, and completed low/high-compactness examples are documented in
+Section~\ref{sec:weighted-einstein-vlasov-pic}.
+
+\subsubsection{How to run the existing EV semi-Lagrangian solver}
+
+\noindent\textbf{Runnable starting point.}
+Save the first block as \path{params.ini}; parameters not shown retain their
+documented defaults.
+\codesource{\code{venus_cpu_einstein_vlasov_eulerian}}
+  {\path{cpu/src/apps/einstein_vlasov/eulerian.cpp} and
+   \path{cpu/include/ev/config.hpp}}
+  {Example input for the nodal Schwarzschild EV task}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+# params.ini: grid-based Einstein--Vlasov semi-Lagrangian run
+physics_model = einstein_vlasov
+initial_data = analytic
+shell_initial_df = true
+gaussian_density_shell = true
+Nr = 96
+Nw = 96
+NL = 24
+r_min = 1e-2
+r_max = 80
+w_max = 5
+L_max = 8
+integrator = semi_lagrangian_kick_drift_kick
+t_end = 1
+cfl = 0.35
+dt_max = 0.04
+save_every = 10
+output_dir = output/ev_semilagrangian_example
+\end{lstlisting}
+The literal input names \code{t_end} and \code{dt_max} are legacy,
+module-generic keys; in this relativistic module they set the final
+Schwarzschild time and the ceiling on \(\Delta\tau\), respectively.
+From the \path{VENUS/cpu} directory, build and run it with:
+\codesource{\code{venus_cpu_einstein_vlasov_eulerian}}
+  {\path{cpu/Makefile} and
+   \path{cpu/src/apps/einstein_vlasov/eulerian.cpp}}
+  {Build and invocation commands}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+make cpu-task-solvers
+./venus_cpu_einstein_vlasov_eulerian --config params.ini
+\end{lstlisting}
+
+The modular executable is:
+\codesource{\code{venus_cpu_einstein_vlasov_eulerian}}
+  {\path{cpu/src/apps/einstein_vlasov/eulerian.cpp} and \path{cpu/Makefile}}
+  {Build and invocation commands}
+\begin{lstlisting}
+cd VENUS/cpu
+make cpu-task-solvers
+./venus_cpu_einstein_vlasov_eulerian \
+  --config examples/einstein_vlasov_low_compactness_virialized_halo.ini \
+  --output-dir output/ev_low_compactness
+\end{lstlisting}
+The compatibility executable runs an EV configuration through the older
+self-contained source:
+\codesource{\code{venus_einstein_vlasov_serial}}
+  {\path{cpu/src/venus_einstein_vlasov.cpp} and \path{cpu/Makefile}}
+  {Compatibility invocation; new work should use the task-specific executable above}
+\begin{lstlisting}
+./venus_einstein_vlasov_serial \
+  --config examples/einstein_vlasov_low_compactness_virialized_halo.ini \
+  --output-dir output/ev_compatibility
+\end{lstlisting}
+The defining parameter block is:
+\codesource{\code{venus_cpu_einstein_vlasov_eulerian}}
+  {\path{cpu/include/ev/config.hpp} and
+   \path{cpu/src/apps/einstein_vlasov/eulerian.cpp}}
+  {Minimal Schwarzschild EV configuration fragment}
+\begin{lstlisting}
+physics_model = einstein_vlasov
+integrator = semi_lagrangian_kick_drift_kick
+inner_boundary = reflecting
+outer_boundary = outflow_vacuum
+cfl = 0.35
+dt_max = 0.04
+\end{lstlisting}
+For a high-order characteristic study, replace the integrator by
+\code{semi_lagrangian_rk} and set
+\code{time_integrator_order}; orders two through four use explicit RK
+tableaus, while larger requested orders use extrapolated midpoint.  The
+\code{semi_lagrangian_adams_bashforth} option is intended for smooth-field
+timing and convergence experiments.
+
+\subsection{Higher-Order Characteristic Integrators}
+
+The higher-order characteristic integrators use the semi-Lagrangian pullback
+with their selected footpoint ODE solver.  Let
+\[
+  y(\tau)=\begin{pmatrix}r(\tau)\\w(\tau)\end{pmatrix},\qquad
+  \frac{dy}{d\tau}=F(y;L),
+\]
+where \(F=(v,a)\) is the frozen-field characteristic vector.  The footpoint is
+obtained by integrating backward with \(h=-\Delta\tau\).
+
+For \code{integrator = semi_lagrangian_rk} and
+\(2\le\code{time_integrator_order}\le4\), VENUS uses precomputed explicit
+Runge--Kutta tableaus:
+\[
+  Y_s=y_n+h\sum_{q<s}a_{sq}F(Y_q),\qquad
+  y_{\rm dep}=y_n+h\sum_s b_s F(Y_s).
+\]
+For requested orders \(>4\), VENUS switches to an extrapolated modified
+midpoint characteristic integrator.  For substep counts \(n_m\), define
+\(\delta_m=h/n_m\) and compute
+\[
+  z_0=y_n,\qquad z_1=z_0+\delta_m F(z_0),\qquad
+  z_{\ell+1}=z_{\ell-1}+2\delta_m F(z_\ell),
+\]
+\[
+  M_m(h)=\frac{1}{2}\left[z_{n_m}+z_{n_m-1}
+     +\delta_m F(z_{n_m})\right].
+\]
+The extrapolated footpoint is
+\[
+  y_{\rm dep}=\sum_m \omega_m M_m(h),\qquad
+  \omega_m=\prod_{\ell\ne m}\frac{-x_\ell}{x_m-x_\ell},
+  \qquad x_m=\frac{1}{n_m^2}.
+\]
+The number of levels is \(\lceil p/2\rceil\), so an odd requested order is
+rounded up to the next even effective order.  The precomputed data live in
+\path{cpu/include/ev/characteristic_integrators.hpp}.
+
+For \code{integrator = semi_lagrangian_adams_bashforth}, VENUS uses
+\[
+  y_{m+1}=y_m+h\sum_{q=0}^{p-1}\beta_q F_{m-q},
+\]
+where the Adams--Bashforth weights are generated once from the Lagrange basis
+on nodes \(0,-1,\ldots,-p+1\):
+\[
+  \beta_q=\int_0^1 \ell_q(s)\,ds,\qquad
+  \ell_q(s)=\prod_{\substack{m=0\\m\ne q}}^{p-1}
+  \frac{s+m}{-q+m}.
+\]
+Because each semi-Lagrangian target cell traces a fresh characteristic, the AB
+history is built inside that trace using RK starter substeps.  This makes AB
+valid for characteristic integration, but it is less robust than RK near
+reflections or rapidly changing forces.  Use RK4 or the extrapolated midpoint
+path for high-accuracy tests; use AB for smooth-field timing measurements.
+
+\subsection{Vlasov--Poisson Equations}
+
+\begin{figure}[htbp]
+\centering
+\textbf{Physics flow: nodal Vlasov--Poisson semi-Lagrangian module}
+\par\smallskip
+\begin{tikzpicture}[node distance=0.22cm]
+\node[physicsflow] (vp1) {Read or construct the collisionless particle distribution on the spherical phase-space grid};
+\node[physicsflow,below=of vp1] (vp2) {Integrate over particle velocities to obtain the radial mass density};
+\node[physicsflow,below=of vp2] (vp3) {Accumulate enclosed mass and solve the spherical Poisson equation for gravity};
+\node[physicsflow,below=of vp3] (vp4) {Choose a timestep from the fastest occupied radial and velocity-space motion};
+\node[physicsflow,below=of vp4] (vp5) {Trace every arrival point backward through gravity and, when requested, cosmological expansion};
+\node[physicsflow,below=of vp5] (vp6) {Interpolate the old distribution at each departure point and apply reflection, inflow, or outflow};
+\node[physicsflow,below=of vp6] (vp7) {Recompute density and gravity, measure mass and escape, then write output or a restart and continue};
+\draw[physicsarrow] (vp1) -- (vp2);
+\draw[physicsarrow] (vp2) -- (vp3);
+\draw[physicsarrow] (vp3) -- (vp4);
+\draw[physicsarrow] (vp4) -- (vp5);
+\draw[physicsarrow] (vp5) -- (vp6);
+\draw[physicsarrow] (vp6) -- (vp7);
+\end{tikzpicture}
+\end{figure}
+
+The static VP module solves
+\[
+  \partial_t f + w\,\partial_r f
+  +\left(\frac{L^2}{r^3}-\partial_r\Phi\right)\partial_w f=0,
+\]
+with
+\[
+  \frac{1}{r^2}\partial_r(r^2\partial_r\Phi)=4\pi G\rho,\qquad
+  \rho=\frac{2\pi}{r^2}\int\!\!\int f L\,dL\,dw .
+\]
+The expanding power-law FLRW form uses the configured scale factor \(a(t)\),
+Hubble factor \(H(t)\), and either total-density or density-contrast Poisson
+source.  The supplied expanding examples use the EdS value
+\(\alpha=2/3\).  The helpers are in \path{cpu/include/ev/vlasov_poisson.hpp}:
+\codesource{\code{venus_cpu_vlasov_poisson_eulerian}}
+  {\path{cpu/include/ev/vlasov_poisson.hpp}}
+  {Expanding-background helper excerpt}
+\begin{lstlisting}[language=C++]
+inline VpBackground vp_background(double t, const Params& p) {
+  bg.tau = t + p.vp_time_offset;
+  if (p.vp_universe == "expanding") {
+    bg.H = p.vp_alpha / bg.tau;
+    bg.a = std::pow(bg.tau / p.vp_time_offset, p.vp_alpha);
+    bg.rho_bar = 3.0 * bg.H * bg.H / (8.0 * PI * p.vp_gravity);
+  }
+  return bg;
+}
+\end{lstlisting}
+The radial Poisson solve is again a trapezoid integration of enclosed mass
+followed by an inward integration of the force:
+\codesource{\code{venus_cpu_vlasov_poisson_eulerian}}
+  {\path{cpu/include/ev/vlasov_poisson.hpp}}
+  {Shortened radial Poisson reconstruction excerpt}
+\begin{lstlisting}[language=C++]
+source_mass[i] = source_mass[i - 1] + 4.0 * pi * 0.5 *
+    (y[i - 1] + y[i]) * (r[i] - r[i - 1]);
+phi_r[i] = Gfac * source_mass[i] / (r[i] * r[i]);
+phi[p.Nr - 1] = -Gfac * source_mass[p.Nr - 1] / r.back();
+for (int i = p.Nr - 2; i >= 0; --i) {
+  phi[i] = phi[i + 1] - 0.5 * (phi_r[i + 1] + phi_r[i]) *
+      (r[i + 1] - r[i]);
+}
+\end{lstlisting}
+The expanding solver stores physical radius \(r\) and peculiar radial
+velocity \(w=\dot r-Hr\).  Consequently the local characteristic speeds are
+\[
+  \dot r = Hr+w,\qquad
+  \dot w = \frac{L^2}{r^3}-\Phi_r-Hw ,
+\]
+with the static limit \(H=0\).  The scale factor \(a(t)\) determines
+\(H=\dot a/a\) and the configured cosmological background, but it does not
+divide these physical-coordinate characteristic speeds.  The implementation
+is in the same header:
+\codesource{\code{venus_cpu_vlasov_poisson_eulerian}}
+  {\path{cpu/include/ev/vlasov_poisson.hpp}}
+  {Radial characteristic-speed excerpt}
+\begin{lstlisting}[language=C++]
+const double vr = field.background.H * r[i] + w[j];
+const double aw = L[k] * L[k] / (r[i] * r[i] * r[i])
+  - field.phi_r[i] - field.background.H * w[j];
+\end{lstlisting}
+
+\subsection{Nodal Characteristic Transport and Interpolation}
+
+The nodal collisionless solver stores \(f\) at the grid points
+\((r_i,w_j,L_k)\).  During one semi-Lagrangian update it performs the
+following operations:
+\begin{enumerate}
+\item Choose a target grid point \((r_i,w_j,L_k)\) at the new time.
+\item Follow its orbit backward by one timestep to find the departure point
+      \((r_{\rm d},w_{\rm d},L_k)\).
+\item Locate the grid cells surrounding the departure point.
+\item Interpolate the old distribution at that point.
+\item Store the interpolated value at the target grid point.
+\end{enumerate}
+
+This procedure follows the characteristic identity
+\[
+ f(t+\Delta t,r_i,w_j,L_k)
+ =f(t,r_{\rm d},w_{\rm d},L_k).                           \tag{VP1}
+\]
+A traced departure point generally lies between stored grid points.
+Interpolation estimates the earlier distribution at that location, and the
+characteristic identity carries that value to the arrival point.
+
+\subsubsection{\texorpdfstring{Direct \((r,w)\) interpolation}{Direct (r,w) interpolation}}
+
+The setting
+\codesource{\code{venus_cpu_vlasov_poisson_eulerian}}
+  {\path{cpu/include/ev/config.hpp} and \path{cpu/include/ev/advection.hpp}}
+  {Configuration selection for direct nodal interpolation}
+\begin{lstlisting}
+vp_interpolation = raw
+\end{lstlisting}
+uses the four grid values surrounding \((r_{\rm d},w_{\rm d})\).  If the
+departure point lies between radial indices \(i_0,i_1\) and velocity indices
+\(j_0,j_1\), define the local fractions \(0\leq\theta_r,\theta_w\leq1\).
+The interpolated value is
+\[
+\begin{aligned}
+ f_{\rm d}={}&
+ (1-\theta_r)(1-\theta_w)f_{i_0j_0k}
+ +\theta_r(1-\theta_w)f_{i_1j_0k}\\
+ &+(1-\theta_r)\theta_w f_{i_0j_1k}
+ +\theta_r\theta_w f_{i_1j_1k}.
+\end{aligned}                                             \tag{VP2}
+\]
+For a logarithmic radial grid, \(\theta_r\) is computed in \(\log r\).
+Equation (VP2) is the general interpolation for nonlinear collisionless
+evolution.
+
+\subsubsection{Hamiltonian interpolation}
+
+For a static system, the single-particle Hamiltonian is
+\[
+ H(r,w,L)
+ =\Phi(r)+\frac12\left(w^2+\frac{L^2}{r^2}\right).        \tag{VP3}
+\]
+The setting
+\codesource{\code{venus_cpu_vlasov_poisson_eulerian}}
+  {\path{cpu/include/ev/config.hpp} and \path{cpu/include/ev/advection.hpp}}
+  {Configuration selection for Hamiltonian-coordinate interpolation}
+\begin{lstlisting}
+vp_interpolation = hamiltonian
+\end{lstlisting}
+uses \(H\) as the local velocity coordinate.  The calculation is:
+\begin{enumerate}
+\item Compute the target energy
+      \(H_{\rm t}=H(r_i,w_j,L_k)\).
+\item Trace the target point backward to
+      \((r_{\rm d},w_{\rm d})\).
+\item At each nearby radial grid point \(r_\ell\), solve
+      \[
+      w_\ell
+      ={\rm sign}(w_{\rm d})
+       \sqrt{
+       2[H_{\rm t}-\Phi(r_\ell)]-\frac{L_k^2}{r_\ell^2}
+       }.                                                 \tag{VP4}
+      \]
+\item Interpolate the instantaneous grid values in velocity to obtain
+      \(f(r_\ell,w_\ell,L_k)\).
+\item Interpolate those values in radius to \(r_{\rm d}\).
+\end{enumerate}
+
+The positive and negative \(w\) branches are kept separate because particles
+moving inward and outward can have different phase-space populations.
+Every value in this procedure comes from the instantaneous distribution.
+Perturbations and other nonequilibrium structure therefore remain part of the
+interpolated state.  The energy coordinate reduces drift for a smooth static
+equilibrium of the form \(f(E,L)\).
+
+The central call in the source is:
+\codesource{\code{venus_cpu_vlasov_poisson_eulerian}}
+  {\path{cpu/include/ev/advection.hpp}}
+  {Shortened Hamiltonian-interpolation call site}
+\begin{lstlisting}[language=C++]
+const double h_target =
+    vp_particle_hamiltonian(r[i], w[j], Lk, field.phi[i]);
+updated = interpolate_vp_hamiltonian_slice(
+    f, dep.r, dep.w, h_target, k,
+    x_r, r, w, L, field, first_nonnegative_w, p);
+\end{lstlisting}
+
+\subsubsection{Interpolation in physical velocity for expanding runs}
+
+In an expanding background, the physical radial velocity is
+\[
+ P=w+Hr.                                                  \tag{VP5}
+\]
+The setting
+\codesource{\code{venus_cpu_vlasov_poisson_eulerian}}
+  {\path{cpu/include/ev/config.hpp} and
+   \path{cpu/include/ev/vp_expanding_interpolation.hpp}}
+  {Configuration selection for expanding physical-velocity interpolation}
+\begin{lstlisting}
+vp_interpolation = expanding_physical_velocity
+\end{lstlisting}
+holds \(P\) fixed during the local radial interpolation.  At each radial
+neighbor \(r_\ell\), the required grid velocity is
+\[
+ w_\ell=P_{\rm d}-Hr_\ell.                                \tag{VP6}
+\]
+The code first interpolates in \(w\) at each \(r_\ell\), then interpolates
+the resulting values in radius.  This coordinate follows the Hubble drift
+across neighboring radial points.
+
+The nodal interpolation kernels are in
+\path{cpu/include/ev/vlasov_poisson.hpp} and
+\path{cpu/include/ev/vp_expanding_interpolation.hpp}.  The fully kinetic solver
+uses the source-cell overlap remap described in
+Section~\ref{sec:fully-kinetic-bp}.
+
+\noindent\textbf{Runnable starting point.}
+Save this module selection and small analytic problem as \path{params.ini}:
+\codesource{\code{venus_cpu_vlasov_poisson_eulerian}}
+  {\path{cpu/src/apps/vlasov_poisson/eulerian.cpp} and
+   \path{cpu/include/ev/config.hpp}}
+  {Example nodal VP input}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+# params.ini: nodal collisionless Vlasov--Poisson run
+physics_model = vlasov_poisson
+vp_universe = static
+vp_poisson_source = total_density
+bp_collision_operator = none
+kinetic_grid = legacy_nodal
+vp_interpolation = raw
+initial_data = analytic
+shell_initial_df = true
+gaussian_density_shell = true
+Nr = 96
+Nw = 96
+NL = 24
+r_min = 1e-2
+r_max = 40
+w_max = 4
+L_max = 6
+integrator = semi_lagrangian_kick_drift_kick
+t_end = 1
+cfl = 0.30
+dt_max = 0.02
+output_dir = output/vp_nodal_example
+\end{lstlisting}
+Then build and run from the CPU source directory:
+\codesource{\code{venus_cpu_vlasov_poisson_eulerian}}
+  {\path{cpu/Makefile} and \path{cpu/src/apps/vlasov_poisson/eulerian.cpp}}
+  {Build and invocation commands}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+cd VENUS/cpu
+make cpu-task-solvers
+./venus_cpu_vlasov_poisson_eulerian --config params.ini
+\end{lstlisting}
+
+\subsection{Finite-Volume VP Option and Inflow}
+
+\begin{figure}[htbp]
+\centering
+\textbf{Physics flow: finite-volume Vlasov--Poisson module}
+\par\smallskip
+\begin{tikzpicture}[node distance=0.22cm]
+\node[physicsflow] (fv1) {Interpret every phase-space value as matter stored in a finite control volume};
+\node[physicsflow,below=of fv1] (fv2) {Integrate the cell matter to obtain radial density and solve spherical gravity};
+\node[physicsflow,below=of fv2] (fv3) {Compute how quickly particles cross every radial and velocity-space cell face};
+\node[physicsflow,below=of fv3] (fv4) {Choose a timestep short enough that the face-crossing update remains stable};
+\node[physicsflow,below=of fv4] (fv5) {Use the upstream side of each face to calculate the outgoing and incoming matter fluxes};
+\node[physicsflow,below=of fv5] (fv6) {Update each cell by subtracting outward flux and adding inward flux};
+\node[physicsflow,below=of fv6] (fv7) {Apply reflecting, vacuum-outflow, or prescribed-inflow boundary fluxes};
+\node[physicsflow,below=of fv7] (fv8) {Recompute gravity, verify the flux and mass ledgers, then write output and continue};
+\draw[physicsarrow] (fv1) -- (fv2);
+\draw[physicsarrow] (fv2) -- (fv3);
+\draw[physicsarrow] (fv3) -- (fv4);
+\draw[physicsarrow] (fv4) -- (fv5);
+\draw[physicsarrow] (fv5) -- (fv6);
+\draw[physicsarrow] (fv6) -- (fv7);
+\draw[physicsarrow] (fv7) -- (fv8);
+\end{tikzpicture}
+\end{figure}
+
+The semi-Lagrangian VP update follows characteristics. The finite-volume
+option instead balances the matter entering and leaving each cell. Shared
+face fluxes then give explicit local conservation, with the timestep limited
+by the amount a donor cell can supply.  It computes face fluxes in \(r\) and
+\(w\) using upwind states and subtracts the divergence from each control
+volume:
+\[
+  f^{n+1}_{ijk}=f^n_{ijk}
+  -\Delta t\left(\frac{F^r_{i+1/2,j,k}-F^r_{i-1/2,j,k}}{\Delta r_i}
+  +\frac{F^w_{i,j+1/2,k}-F^w_{i,j-1/2,k}}{\Delta w_j}\right).
+\]
+The finite-volume implementation is in
+\path{cpu/include/ev/vlasov_poisson.hpp}.  External inflow boundary conditions for
+selected shell problems are built in the same file:
+\codesource{\code{venus_cpu_vlasov_poisson_eulerian}}
+  {\path{cpu/include/ev/vlasov_poisson.hpp}}
+  {Shortened upwind finite-volume flux excerpt}
+\begin{lstlisting}[language=C++]
+const double flux_r = speed_r > 0.0 ? speed_r * f_left
+                                    : speed_r * f_right;
+const double flux_w = speed_w > 0.0 ? speed_w * f_down
+                                    : speed_w * f_up;
+f_new[q] = f[q] - dt * ((flux_r_hi - flux_r_lo) / dr
+                      + (flux_w_hi - flux_w_lo) / dw);
+\end{lstlisting}
+At a fixed reflecting radial face \(R\), an outgoing velocity interval
+\([w_-,w_+]\) maps to \([-w_+-2HR,-w_--2HR]\).  The finite-volume code
+integrates \((w+HR)f\) over the outgoing part of each velocity cell and
+distributes the opposite flux over the intersected incoming cells.  Summing
+these two contributions cancels the radial mass flux to roundoff whenever
+the reflected interval lies within the velocity domain.  Reflected velocities
+outside that domain contribute to velocity-domain loss.  At an origin-parity
+face \(R=0\), the same construction reverses \(w\).
+The finite-volume timestep uses the sum of outgoing radial and velocity
+flux coefficients divided by their cell widths.  At a reflecting face,
+it uses the same velocity-cell integral as the wall flux.  This resolves a
+wide velocity bin on a stretched grid even when its center lies near zero
+radial speed.  Every positive donor cell enters this CFL limit, including
+low-density tails, so its explicit outgoing contribution cannot exceed the
+cell population within the configured Courant bound.
+
+
+\noindent\textbf{Runnable starting point.}
+The finite-volume branch uses the same VP physics selection but changes the
+transport integrator.  A small \path{params.ini} is:
+\codesource{\code{venus_cpu_vlasov_poisson_eulerian}}
+  {\path{cpu/src/apps/vlasov_poisson/eulerian.cpp} and
+   \path{cpu/include/ev/config.hpp}}
+  {Example input for the explicit finite-volume VP branch}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+# params.ini: finite-volume Vlasov--Poisson run
+physics_model = vlasov_poisson
+vp_universe = static
+vp_poisson_source = total_density
+bp_collision_operator = none
+kinetic_grid = legacy_nodal
+initial_data = analytic
+shell_initial_df = true
+gaussian_density_shell = true
+Nr = 96
+Nw = 96
+NL = 24
+r_min = 1e-2
+r_max = 40
+w_max = 4
+L_max = 6
+integrator = conservative_finite_volume
+inner_boundary = reflecting
+outer_boundary = outflow_vacuum
+t_end = 0.5
+cfl = 0.35
+dt_max = 0.01
+output_dir = output/vp_finite_volume_example
+\end{lstlisting}
+Run it from the CPU source directory with:
+\codesource{\code{venus_cpu_vlasov_poisson_eulerian}}
+  {\path{cpu/Makefile} and \path{cpu/src/apps/vlasov_poisson/eulerian.cpp}}
+  {Build and invocation commands}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+cd VENUS/cpu
+make cpu-task-solvers
+./venus_cpu_vlasov_poisson_eulerian --config params.ini
+\end{lstlisting}
+
+\input{sections/exact_collision_foundations}
+
+\input{sections/cpu/eulerian_grid_collision_backends}
+
+\input{sections/cpu/fully_kinetic_boltzmann_manual_section}
+
+\input{sections/cpu/semi_lagrangian_manual_section}
+\fi
+
+\subsection{Mass, Energy, and Escape Diagnostics}
+
+In the Newtonian VP/BP grid modules, represented mass is integrated directly
+from the stored mass distribution:
+\[
+  M_f = 8\pi^2\int \dd r\int\dd w\int L\,\dd L\, f
+      = 8\pi^2\int\dd r\int\dd w\int\dd\eta\, f .
+\]
+With the delayed inner boundary, the matter mass is
+\[
+  M_{\rm matter}=M_f+M_{\rm h},
+\]
+\ifvenusfullcpu
+where \(M_{\rm h}\) is the direct sum of carrier-packet masses in
+Section~\ref{sec:delayed-inner-carrier}.
+\else
+where \(M_{\rm h}\) denotes any explicitly represented packet mass outside the
+instantaneous radial mesh.  In WPIC and SphDSMC runs the primary
+matter ledger is instead the direct sum of the actual positive masses stored
+on their markers.
+\fi
+For Einstein--Vlasov, the invariant rest mass instead includes the proper
+radial-volume factor,
+\[
+ M_0=8\pi^2\int e^\lambda f\,\dd r\,\dd w\,\dd\eta,
+ \qquad
+ M_{\rm ADM}=4\pi\int_0^\infty r^2\rho\,\dd r.
+\]
+Here \(M_0\) counts invariant rest weight, while \(M_{\rm ADM}\) is the
+asymptotic gravitating mass obtained from the metric constraint; particle
+energy and gravitational binding distinguish the two.  In VP/BP the
+declared background subtraction determines the Poisson source mass, which
+can differ from the represented matter mass.  Escape diagnostics estimate
+phase density crossing the radial boundary with outward speed.  The reduction
+kernels for moments, mass, timestep scans, and escape diagnostics are
+flattened across phase-space work items.
+
+The main takeaway for users is:
+\begin{itemize}
+\ifvenusfullcpu
+\item monitor \code{history.csv} for mass drift, escape estimates, compactness
+gap, \code{dt}, and BP operator ratios;
+\item use the canonical-orbit solver for fully kinetic finite-volume
+Boltzmann--Poisson evolution with infrequent field reconstruction;
+\else
+\item monitor solver histories for mass/energy drift, central or maximum
+density, accepted \(\Delta t\), mean-free-path locality, pair counts and
+pair-invariant errors, and event-clock diagnostics as applicable;
+\item use weighted particle--mesh Boltzmann--Poisson evolution for continuous
+marker orbits, local NTC scattering, and marker-noise convergence;
+\item use SphDSMC for the published persistent-marker SIDM benchmark family;
+\fi
+\end{itemize}
+
+The one-main-per-task source map is in
+Section~\ref{sec:task-solver-catalogue}; the full user-facing utility map is
+\path{notes/SCRIPT_REFERENCE.md}.  Those catalogues replace duplicated
+file-by-file listings here.
+
+\part{Implementation, Data, and Computing}
+
+\input{sections/solver_module_catalog}
+
+\input{sections/cpu/software_orientation}
+
+\input{sections/parallel_computing_foundations}
+
+\section{Parallel Implementation}
+
+\subsection{Thread Backend}
+
+The local parallel wrapper in \path{cpu/include/ev/parallel.hpp} uses OpenMP when
+compiled with \code{-fopenmp}; otherwise it falls back to \code{std::thread}.
+The high-level code calls \code{parallel_for_chunks} or
+\code{parallel_for_dynamic_chunks}.  \code{threads = 0} auto-detects from the
+environment in this order: \code{EV_THREADS}, \code{EV_SOLVER_THREADS},
+\code{OMP_NUM_THREADS}, \code{SLURM_CPUS_PER_TASK}, and then hardware.
+
+Threaded kernels assign one output cell per work item, use thread-local partial
+sums for reductions, or give each shell one thread owner.  The release
+parallelization includes:
+\begin{itemize}
+\ifvenusfullcpu
+\item EV and VP/BP moment reductions flattened over \((r,w)\) work.
+\item timestep scans, mass scans, escape diagnostics, adaptive-\(w\) support
+scans, phase projections, and operator diagnostics over flattened phase-space
+work.
+\item VP energy-shell table construction over local \(L\) slabs.
+\item canonical atlas construction and projection with dynamic ownership of
+complete \(\eta\) planes;
+\item canonical outgoing-packet lifts, local positive quadrature reduction,
+and disjoint NTC collision shells;
+\else
+\item weighted PIC orbit pushes and disjoint local NTC collision shells over
+threads, with deterministic counter-based random streams;
+\item SphDSMC gravity loops over markers and disjoint collision shells over
+threads.
+\fi
+\end{itemize}
+\ifvenusfullcpu
+Flattened work supplies \((r,w,L)\)-level concurrency when \(N_r\) is smaller
+than the requested core count.
+\fi
+
+\subsection{MPI Decomposition}
+
+\ifvenusfullcpu
+MPI decomposes the global \(L\)-grid into contiguous slabs.  Each rank owns the
+full \(r\)-grid, full \(w\)-grid, and only its local \(L\) values and
+\(f(r,w,L_{\rm local})\) slab.  Thus a rank-local transport loop uses the
+global radial and momentum indices \(i,j\) together with a local angular index
+\(k_{\rm local}\); thread-level work is drawn from these local
+\((i,j,k_{\rm local})\) entries.  This ownership is possible because spherical
+symmetry conserves \(L\), so each \(L\)-slice transports independently.
+Moments are computed in two stages:
+\begin{enumerate}
+\item each rank integrates over its local \(L\) slab;
+\item radial arrays such as \(\rho(r)\), \(p(r)\), and \(j(r)\) are summed by
+\code{MPI_Allreduce}.
+\end{enumerate}
+After that reduction every rank has the same metric or Poisson field, and the
+next advection step is independent over rank-local \(L\) slices.
+
+MPI is supported for:
+\begin{itemize}
+\item Einstein--Vlasov;
+\item Vlasov--Poisson in static backgrounds;
+\item Vlasov--Poisson in expanding backgrounds;
+\item collisionless Boltzmann--Poisson dispatch.
+\end{itemize}
+BP collision operators use one process and OpenMP threads.  Their shell-local
+velocity coupling has a single-process ownership contract.
+\else
+The WPIC and SphDSMC collision paths use one process.
+Their scalable work is threaded: independent marker orbit pushes, disjoint
+collision shells, SphDSMC gravity loops, and the parallel radix-sort passes.
+Launching more than one MPI rank would create independent marker ensembles
+rather than one distributed collision calculation, so the scheduler scripts
+request one Slurm task and allocate cores with \code{--cpus-per-task}.
+\fi
+
+\subsection{Slurm Resource Rules}
+
+\ifvenusfullcpu
+For EV and collisionless VP/BP, use the MPI executable and set:
+\codesource{Collisionless Eulerian EV/VP MPI tasks}
+  {\path{cpu/scripts/slurm/ias_hybrid_ev_vp.sbatch} and
+   \path{cpu/scripts/slurm/iitk_param_hybrid_ev_vp.sbatch}}
+  {Scheduler resource pattern; the site allocation must be chosen locally}
+\begin{lstlisting}
+--ntasks or --ntasks-per-node     number of MPI L-slab ranks
+--cpus-per-task                  OpenMP threads per rank
+\end{lstlisting}
+A good first cluster test is 2--8 MPI ranks with 2--8 threads each.  Use at
+most \(N_L\) MPI ranks; VENUS validates this bound before writing output.
+Once local slabs become small, allocate the remaining cores to OpenMP threads.
+\fi
+
+\ifvenusfullcpu
+For grid BP collision runs, use:
+\codesource{Single-process grid BP collision tasks}
+  {\path{cpu/scripts/slurm/ias_openmp_bp.sbatch} and
+   \path{cpu/scripts/slurm/iitk_param_openmp_bp.sbatch}}
+  {Scheduler resource pattern and task-executable naming convention}
+\begin{lstlisting}
+--ntasks=1
+--cpus-per-task=<threads>
+venus_cpu_boltzmann_poisson_<backend>_openmp
+\end{lstlisting}
+Increase \code{--cpus-per-task} to fill the node.  BP collisions use
+\code{--ntasks=1} and the matching OpenMP task executable.
+\else
+For grid BP or SphDSMC collision runs, the following templates provide a
+one-process shared-memory resource pattern:
+\codesource{Grid BP and SphDSMC collision tasks}
+  {\path{cpu/scripts/slurm/ias_openmp_bp.sbatch} and
+   \path{cpu/scripts/slurm/iitk_param_openmp_bp.sbatch}}
+  {Single-process shared-memory scheduler pattern for the modular
+   configuration-file interface}
+\begin{lstlisting}
+--ntasks=1
+--cpus-per-task=<OpenMP threads>
+\end{lstlisting}
+For SphDSMC, set both \code{CONFIG} and \code{EXECUTABLE} to the selected
+constant or velocity-dependent SphDSMC task.  The six dedicated WPIC
+frontends use their own command-line interfaces and are not built or invoked
+by these modular-BP templates; a WPIC scheduler wrapper must call the
+corresponding WPIC executable explicitly.
+\fi
+
+The templates set:
+\codesource{Portable CPU Slurm templates}
+  {\path{cpu/scripts/slurm/ias_hybrid_ev_vp.sbatch},
+   \path{cpu/scripts/slurm/ias_openmp_bp.sbatch},
+   \path{cpu/scripts/slurm/iitk_param_hybrid_ev_vp.sbatch}, and
+   \path{cpu/scripts/slurm/iitk_param_openmp_bp.sbatch}}
+  {Environment-variable pattern used by the maintained templates}
+\begin{lstlisting}
+OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
+OMP_PLACES=cores
+OMP_PROC_BIND=spread
+EV_THREADS=$OMP_NUM_THREADS
+EV_CONFIG, EV_OUTPUT_DIR, EV_RESTART_DIR
+\end{lstlisting}
+The templates derive \code{VENUS_DIR} from their own location and write to a
+unique automatically named run directory under \path{venus_runs/} by default.
+This keeps the templates portable across user checkouts.  For large runs, set
+\code{VENUS_RUN_ROOT} to a scratch/project filesystem or set
+exact \code{OUTPUT_DIR} and \code{RESTART_DIR} values.  The main portable
+controls are:
+\begin{itemize}
+\item \code{VENUS_DIR}: source checkout, normally auto-detected.
+\item \code{VENUS_RUN_ROOT}: parent directory for automatically named run
+folders.
+\item \code{CONFIG}: input parameter file.
+\item \code{EXECUTABLE}: exact or \code{VENUS_DIR}-relative binary path.
+\item \code{VENUS_BUILD=0}: skip compilation and require \code{EXECUTABLE} to
+exist.
+\item \code{VENUS_MAKE_JOBS}: number of compile jobs when compilation is
+enabled.
+\item \code{VENUS_SKIP_MODULES=1}: bypass \code{module load}.
+\item \code{VENUS_PURGE_MODULES=0}: keep the existing module environment.
+\end{itemize}
+Relative \code{CONFIG}, \code{OUTPUT_DIR}, and \code{RESTART_DIR} values are
+resolved from \code{SLURM_SUBMIT_DIR}; relative \code{EXECUTABLE} values are
+resolved from \code{VENUS_DIR}.  The templates first use an explicit
+\code{VENUS_DIR} if provided, then fall back to \code{SLURM_SUBMIT_DIR} when
+it looks like a VENUS checkout; this avoids Slurm spool-directory path
+confusion when \code{BASH_SOURCE} points into \code{/var/spool}.  If
+\code{OUTPUT_DIR} or \code{EV_OUTPUT_DIR} is overridden in the absence of an
+explicit restart directory, the
+solver writes restarts under \code{<output_dir>/restarts}.  Set
+\code{RESTART_DIR}/\code{EV_RESTART_DIR} only when restarts should live
+somewhere else.
+The non-MPI executable checks common Slurm/MPI environment variables and
+accepts one rank by default.  Setting
+\code{allow_multi_rank_launch = true} enables an explicit multi-rank launch.
+The default keeps one writer assigned to each shared output directory.
+
+\subsection{IAS Apollo/Typhon}
+
+The IAS scripts are:
+\begin{itemize}
+\ifvenusfullcpu
+\item \path{cpu/scripts/slurm/ias_hybrid_ev_vp.sbatch}: EV and collisionless VP
+MPI+OpenMP.
+\fi
+\item \path{cpu/scripts/slurm/ias_openmp_bp.sbatch}: modular BP OpenMP-only; its
+default executable is the Fokker--Planck grid task, so SphDSMC requires both
+an explicit \code{CONFIG} and an explicit \code{EXECUTABLE}.
+\end{itemize}
+One commonly available IAS compiler/MPI environment is:
+\codesource{IAS CPU Slurm templates}
+  {\path{cpu/scripts/slurm/ias_hybrid_ev_vp.sbatch} and
+   \path{cpu/scripts/slurm/ias_openmp_bp.sbatch}}
+  {Illustrative site module commands; verify available names at login}
+\begin{lstlisting}
+module load gcc-toolset/10
+module load openmpi/gcc/4.1.0
+\end{lstlisting}
+\ifvenusfullcpu
+Submit a collisionless VP hybrid job with:
+\codesource{Collisionless VP MPI plus OpenMP task}
+  {\path{cpu/scripts/slurm/ias_hybrid_ev_vp.sbatch}}
+  {Illustrative submission command; paths and allocation fields are user supplied}
+\begin{lstlisting}
+sbatch --nodes=1 --ntasks-per-node=4 --cpus-per-task=8 \
+  --export=ALL,CONFIG=$PWD/examples/modular/vp_expanding_nfw_gamma2_collisionless.ini,VENUS_RUN_ROOT=/path/to/scratch/$USER/venus \
+  cpu/scripts/slurm/ias_hybrid_ev_vp.sbatch
+\end{lstlisting}
+\fi
+Submit a SphDSMC job with a configuration that explicitly contains:
+\codesource{\code{venus_cpu_sidm_sphdsmc_constant_openmp} or velocity-dependent counterpart}
+  {\path{cpu/include/ev/config.hpp} and
+   \path{cpu/src/apps/sidm/sphdsmc_constant.cpp}}
+  {Required collision-backend configuration selection}
+\begin{lstlisting}
+bp_collision_operator = spherical_dsmc
+\end{lstlisting}
+\noindent Then submit:
+\codesource{SphDSMC OpenMP task}
+  {\path{cpu/scripts/slurm/ias_openmp_bp.sbatch}}
+  {Illustrative submission command; no job is submitted by this manual build}
+\begin{lstlisting}
+sbatch --nodes=1 --ntasks=1 --cpus-per-task=32 \
+  --export=ALL,CONFIG=$PWD/my_sphdsmc.ini,EXECUTABLE=$PWD/venus_cpu_sidm_sphdsmc_constant_openmp,VENUS_RUN_ROOT=/path/to/scratch/$USER/venus \
+  cpu/scripts/slurm/ias_openmp_bp.sbatch
+\end{lstlisting}
+Before a run, check \code{module avail}, \code{sinfo}, and
+\code{scontrol show partition}; edit or override partition/account/module
+settings as needed.
+
+\subsection{IIT Kanpur PARAM Sanganak}
+
+The PARAM scripts are:
+\begin{itemize}
+\ifvenusfullcpu
+\item \path{cpu/scripts/slurm/iitk_param_hybrid_ev_vp.sbatch}: EV and
+collisionless VP MPI+OpenMP.
+\fi
+\item \path{cpu/scripts/slurm/iitk_param_openmp_bp.sbatch}: modular BP collision
+OpenMP-only; select SphDSMC explicitly when that is the intended backend.
+\end{itemize}
+The public PARAM Sanganak pages identify it as a PARAM CPU supercomputing
+system.  Site module names are supplied at login time, so the scripts keep
+module and partition lines editable.  Check \code{module avail}
+and \code{sinfo} after login, then pass site-specific module names with
+\code{PARAM_GCC_MODULE} and \code{PARAM_MPI_MODULE} if necessary.
+
+\ifvenusfullcpu
+\section{Initial Data}
+
+\input{sections/module_initial_conditions}
+
+VENUS accepts analytic initial data or EVICRWL1 binary data in its nodal
+representations.  Analytic data are useful for compact EV checks and simple shell
+experiments.  Quantitative nodal VP/BP runs normally use binary files because
+the generated distribution, radial grid, and velocity grid need to match a
+calibrated physical setup.  Fresh \code{cell_average_eta} runs use analytic
+cell integration; their continuations use version-9 modular single-file
+restarts or the version-7 modular MPI manifest/rank-payload format.
+
+\subsection{Solver Input Files}
+
+The main input file is a plain \code{params.ini}-style file with
+\code{key = value} entries.  The parser accepts comments introduced by
+\texttt{\#} or \code{;} outside quotes, trims whitespace, and treats
+\code{underscored_keys} and \code{hyphenated-keys} equivalently.  The C++
+implementation is in \path{cpu/include/ev/config.hpp}; the Python compatibility
+parser is in \path{cpu/python/ev_solver/config.py}.
+
+The usual precedence is:
+\begin{enumerate}
+\item compiled defaults in \path{cpu/include/ev/common.hpp} or
+\path{cpu/python/ev_solver/params.py};
+\item values from the config file supplied by \code{--config} or
+\code{EV_CONFIG};
+\item environment overrides used by Slurm scripts, especially
+\code{EV_OUTPUT_DIR}, \code{EV_RESTART_DIR}, \code{EV_RESTART_FROM}, and
+\code{EV_THREADS};
+\item command-line overrides such as \code{--output-dir},
+\code{--restart-from}, \code{--initial-data-file}, and \code{--threads}.
+\end{enumerate}
+For cluster runs, retain the example \code{.ini} file and override
+output/restart directories through Slurm environment variables. The input
+then records the requested physics, while \code{metadata.json} records the
+resolved settings and output locations used by the run.
+
+The C++ environment handling is:
+\codesource{All modular CPU grid tasks}
+  {\path{cpu/include/ev/config.hpp}}
+  {Shortened environment-override implementation excerpt}
+\begin{lstlisting}[language=C++]
+if (const char* output_dir = getenv_nonempty("EV_OUTPUT_DIR")) {
+    p.output_dir = output_dir;
+}
+if (const char* restart_dir = getenv_nonempty("EV_RESTART_DIR")) {
+    p.restart_dir = restart_dir;
+}
+const int forced_threads =
+    first_positive_env_int({"EV_THREADS", "EV_SOLVER_THREADS"});
+if (forced_threads > 0) {
+    p.threads = forced_threads;
+}
+\end{lstlisting}
+
+\subsection{EVICRWL1 Binary Format}
+
+The EVICRWL1 binary format is:
+\codesource{Eulerian EV, VP, and BP grid tasks}
+  {\path{cpu/include/ev/initial_data.hpp}}
+  {Binary initial-condition schema read by the C++ solvers}
+\begin{lstlisting}
+char[16]  magic   = "EVICRWL1" padded with zeros
+int32     version = 1
+int32     Nr, Nw, NL
+float64   r[Nr]
+float64   w[Nw]
+float64   L[NL]
+float64   f[Nr*Nw*NL]
+\end{lstlisting}
+The layout is \(f[(iN_w+j)N_L+k]\).  Grids must be increasing, \(r>0\),
+\(L\ge0\), and \(f\) finite and nonnegative.  In MPI runs, every rank reads
+the header but seeks only its local \(L\)-slab from the final array.
+
+The full and local readers are in \path{cpu/include/ev/initial_data.hpp}.  The
+distributed reader loads each local \(L\)-slab directly from its byte offset:
+\codesource{Eulerian EV/VP MPI tasks and serial grid tasks}
+  {\path{cpu/include/ev/initial_data.hpp}}
+  {Shortened local-slab binary reader excerpt}
+\begin{lstlisting}[language=C++]
+const std::streamoff f0 = initial_data_f_offset(ic);
+const std::streamoff cell_offset =
+    ((static_cast<std::streamoff>(i) * ic.Nw + j) * ic.NL + local_L0)
+    * static_cast<std::streamoff>(sizeof(double));
+in.seekg(f0 + cell_offset);
+in.read(reinterpret_cast<char*>(&out[idx(i, j, 0, local_p)]),
+        local_NL * static_cast<std::streamsize>(sizeof(double)));
+\end{lstlisting}
+
+When \code{initial_data = binary_rwl}, the file's grid is authoritative.  The
+solver replaces the configured \code{Nr}, \code{Nw}, \code{NL},
+\code{r_min}, \code{r_max}, \code{w_max}, and \code{L_max} by file metadata and
+sets \code{radial_grid = custom}.  Set \code{custom_radial_coordinate = log}
+for logarithmic custom grids.
+
+An optional tracer file can be supplied with
+\code{tracer_initial_data_file}.  It must have exactly the same \(r,w,L\)
+grids as the total distribution.  Tracers are advected passively; BP
+coefficients are built from the total distribution.  Tracer runs require
+\code{adaptive_w = false}.
+
+\subsection{Generic Analytic IC Generator}
+
+The maintained generic EVICRWL1 generator is
+\path{cpu/python/ev_solver/ic_generator.py}.  From \path{cpu/}, expose the package
+with \code{PYTHONPATH=python} and execute it as a module.  A user distribution
+file must define:
+\codesource{User distribution consumed by \code{ev_solver.ic_generator}}
+  {\path{cpu/python/ev_solver/ic_generator.py}}
+  {Required callable interface in a user-supplied Python file}
+\begin{lstlisting}[language=Python]
+def distribution(r, w, L):
+    # r, w, and L are broadcast-ready NumPy arrays.
+    return f
+\end{lstlisting}
+The return value must be finite, nonnegative, and broadcastable to
+\((N_r,N_w,N_L)\).  A typical command is:
+\codesource{\code{ev_solver.ic_generator}}
+  {\path{cpu/python/ev_solver/ic_generator.py}}
+  {Example EVICRWL1 generation command, run from \path{cpu/}}
+\begin{lstlisting}[language=bash]
+PYTHONPATH=python python3 -m ev_solver.ic_generator \
+  --output examples/initial_data/example.bin \
+  --function-file my_distribution.py \
+  --Nr 128 --Nw 160 --NL 72 \
+  --radial-grid log --w-grid stretched --L-grid quadratic \
+  --r-min 1e-3 --r-max 20 --w-max 3 --L-max 8
+\end{lstlisting}
+The generator constructs the requested grids and evaluates:
+\codesource{\code{ev_solver.ic_generator}}
+  {\path{cpu/python/ev_solver/ic_generator.py}}
+  {Shortened broadcast-and-write implementation excerpt}
+\begin{lstlisting}[language=Python]
+rr = r[:, None, None]
+ww = w[None, :, None]
+LL = L[None, None, :]
+f = distribution(rr, ww, LL)
+write_ev_ic(output, r, w, L, f)
+\end{lstlisting}
+It rejects invalid dimensions, coordinate limits, non-finite values, negative
+\(f\), and incorrectly shaped payloads.  The direct front end
+\path{cpu/tools/ic_generator_legacy.py} writes the same binary contract; the
+importable module additionally supports a quadratic \(L\) grid.
+
+\subsection{Eddington-Inversion Halo ICs}
+
+For equilibrium VP/BP halos, \path{cpu/tools/sidm_nfw_eddington.py} constructs an
+isotropic distribution \(f(\mathcal E)\) from a smooth spherical density
+profile using Eddington inversion:
+\[
+  f(\mathcal E)=\frac{1}{\sqrt{8}\pi^2}
+  \left[
+    \int_0^{\mathcal E}\frac{d^2\rho}{d\Psi^2}
+    \frac{d\Psi}{\sqrt{\mathcal E-\Psi}}
+    +\frac{1}{\sqrt{\mathcal E}}
+    \left(\frac{d\rho}{d\Psi}\right)_{\Psi=0}
+  \right],
+\]
+where \(\Psi=-\Phi+\Phi(\infty)\) is the relative potential and
+\(\mathcal E=\Psi-v^2/2\).  The script supports NFW, cored-NFW,
+cored-\(r^2\)-NFW, beta-core, Plummer, gravothermal-core, Frank-core, and King
+profiles.  It samples \(\rho(r)\), reconstructs the enclosed mass and
+wall-relative potential, builds the \(f(\mathcal E)\) table, and evaluates
+that table on the solver \((r,w,L)\) grid with
+\[
+  v^2=w^2+L^2/r^2,\qquad \mathcal E=\Psi(r)-\frac{v^2}{2}.
+\]
+The implementation follows:
+\codesource{\code{sidm_nfw_eddington.py}}
+  {\path{cpu/tools/sidm_nfw_eddington.py}}
+  {Shortened Eddington-inversion and phase-grid evaluation excerpt}
+\begin{lstlisting}[language=Python]
+mass_model = cumulative_trapezoid(4*pi*r_model**2*rho_model, r_model)
+psi_model = wall_relative_potential(r_model, mass_model, gravity)
+energy, f_energy, diag = eddington_table(
+    psi_model, rho_model, n_energy, n_quad, clip_negative
+)
+f = distribution_from_potential(
+    psi, r, w, L, PchipInterpolator(energy, f_energy)
+)
+\end{lstlisting}
+For example:
+\codesource{\code{sidm_nfw_eddington.py}}
+  {\path{cpu/tools/sidm_nfw_eddington.py}}
+  {Example equilibrium-halo IC generation command, run from \path{cpu/}}
+\begin{lstlisting}[language=bash]
+python3 tools/sidm_nfw_eddington.py \
+  --profile nfw --output examples/initial_data/my_nfw.bin \
+  --report examples/initial_data/my_nfw_report.json \
+  --nr 128 --nw 160 --nl 72 \
+  --r-min 1e-3 --r-max 20 --w-max 3 --L-max 8
+\end{lstlisting}
+The JSON report records mass normalization, represented density error, escape
+speed support, angular-momentum/radial-velocity resolution, negative-value
+treatment, and any grid self-consistency iterations. These quantities show
+how accurately the finite grid represents the intended equilibrium. Inspect
+them before evolution, then measure the collisionless drift of that sampled
+state.
+
+The Frank comparison path has separate task-specific generators:
+\path{generate_frank_core_cell_average_restart.py} for grid/canonical cell
+averages, \path{generate_frank_core_spherical_dsmc_restart.py} for persistent
+SphDSMC markers, and \path{generate_frank_nfwc40_fig2_restart.py} for the
+concentrated reference halo.  \path{export_frank_eddington_table.py} writes
+their common \(f(\mathcal E)\) table.  Their formats are not interchangeable:
+EVICRWL1 stores \(f(r,w,L)\), whereas WPIC, SphDSMC, and canonical restart
+files preserve task-specific particle and event state.
+
+\subsection{Bound Shell and Composite IC Checks}
+
+The bundled collisionless shell-train example contains a prepared EVICRWL1
+distribution.  For any newly constructed background plus infalling shell,
+the important physical requirement is that occupied cells satisfy
+\[
+  E=\frac{1}{2}\left[(w+Hr)^2+\frac{L^2}{r^2}\right]+\Phi(r)<0,
+\]
+and that the outer turning point remains inside the intended box.  Before a
+custom composite IC is used:
+\begin{enumerate}
+\item integrate its density with the solver quadrature and reconstruct
+\(M(<r)\) and \(\Phi(r)\);
+\item evaluate the unbound mass fraction and mass-weighted apocenter
+distribution with the run's \(H\), mass normalization, and boundary
+convention;
+\item redesign unsupported tails while preserving total/tracer normalization,
+then regenerate both files on exactly the same \(r,w,L\) grid;
+\item verify collisionless equilibrium drift, boundary flux, and resolution
+before enabling collisions or interpreting shell relaxation.
+\end{enumerate}
+
+\section{Examples Included in VENUS}
+
+\begin{itemize}
+\item \path{cpu/examples/einstein_vlasov_high_compactness_horizon_formation.ini}:
+EV binary-IC near-collapse test.  Use this for compactness gap and horizon
+formation workflows.
+\item \path{cpu/examples/einstein_vlasov_low_compactness_virialized_halo.ini}:
+analytic low-compactness EV shell/halo virialization test.
+\item \path{cpu/examples/modular/vp_expanding_nfw_gamma2_collisionless.ini}:
+collisionless expanding Einstein--de Sitter VP control from a zero-physical-flux
+\(\gamma=2\) seed.
+\item \path{cpu/examples/modular/bp_expanding_nfw_gamma1p5_weak_collision.ini}:
+expanding EdS BP weak-collision run with softened subhalo encounters and
+instantaneous-DF coefficients.
+\item \path{cpu/examples/modular/bp_sidm_corecollapse_yukawa.ini}: static SIDM-like
+core-collapse run using a Yukawa Born transfer cross section and a local
+Maxwellian bath.
+\item \path{cpu/examples/modular/vp_bound_infalling_gaussian_shell_train.ini}:
+static collisionless VP relaxation of a gravitationally bound infalling
+Gaussian shell train.  The bundled IC uses a bound-tail filter so the
+comparison is governed by the represented bound population.
+\end{itemize}
+
+For cluster runs, always override the output directory.  For example:
+\codesource{Grid BP or explicitly selected SphDSMC OpenMP task}
+  {\path{cpu/scripts/slurm/ias_openmp_bp.sbatch}}
+  {Illustrative submission command; it does not run during documentation QA}
+\begin{lstlisting}
+sbatch --nodes=1 --ntasks=1 --cpus-per-task=32 \
+  --export=ALL,CONFIG=$PWD/examples/modular/bp_sidm_corecollapse_yukawa.ini,OUTPUT_DIR=/path/to/scratch/$USER/venus/sidm01 \
+  cpu/scripts/slurm/ias_openmp_bp.sbatch
+\end{lstlisting}
+
+\fi
+\ifvenusfullcpu
+\section{Output and Restarts}
+
+The root rank writes CSV diagnostics and metadata.  A typical output directory
+contains:
+\codesource{Eulerian EV, VP, and BP grid tasks}
+  {\path{cpu/include/ev/solver_setup.hpp} and
+   \path{cpu/include/ev/solver_evolution.hpp}}
+  {Representative output-object names; the active task controls the subset}
+\begin{lstlisting}
+metadata.json
+profiles.csv
+history.csv
+operator_mass_budget.csv
+w_grid_history.csv
+phase_space_initial.csv
+phase_space_final.csv
+phase_space_snapshots.csv              # if phase_every > 0
+tracer_profiles.csv                    # if tracer active
+tracer_phase_space_initial.csv         # if tracer active
+tracer_phase_space_final.csv           # if tracer active
+tracer_phase_space_snapshots.csv       # if tracer active and phase_every > 0
+restart_state.bin                      # in restart_dir for one-rank runs
+restart_state.bin.rank000000           # MPI rank payloads
+\end{lstlisting}
+The low-level C++ CSV helpers are in \path{cpu/include/ev/output.hpp};
+\path{cpu/include/ev/solver_setup.hpp} creates the grid-task files and their
+headers, and \path{cpu/include/ev/solver_evolution.hpp} writes evolved rows.
+The Python compatibility writer is in \path{cpu/python/ev_solver/io.py}, which supports archival
+notebooks and single-process experiments.
+
+\code{metadata.json} records resolved parameters, output conventions,
+parallel backend, \code{mpi_size}, global \(N_L\), rank-0 \(L\)-slab metadata,
+and restart layout.  It is the first file to inspect when confirming that a
+cluster job used the intended resource layout.
+
+\code{profiles.csv} has:
+\codesource{Eulerian EV, VP, and BP grid tasks}
+  {\path{cpu/include/ev/solver_setup.hpp}}
+  {Shared radial-profile CSV schema}
+\begin{lstlisting}
+time,step,r,rho,p,pt,j,m,mu,lambda,gap
+\end{lstlisting}
+For EV, these are relativistic moments and metric fields.  For VP/BP,
+\code{m} is Poisson source mass, \code{mu} is \(\Phi\), \code{lambda} is zero,
+and \code{gap} is one.
+
+The radial profile rows are written at the configured profile cadence.  The
+columns mean:
+\begin{itemize}
+\item \code{time}, \code{step}: physical solver time and integer step.
+\item \code{r}: radial grid point.
+\item \code{rho}, \code{p}, \code{pt}, \code{j}: density, radial and
+tangential pressure/dispersion moments, and radial momentum flux.  In VP/BP
+\code{p/rho-(j/rho)^2} is the radial velocity variance and
+\code{pt/rho} is the tangential second moment where \(\rho>0\).
+\item \code{m}: enclosed mass.
+\item \code{mu}, \code{lambda}: EV metric potentials or VP potential
+convention.
+\item \code{gap}: EV compactness gap \(1-2m/r\), or one for VP/BP.
+\end{itemize}
+
+\code{history.csv} contains time, step, timestep, total matter mass, maximum
+density, compactness or diagnostic gap, boundary escape estimates, current
+\code{w_max}, minimum \(w\)-spacing, and RMS operator diagnostics for the
+Vlasov and collision increments.  Delayed-return runs also record
+\code{hidden_carrier_mass}, its uniform-cell mean density, and the number of
+active carrier packets.  The operator ratio
+\code{op_collision_over_vlasov} is especially useful in BP runs.  A very large
+ratio means the run is collision dominated; a tiny ratio means the run is
+effectively collisionless over the simulated time.
+
+\path{operator_mass_budget.csv} is the authoritative conservation audit.  The
+canonical solver records atlas mass before and after frozen transport,
+represented mass before and after collisions, pair momentum and kinetic-energy
+errors, collision-shell locality, outgoing-packet materialization residuals,
+compression residuals, and active, hidden, and escaped open-orbit mass.  The
+static material-SIDM WPIC driver and SphDSMC solvers record corresponding
+marker-mass, collision, shell-locality, and energy ledgers.  The expanding
+collisionless and subhalo WPIC drivers use their own profile, history,
+and collision-history outputs and do not write this grid-style operator
+budget file.
+Core-collapse runs should monitor this file in addition to the
+aggregate mass in \path{history.csv}.
+
+For debugging BP runs, compare the three operator diagnostics:
+\codesource{Grid Boltzmann--Poisson task executables}
+  {\path{cpu/include/ev/operator_diagnostics.hpp},
+   \path{cpu/include/ev/solver_setup.hpp}, and
+   \path{cpu/include/ev/solver_evolution.hpp}}
+  {Names of the saved transport-versus-collision diagnostics}
+\begin{lstlisting}
+op_vlasov_rms
+op_collision_rms
+op_collision_over_vlasov
+\end{lstlisting}
+An unexpectedly large ratio calls for a smaller \code{dt_max} and inspection
+of the collision positivity limit.  A small ratio in a collisional experiment
+calls for checks of the cross-section normalization, density scale, and sample
+ledger.
+
+Phase-space CSV files store
+\[
+  g(r,w)=\int_0^\infty L f(r,w,L)\,\dd L .
+\]
+MPI ranks all-reduce their local \(L\)-slab contributions before rank zero
+writes the projection.
+
+One-rank restarts are single binary files with magic \code{EVLOGRST1}.  MPI
+restarts use a manifest with magic \code{EVMPIRST1} plus one rank-local payload
+per MPI rank with magic \code{EVMPIRNK1}.  Distributed restarts currently
+require the same MPI rank count used when they were written.  A single-file
+restart can be read by an MPI run because each rank seeks its local \(L\)-slab.
+
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{0.26\linewidth}
+>{\raggedright\arraybackslash}p{0.25\linewidth}
+>{\raggedright\arraybackslash}p{0.15\linewidth}X@{}}
+\toprule
+Writer/state & Magic & Current write & Reader compatibility \\
+\midrule
+Modular grid, one rank & \code{EVLOGRST1} & 9 & 1--9 \\
+Modular grid, MPI & \code{EVMPIRST1}/\code{EVMPIRNK1} & 7 & 1--7; same rank count \\
+Stand-alone EV, one rank & \code{EVLOGRST1} & 3 & 1--3 \\
+Stand-alone EV, MPI & \code{EVMPIRST1}/\code{EVMPIRNK1} & 1 & 1; same rank count \\
+Weighted PIC (CPU and GPU) & \code{VENUSWVPIC1} & 6 & 1--6 \\
+SphDSMC & \code{VENUSSPHDSMC1} & 4, or 5 in paper-exact mode & 2--5 \\
+Canonical BP event state & \code{VENUSCANBP1} & 4 & 1--4 \\
+\bottomrule
+\end{tabularx}
+\end{center}
+The magic identifies a file family. To establish compatibility, readers
+also check the versioned dimensions, mesh/model convention, byte-order
+sentinel where present, finite state, and complete file length before
+evolution.
+Fixed-width magic fields are compared within their declared byte arrays, so a
+malformed field without a NUL terminator cannot trigger an unbounded string
+read.  Grid restart metadata and clocks must be finite, time and step must be
+nonnegative, and a persisted 64-bit step must fit the solver's in-memory
+integer type.  Both legacy nodal and cell-average distribution payloads must
+have the exact expected size and contain only finite nonnegative values.
+
+Fresh runs start in empty output and restart directories.  Restart
+continuations may append to an output directory and write checkpoints to a
+fresh destination \code{restart_dir}.  This preserves the source checkpoint
+used to launch a continuation.
+
+\subsection{Restart Semantics}
+
+Restarts contain the full distribution, the current time, and the current
+integer step.  A continuation takes \(t,\mathrm{step},f\) from the checkpoint. The new
+config supplies future \code{t_final}, output cadence, collision
+cadence, and paths. This division preserves the evolved state while allowing
+the next segment's duration and output schedule to be specified.  Keep
+the grid-defining parameters and binary-IC metadata compatible with the restart.
+Before appending a continuation, VENUS verifies every existing CSV header
+against the executable's current schema.  A schema revision uses a fresh
+\code{output_dir}; the earlier segment remains available for subsequent
+profile/history concatenation.
+
+For MPI restarts, keep the same MPI rank count unless converting from a
+single-file checkpoint.  The MPI format writes one payload per rank and
+distributes restart I/O.  The manifest records the rank count and slab
+metadata and validates slab compatibility before loading.
+
+\input{sections/gpu/gpu_architecture}
+
+\section{Reading Output Safely}
+
+Use a Python environment that has NumPy, Matplotlib, SciPy, Pillow, and
+imageio available.  The examples below use a configurable shell variable:
+\codesource{All Python readers and renderers documented in this section}
+  {\path{cpu/python/ev_solver/output_reader.py} and \path{cpu/tools/}}
+  {Optional shell interpreter selection used in the following commands}
+\begin{lstlisting}
+PYTHON=${PYTHON:-python}
+\end{lstlisting}
+The plotting scripts set a writable Matplotlib cache under the temp directory
+when \code{MPLCONFIGDIR} is absent.
+
+\subsection{Programmatic Readers}
+
+The canonical reader helpers are in \path{cpu/python/ev_solver/output_reader.py}.
+Use them from notebooks or analysis scripts for schema-aware CSV reshaping:
+\codesource{Python analysis or notebook code}
+  {\path{cpu/python/ev_solver/output_reader.py}}
+  {Example use of the maintained schema-aware reader API}
+\begin{lstlisting}[language=Python]
+from pathlib import Path
+from ev_solver.output_reader import (
+    load_named_csv,
+    load_phase,
+    load_phase_snapshots,
+)
+
+run = Path("output/my_run")
+profiles = load_named_csv(run / "profiles.csv")
+history = load_named_csv(run / "history.csv")
+r, w, g_final = load_phase(run / "phase_space_final.csv")
+times, r_frames, w_frames, snapshots = load_phase_snapshots(
+    run / "phase_space_snapshots.csv"
+)
+\end{lstlisting}
+\code{load_named_csv} preserves one-row files as arrays, which avoids a common
+NumPy scalar/array surprise in one-row outputs.  \code{load_phase} reads
+a single \(g(r,w)\) projection.  \code{load_phase_snapshots} stores a separate
+\(r,w\) grid for each frame because adaptive-\(w\) runs can change the
+momentum coordinates while keeping the same index count.
+
+For live monitoring, the snapshot reader and current profile/GIF renderers
+use complete trailing CSV rows and frames. The solver can therefore append
+the next frame while a plotting process reads the preceding complete data.
+Final analysis checks that the selected scientific outputs are complete.
+
+\section{Plotting and GIF Construction}
+
+\input{sections/module_visualization_guide}
+\input{sections/wpic_diagnostics}
+\input{sections/phase_space_analysis}
+
+\subsection{Standard Plotting Commands}
+
+Run the following relative commands from \path{VENUS/cpu}; each ownership
+line also gives the full repository path of the analysis tool.
+
+For EV output:
+\codesource{\code{plot_einstein_vlasov_outputs.py}}
+  {\path{cpu/tools/plot_einstein_vlasov_outputs.py}}
+  {Example EV plot and optional GIF command, run from \path{cpu/}}
+\begin{lstlisting}
+$PYTHON tools/plot_einstein_vlasov_outputs.py \
+  --input-dir output/ev_high_compactness_horizon_formation \
+  --output-dir plots/ev_high_compactness \
+  --make-gifs
+\end{lstlisting}
+This script reads \code{profiles.csv}, \code{history.csv}, and phase-space
+files and writes density, metric, compactness, phase-space, and optional GIF
+products.
+
+For VP/BP density-slope GIFs:
+\codesource{\code{spherical_profile_rendering.py}}
+  {\path{cpu/tools/spherical_profile_rendering.py}}
+  {Example named-column density/slope GIF command, run from \path{cpu/}}
+\begin{lstlisting}
+$PYTHON tools/spherical_profile_rendering.py \
+  --input-dir output/vp_run \
+  --output plots/vp_gamma2_density_slope.gif
+\end{lstlisting}
+For density plus velocity-dispersion diagnostics:
+\codesource{\code{render_density_slope_sigma2_gif.py}}
+  {\path{cpu/tools/render_density_slope_sigma2_gif.py}}
+  {Example density, slope, and dispersion GIF command, run from \path{cpu/}}
+\begin{lstlisting}
+$PYTHON tools/render_density_slope_sigma2_gif.py \
+  --input-dir output/bp_sidm_run \
+  --output plots/sidm_density_sigma2.gif
+\end{lstlisting}
+\path{spherical_profile_rendering.py} requires the named columns
+\code{time}, \code{step}, \code{r}, and \code{rho}; it fixes plot limits over
+the selected physical times, calculates the logarithmic slope, writes the GIF
+atomically, and records exact frame times in a sidecar.  The reader helpers in
+\path{cpu/python/ev_solver/output_reader.py} provide
+\code{load_named_csv}, \code{load_phase}, and \code{load_phase_snapshots}.  The
+snapshot reader skips incomplete final frames, so it is safe for monitoring a
+running job while the solver is appending rows.
+
+\subsection{Figure Conventions}
+
+The plot scripts use the following conventions for diagnostic figures:
+\begin{itemize}
+\item radial plots use logarithmic \(r\) axes for halo formation and shell
+relaxation;
+\item density-slope figures plot
+\(\mathrm d\log\rho/\mathrm d\log r\) with reference lines at slopes
+\(-1\), \(-3/2\), \(-2\), and \(-3\);
+\item phase-space figures show \(\log_{10} g(r,w)\), where
+\(g=\int Lf\,dL\), and apply a small floor only for visualization;
+\item GIF sidecar files ending in \code{_frame_times.txt} list the physical
+time associated with each frame.
+\end{itemize}
+When comparing VP/BP runs, use identical \code{r_min_plot}, \code{r_max_plot},
+frame sampling, and color/floor choices so differences reflect the physics
+under one plotting normalization.
+\fi
+
+\section{Configuration Reference}
+
+\ifvenusfullcpu
+The accepted model choices are:
+\codesource{Modular Eulerian EV, VP, and BP task frontends}
+  {\path{cpu/include/ev/config.hpp} and
+   \path{cpu/include/ev/solver_task_profile.hpp}}
+  {Accepted high-level model and transport selections}
+\begin{lstlisting}
+physics_model = einstein_vlasov | vlasov_poisson | boltzmann_poisson
+vp_universe = static | expanding
+vp_poisson_source = total_density | density_contrast
+vp_poisson_reconstruction = constant_line_mass | p2_line_mass
+vp_interpolation = raw | hamiltonian | hamiltonian_conservative |
+    conservative_sldg | hamiltonian_sldg | energy_shell |
+    expanding_physical_velocity
+kinetic_grid = legacy_nodal | cell_average_eta
+\end{lstlisting}
+
+VP background, timestep, Hamiltonian-reference, and orbit-regularization keys
+are:
+\codesource{Eulerian and WPIC Vlasov--Poisson tasks}
+  {\path{cpu/include/ev/config.hpp},
+   \path{cpu/include/ev/vlasov_poisson.hpp}, and
+   \path{cpu/include/ev/hamiltonian_orbit_reference.hpp}}
+  {Configuration names; their numerical meanings are derived in the VP chapters}
+\begin{lstlisting}
+vp_alpha, vp_time_offset, vp_gravity
+vp_timestep_mode = active_cell_cfl | frank_dynamical
+vp_dynamical_eta, vp_potential_variation_eta
+vp_timestep_omitted_mass_fraction
+vp_hamiltonian_reference = orbit_average | none
+vp_hamiltonian_reference_energy_bins
+vp_hamiltonian_reference_quadrature_points
+vp_orbit_regularization = off | auto | always
+vp_orbit_energy_tolerance
+vp_orbit_lc_relative_tolerance, vp_orbit_lc_absolute_tolerance
+vp_orbit_lc_max_steps, vp_orbit_lc_max_refinements
+\end{lstlisting}
+The \(\eta\)-grid controls are
+\code{kinetic_eta_grid = uniform|power|composite_power},
+\code{kinetic_eta_power}, \code{kinetic_eta_join},
+\code{kinetic_eta_inner_cells}, and
+\code{kinetic_ic_quadrature_points}.
+
+The optional VP outer-inflow family is completely specified by:
+\codesource{\code{venus_cpu_vlasov_poisson_eulerian}}
+  {\path{cpu/include/ev/config.hpp} and
+   \path{cpu/include/ev/vlasov_poisson.hpp}}
+  {Outer-inflow configuration names}
+\begin{lstlisting}
+vp_outer_inflow
+vp_inflow_start_time, vp_inflow_period
+vp_inflow_time_sigma, vp_inflow_time_cutoff
+vp_inflow_count, vp_inflow_low_l_count, vp_inflow_high_l_delay
+vp_inflow_shell_mass, vp_inflow_high_shell_mass
+vp_inflow_sigma_u, vp_inflow_high_sigma_u
+vp_inflow_low_sigma_t, vp_inflow_high_sigma_t
+vp_inflow_low_l_center, vp_inflow_high_l_center
+vp_inflow_freefall_mass, vp_inflow_vff_factor
+vp_inflow_coord_speed
+\end{lstlisting}
+These parameters set pulse times, masses, radial/tangential velocity widths,
+angular-momentum centres, and the free-fall velocity normalization described
+with the VP inflow equation.
+
+The canonical orbit-phase task uses command-line controls rather than the
+generic \path{params.ini}:
+\codesource{\code{venus_cpu_boltzmann_poisson_canonical_orbit}}
+  {\path{cpu/src/apps/boltzmann_poisson/canonical_orbit.cpp}}
+  {Command that prints the task's current interface}
+\begin{lstlisting}[language=bash]
+./venus_cpu_boltzmann_poisson_canonical_orbit --help
+\end{lstlisting}
+Its complete interface is:
+\codesource{\code{venus_cpu_boltzmann_poisson_canonical_orbit}}
+  {\path{cpu/src/apps/boltzmann_poisson/canonical_orbit.cpp} and
+   \path{cpu/include/ev/canonical_boltzmann_poisson_event.hpp}}
+  {Condensed command-line option catalogue}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+# Input, output, restart, atlas, and projection geometry
+--restart FILE
+--eddington-table FILE
+--output-directory DIR
+--canonical-restart FILE
+--energy-rows N (8), --phase-cells N (16)
+--boundary-segments N (12)
+--mapping-energy-points N (8), --mapping-phase-points N (8)
+--atlas-eta-points N (2), --energy-power P (1)
+--nr N (48), --nw N (32), --nl N (16)
+--r-min R (1e-3), --r-max R (1000)
+--w-max W (3), --L-max L (100)
+--eta-grid power|composite_power (power)
+--eta-power P (10), --eta-join X (0), --eta-inner-cells N (0)
+--atlas-initialization analytic|grid (analytic)
+
+# Transport, collision sampling, and convergence probes
+--transport-time T (0.1), --collision-time T (0)
+--collision-strength S (1)
+--collision-coupling carrier_ntc|delta_ntc|owned_ntc|
+  batched_ntc|reversible_increment|detached_ntc_experimental
+--collision-markers N (65536)
+--collision-markers-per-occupied-cell N (32)
+--collision-target-shell-markers N (4096)
+--collision-minimum-shell-markers N (16)
+--collision-batches N (1), --maximum-collision-batches N (4096)
+--minimum-shell-trials X (0)
+--core-importance-radius R (0), --core-importance-fraction F (0)
+--collision-convergence-levels N (0)
+--collision-marker-convergence-levels N (0)
+--collision-balanced-convergence-levels N (0)
+--reconstruction-cycles N (0)
+
+# Event evolution and output cadence
+--evolution-events N (0), --evolution-time T (0)
+--event-dt DT (0.1)
+--event-dt-convergence-levels N (0)
+--event-dt-convergence-time T (0)
+--potential-fraction F (0.05), --collision-fraction F (0.1)
+--collision-cfl-safety F (0.5), --collision-cfl F (0.15)
+--collision-locality-max-ratio X (1)
+--output-every N (1), --restart-every N (10), --threads N (4)
+
+# Open packets, lifting, compression, and startup field
+--open-compression-trigger N (65536)
+--open-compression-subcells N (1)
+--open-compression-tolerance EPS (2e-11)
+--source-row-fraction F (0.5)
+--minimum-energy-guard-fraction F (1e-6)
+--maximum-lift-phase-cell-error X (0.1)
+--maximum-open-mass-fraction F (1e-3)
+--maximum-collision-excluded-open-mass-fraction F (1e-5)
+--maximum-detached-mass-fraction F (1)
+--absorb-detached-carriers-on-field-rebuild true|false (false)
+--maximum-unrepresented-mass-fraction F (1e-8)
+--maximum-collision-escaped-increment-fraction F (0)
+--maximum-collision-moment-repair-mass-fraction F (2e-12)
+--startup-field-tolerance EPS (2e-2)
+--startup-field-iterations N (0)
+
+# Reversible sampled/streamed collision backend
+--reversible-operator sampled|streamed (streamed)
+--sampled-dense-cells N (48)
+--sampled-min-samples N (2048), --sampled-max-samples N (262144)
+--sampled-guided-fraction F (0.5)
+--sampled-rhs-tolerance EPS (0.01)
+--sampled-heat-tolerance EPS (0.01)
+--sampled-fail-on-unconverged true|false (true)
+--direct-fh-diagnostic-only true|false (false)
+\end{lstlisting}
+The canonical task always requires \code{--restart PATH}, and that path must
+name a versioned Eulerian grid restart.  It also always loads a stationary
+Eddington table from \code{--eddington-table PATH}, or from the documented
+default beside the source restart.  The optional
+\code{--canonical-restart PATH} restores the evolved atlas and event state;
+it replaces neither required source input.  The
+\path{canonical_*} headers own the atlas, transport, collision, projection,
+event, and restart APIs.  The separate
+\path{weighted_pic_boltzmann_event.hpp} implementation remains an internal
+library rather than another public solver task.
+
+The grid BP collision dispatch and physical kernel controls are:
+\codesource{Task-specific grid Boltzmann--Poisson executables}
+  {\path{cpu/include/ev/config.hpp},
+   \path{cpu/include/ev/solver_task_profile.hpp}, and
+   \path{cpu/src/apps/boltzmann_poisson/}}
+  {Collision-backend and cross-section configuration names}
+\begin{lstlisting}
+bp_collision_operator = none | fokker_planck | landau_fp |
+    boltzmann_exact | boltzmann_reversible |
+    boltzmann_reversible_sampled |
+    boltzmann_reversible_streamed | spherical_dsmc
+bp_cross_section = powerlaw | constant | softened_gravity | yukawa_born
+bp_boltzmann_kernel = auto | isotropic | yukawa_born
+bp_bath = instantaneous_df | local_maxwellian | global_maxwellian
+bp_fp_terms
+bp_collision_flux = centered | chang_cooper
+bp_collision_integrator = explicit | sts_rkl2
+bp_collision_splitting = after_vlasov | strang
+bp_coeff_refresh_mode = steps | collision_time
+bp_collision_strength, bp_sigma0, bp_sigma_u0, bp_sigma_n
+bp_subhalo_mass, bp_subhalo_radius, bp_coulomb_log
+bp_yukawa_alpha, bp_yukawa_mchi, bp_yukawa_mphi
+\end{lstlisting}
+The meaning of \code{bp_sigma0} is backend and cross-section-law dependent.
+For the grid FP branch it enters the effective transfer cross section; for
+the grid finite-angle branches it enters the total cross section.  Material
+marker methods separately interpret their constant-law input as a cross
+section per unit mass.  In the grid \code{softened_gravity} law, a positive
+\code{bp_sigma0} is the reference saturated physical area, while zero selects
+\(2\pi a_{\rm ref}^{2}\) with
+\(a_{\rm ref}=\code{bp_subhalo_radius}\).  The subhalo reference mass/radius
+and Coulomb logarithm then set the literal geometric/focusing kernel in
+equations~(EGC3)--(EGC5); this must not be conflated with the unequal-mass
+SphDSMC or WPIC event scheduler.  The Yukawa parameters set a numerical
+amplitude and speed scale.  Their physical normalization follows the
+module's area or area-per-mass convention; the material conversion is derived
+in Section~\ref{sec:yukawa-material-units}.
+Section~\ref{sec:eulerian-grid-collisions}
+lists the distinct transfer, total, and differential formulas.
+
+Coefficient, floor, locality, and collision-step controls are:
+\codesource{Task-specific grid Boltzmann--Poisson executables}
+  {\path{cpu/include/ev/config.hpp},
+   \path{cpu/include/ev/boltzmann_poisson.hpp}, and
+   \path{cpu/include/ev/finite_angle_boltzmann.hpp}}
+  {Collision coefficient, locality, and timestep configuration names}
+\begin{lstlisting}
+bp_temperature_floor
+bp_density_floor_abs, bp_density_floor_rel
+bp_partner_mass_tol, bp_bath_speed_cutoff
+bp_coeff_table_points, bp_coeff_speed_points, bp_coeff_mu_points
+bp_coeff_refresh_every, bp_coeff_refresh_chi
+bp_coeff_refresh_time_quantile
+bp_collision_apply_every, bp_collision_cfl
+bp_collision_max_substeps, bp_collision_locality_max_ratio
+bp_collision_fail_on_nonlocal_cells
+bp_sts_max_stages, bp_collision_l_min_rel
+bp_boltzmann_pair_phi_points
+bp_boltzmann_scatter_mu_points, bp_boltzmann_scatter_phi_points
+bp_boltzmann_mass_tol, bp_boltzmann_remap_max_skipped_fraction
+bp_boltzmann_conserve_moments
+\end{lstlisting}
+The bath, FP-term, coefficient-table, coefficient-refresh, flux, STS, floor,
+partner, and \(L\)-cutoff controls apply only to
+\code{fokker_planck}/\code{landau_fp}.  The locality ratio and fail flag are
+implemented only by the sampled and streamed reversible branches.  Collision
+CFL and maximum-substep settings enter different backend-specific algorithms
+and do not activate RKL2 outside FP.  The angular quadrature controls are
+physically used only by finite-angle backends, but the parser requires at
+least pair/scatter counts \(4/2/4\) for an FP configuration; leave them at
+valid defaults.  \code{bp_boltzmann_mass_tol}
+and \code{bp_boltzmann_conserve_moments} are direct-remap
+\code{boltzmann_exact} controls.  Reversible branches instead require zero
+mass pruning and conserve represented reaction moments by construction.
+
+Reversible and sampled/streamed Boltzmann controls are:
+\codesource{Reversible, sampled, and streamed grid BP tasks}
+  {\path{cpu/include/ev/config.hpp},
+   \path{cpu/include/ev/reversible_finite_angle_boltzmann.hpp},
+   \path{cpu/include/ev/sampled_reversible_boltzmann.hpp}, and
+   \path{cpu/include/ev/streamed_reversible_boltzmann.hpp}}
+  {Configuration names for the three research collision backends}
+\begin{lstlisting}
+bp_reversible_candidate_radius
+bp_reversible_max_velocity_cells
+bp_reversible_projection_tolerance
+bp_reversible_entropy_floor, bp_reversible_entropy_tolerance
+bp_reversible_active_shell_floor_fraction
+bp_reversible_explicit_fast_path
+
+bp_sampled_dense_cells
+bp_sampled_min_samples_per_batch, bp_sampled_max_samples_per_batch
+bp_sampled_replicates_per_estimate
+bp_sampled_outgoing_angle_samples
+bp_sampled_guided_pilot_samples, bp_sampled_guided_pairs
+bp_sampled_guided_fraction
+bp_sampled_fixed_geometric_sequence
+bp_sampled_reuse_operator_graph
+bp_sampled_operator_refresh_l1_fraction
+bp_sampled_ntc_pair_thinning, bp_sampled_ntc_pilot_samples
+bp_sampled_ntc_quantile
+bp_sampled_energy_strata, bp_sampled_L_strata
+bp_sampled_tail_fraction, bp_sampled_stratified_fraction
+bp_sampled_equilibrium_fraction, bp_sampled_phase_density_fraction
+bp_sampled_stratum_uniform_fraction, bp_sampled_uniform_fraction
+bp_sampled_tail_power
+bp_sampled_rhs_tolerance, bp_sampled_rhs_floor_fraction
+bp_sampled_heat_tolerance, bp_sampled_heat_floor_fraction
+bp_sampled_activity_boost_max, bp_sampled_fail_on_unconverged
+bp_sampled_seed
+\end{lstlisting}
+The reversible projection, entropy, active-shell, and explicit-fast-path
+controls apply to all three reversible branches, while
+\code{bp_reversible_max_velocity_cells} guards only the complete dense graph.
+The sampled mixture, batch, NTC, tolerance, and seed controls apply to both
+sampled variants.  Guided-pilot controls and
+\code{bp_sampled_fixed_geometric_sequence},
+\code{bp_sampled_reuse_operator_graph}, and
+\code{bp_sampled_operator_refresh_l1_fraction} apply only to
+\code{boltzmann_reversible_streamed}.  The fractions define the six-component
+full-support proposal in equation~(EGC52).  The RHS and heat tolerances set
+independent-replicate convergence gates, and the seed identifies the
+counter-based sample stream.  The streamed workspace persists during one
+process but is rebuilt after a restart.
+\else
+
+SphDSMC-specific parameters are:
+\codesource{Constant- and velocity-dependent SphDSMC tasks}
+  {\path{cpu/include/ev/config.hpp} and
+   \path{cpu/include/ev/spherical_dsmc_solver.hpp}}
+  {SphDSMC configuration names}
+\begin{lstlisting}
+bp_dsmc_particles, bp_dsmc_total_mass
+bp_dsmc_shell_particles, bp_dsmc_min_shell_particles
+bp_dsmc_collision_epsilon, bp_dsmc_gravity_eta
+bp_dsmc_seed
+\end{lstlisting}
+Their physical meaning and diagnostics are derived in
+Section~\ref{sec:spherical-dsmc}.
+\fi
+
+\ifvenusfullcpu
+Grid and time controls are:
+\codesource{Eulerian EV, VP, and BP grid tasks}
+  {\path{cpu/include/ev/config.hpp} and \path{cpu/include/ev/common.hpp}}
+  {Shared phase-grid, timestep, and boundary configuration names}
+\begin{lstlisting}
+Nr, Nw, NL
+r_min, r_max, w_max, L_max
+radial_grid = log | linear | piecewise-linear | custom
+custom_radial_coordinate = linear | log
+inner_refine_radius, inner_refine_cells
+w_stretch, w_center
+adaptive_w, adaptive_w_every, adaptive_w_trigger, adaptive_w_margin, adaptive_w_growth, adaptive_w_max
+t_end, cfl, dt_max, max_steps
+save_every, phase_every, phase_r_stride, phase_w_stride, restart_every
+integrator = semi_lagrangian_kick_drift_kick | semi_lagrangian_rk | runge_kutta | rk | semi_lagrangian_adams_bashforth | adams_bashforth | conservative_finite_volume
+time_integrator_order = 2..4 for explicit RK, 5..32 for extrapolated midpoint, 2..12 for Adams-Bashforth
+time_integrator_substeps = positive integer
+inner_boundary = reflecting | delayed_return | origin_parity
+outer_boundary = outflow_vacuum | reflecting | vp_outer_inflow
+momentum_boundary = outflow_vacuum
+\end{lstlisting}
+
+Cell-integrated SLDG geometry, fallback, and adaptive-cap controls are:
+\codesource{\code{venus_cpu_vlasov_poisson_eulerian} SLDG branches}
+  {\path{cpu/include/ev/config.hpp},
+   \path{cpu/include/ev/conservative_sldg_transport.hpp}, and
+   \path{cpu/include/ev/hamiltonian_sldg_transport.hpp}}
+  {SLDG geometry and timestep-control configuration names}
+\begin{lstlisting}
+vp_sldg_subcells, vp_sldg_eta_quadrature_points
+vp_sldg_geometry_tolerance
+vp_sldg_max_area_defect, vp_sldg_max_map_defect
+vp_sldg_max_refinement, vp_sldg_max_work_per_subcell
+vp_sldg_fallback_mass_tolerance
+vp_sldg_initial_transport_dt
+vp_sldg_target_fallback_fraction
+vp_sldg_timestep_growth, vp_sldg_timestep_shrink
+\end{lstlisting}
+Delayed-inner carrier controls are:
+\codesource{\code{venus_cpu_vlasov_poisson_eulerian} SLDG carrier branch}
+  {\path{cpu/include/ev/config.hpp} and
+   \path{cpu/include/ev/delayed_inner_orbit_carrier.hpp}}
+  {Delayed-inner-carrier configuration names}
+\begin{lstlisting}
+vp_inner_carrier_quadrature_points
+vp_inner_carrier_max_refinement
+vp_inner_carrier_max_orbit_segments
+vp_inner_carrier_max_packets
+vp_inner_carrier_mass_tolerance
+vp_inner_carrier_return_time_bin_width
+vp_inner_carrier_compress_min_packets
+\end{lstlisting}
+All are defined by the ledgers and refinement formulas in
+Section~\ref{sec:cell-integrated-sldg}.
+
+Initial-data, output, and launch controls are:
+\codesource{Eulerian EV, VP, and BP grid tasks}
+  {\path{cpu/include/ev/config.hpp},
+   \path{cpu/include/ev/initial_data.hpp}, and
+   \path{cpu/include/ev/solver_setup.hpp}}
+  {Shared data, stopping, output, and process-layout configuration names}
+\begin{lstlisting}
+initial_data = analytic | binary_rwl
+initial_data_file
+custom_ic_normalize_mass, custom_ic_target_mass
+tracer_initial_data, tracer_initial_data_file
+central_mass
+metric_floor, gap_stop, active_floor_rel, active_floor_abs, f_floor
+output_dir, restart_dir, restart_from
+threads
+allow_multi_rank_launch
+\end{lstlisting}
+
+Analytic shell controls include:
+\codesource{Eulerian Einstein--Vlasov task}
+  {\path{cpu/include/ev/config.hpp} and
+   \path{cpu/include/ev/initial_data.hpp}}
+  {Analytic shell initial-data configuration names}
+\begin{lstlisting}
+shell_initial_df
+R0, dR, beta, amp, w_in
+top_hat_shell, top_hat_density_shell, gaussian_density_shell
+double_gaussian_density_shell
+R0_2, dR_2, amp_2, w_in_2
+initial_metric_iters
+\end{lstlisting}
+\fi
+
+\subsection{Accepted compatibility names}
+
+The parser normalizes hyphens and underscores, so
+\code{bp-sigma0} and \code{bp_sigma0} name the same input.  It also accepts
+the following older aliases.  The name on the left is preferred in new
+\path{params.ini} files; the name on the right has exactly the same effect:
+\codesource{All modular CPU grid tasks}
+  {\path{cpu/include/ev/config.hpp}}
+  {Compatibility-key map; names in the left column are preferred}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+physics_model                  model
+vp_universe                    vp_background
+vp_alpha                       alpha
+vp_time_offset                 vp_t0
+vp_gravity                     vp_g
+vp_interpolation               vp_transport_interpolation
+vp_outer_inflow                vp_inflow
+bp_collision_operator          collision_operator
+bp_cross_section               bp_sigma_model
+bp_boltzmann_kernel            bp_differential_kernel
+bp_sigma_u0                    bp_u0
+bp_sigma_n                     bp_n
+bp_subhalo_radius              bp_epsilon
+custom_radial_coordinate       radial_coordinate
+time_integrator_order          integrator_order
+time_integrator_substeps       integrator_substeps
+initial_data                   initial_data_mode
+tracer_initial_data            tracer_initial_data_enabled
+custom_ic_normalize_mass       normalize_initial_mass
+custom_ic_target_mass          target_initial_mass
+\end{lstlisting}
+
+\section{Input Contracts and Operational Diagnostics}
+
+The validator checks model contracts before large arrays are allocated.
+Required contracts are:
+\begin{itemize}
+\item \code{physics_model = boltzmann_poisson} requires a runnable collision
+operator.\par
+\item BP collisions require \code{mpi_size = 1}.
+\ifvenusfullcpu
+\item The canonical solver requires cell-average \(\eta\) geometry, a positive
+logarithmic inner radius, symmetric radial-velocity support, and one OpenMP
+process.
+\item Canonical NTC shells require a positive majorant, a positive marker
+budget, deterministic random-stream counters, and
+\(\Delta r_s\le\lambda_{\rm rms,s}\).
+\item The canonical field clock requires positive potential and collision
+fractions and a finite maximum event interval.
+\item \code{conservative_finite_volume} is VP/BP-only.
+\item \code{conservative_sldg} and \code{hamiltonian_sldg} require
+\code{kinetic_grid=cell_average_eta}; the delayed-return boundary requires one
+of these two methods and a persistent carrier.
+\item \code{hamiltonian}, \code{hamiltonian_conservative},
+\code{hamiltonian_sldg}, and \code{energy_shell} interpolation require static
+VP/BP.
+\item \code{expanding_physical_velocity} interpolation requires expanding
+VP/BP.
+\item SLDG subcell/quadrature/work limits and all geometry/fallback tolerances
+must be positive and internally ordered; a fallback fraction above the hard
+tolerance terminates the step.
+\item binary ICs force \code{radial_grid = custom} after loading.
+\item \code{radial_grid = custom} is reserved for binary ICs.
+\item binary IC and tracer workflows require \code{adaptive_w = false}.
+\item tracers require binary total data and matching binary tracer grids.
+\item a nonzero \code{central_mass} requires \(r_{\min}\) safely outside
+\(2M\).
+\fi
+\item fresh runs require new output and restart directories.
+\end{itemize}
+
+Typical operational diagnostics and responses are:
+\begin{itemize}
+\ifvenusfullcpu
+\item Boundary occupancy at a \(w\)-edge calls for a larger \code{w_max}, an
+improved IC, or an analytic workflow with adaptive \(w\).
+\item A BP collision substep-cap event calls for a smaller timestep or
+collision strength, or a verified increase in the substep cap.  The relevant
+keys are:
+\codesource{Grid Boltzmann--Poisson collision tasks}
+  {\path{cpu/include/ev/config.hpp} and
+   \path{cpu/include/ev/solver_evolution.hpp}}
+  {Timestep and collision-substep controls used when diagnosing a cap event}
+\begin{lstlisting}
+dt_max
+bp_collision_strength
+bp_collision_max_substeps
+\end{lstlisting}
+\item A BP run has \code{op_collision_over_vlasov} much larger than one: it is
+collision dominated.
+\item A BP run has \code{op_collision_over_vlasov} near zero throughout: it is
+effectively collisionless on the simulated interval.
+\item A non-MPI executable uses \code{--ntasks=1}; the MPI target supports a
+multi-rank Slurm layout.
+\item A distributed restart relaunches with the MPI rank count recorded when
+the restart was written.
+\item An SLDG run with nonzero \code{quadrature_fallback_mass} should reduce
+\code{dt}, increase geometric refinement only with measured need, and verify
+that the fraction decreases with resolution; a failed carrier ledger is never
+repaired by normalization.
+\else
+\item With \code{--subhalo-locality-maximum-ratio 0}, a subhalo-WPIC run
+reports \(\Delta r/\lambda_{\rm mfp}>1\) as a diagnostic warning.  For
+quantitative calculations, set a positive limit, normally one, so the runner
+atomically checkpoints and
+stops with status 98 at the first violation.  Refine radial cells, marker
+sampling, and marker count before continuing; reducing the collision interval
+is a separate cadence test and does not by itself resolve a mean free path.
+\item A SphDSMC run must keep the reported shell-to-mean-free-path ratio below
+one in every physically interpreted core shell.  Increase the marker count
+and radial shell resolution together when this ratio approaches unity.
+\item A large collision-majorant violation, pair-energy residual, or
+restart-equivalence error invalidates the run; these are required correctness
+checks, not optional performance counters.
+\fi
+\end{itemize}
+
+\section{Developer Checklist}
+
+A numerical change propagates from the continuum equation through the
+discrete operator to its diagnostics, examples, and plots. Check each of
+these representations together so they retain the same physical meaning.  A change to the
+meaning of \(w\) touches characteristic speeds, timestep selection, moment
+integrals, boundary diagnostics, IC generators, and plot labels.  A change to
+the meaning of \(L\) touches the phase-space measure, MPI slabs, BP
+\(\eta\)-fluxes, finite-angle remapping, and phase projections.
+
+The verification sequence is:
+\begin{enumerate}[itemsep=0pt,parsep=0pt,topsep=0.4em]
+\item Make the smallest source change that expresses the intended equation.
+\item Run a tiny configuration that isolates that operator.
+\item Compare one-thread and multi-thread output for deterministic reductions
+to roundoff.
+\item For EV/VP, test both serial/OpenMP and MPI when the module supports MPI.
+\item For BP, test OpenMP with one MPI task and inspect collision substeps,
+operator ratios, positivity repair, and mass conservation.
+\item Update this manual, \path{docs/cluster.md}, and example comments when a
+parameter or algorithm changes.
+\end{enumerate}
+
+The collision modules documented in this volume currently use one process
+with OpenMP.  A future distributed implementation requires shell-local
+collision ownership and explicit inter-rank particle or phase-space exchange.
+
+\input{sections/successful_run_examples}
+
+\input{sections/shared_release_operations}
+
+\end{document}

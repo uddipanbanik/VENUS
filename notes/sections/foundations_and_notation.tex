@@ -1,0 +1,299 @@
+\section{How to Read This Manual}
+
+This manual follows a calculation from its physical assumptions to its
+numerical result. Each method begins with the physical picture and continuum
+equations, then explains how the numerical representation gives a sequence
+of updates. Initial and boundary data complete the problem. Source files,
+diagnostics, and limitations connect that calculation to its implementation.
+The later computing chapters explain files, restarts, parallel execution,
+graphics-processor acceleration, plotting, and animation. Read the method
+chapter first, then use the operating chapters to build and run it.
+
+The first chapters describe the most exercised persistent-marker methods:
+weighted particle-in-cell and spherical direct simulation Monte Carlo.  The
+relativistic chapters then develop Einstein--Vlasov evolution in Schwarzschild
+and ingoing Eddington--Finkelstein coordinates.  Vlasov--Poisson and
+Boltzmann--Poisson follow.  Exact finite-angle collision physics is introduced
+before small-angle approximations.  Semi-Lagrangian, discontinuous-Galerkin,
+canonical-orbit, and other methods whose validation is still developing are
+placed after the production modules.
+
+\subsection{Meaning of the maturity labels}
+
+The labels below describe the calculations and checks available for each
+method. A new physical problem requires its own convergence study, using the
+observables and numerical controls relevant to that problem.
+
+\begin{description}
+\item[Production, strength-tested.] The task has a maintained executable,
+      restart and diagnostic contract, representative successful-run
+      material, and problem-specific checks.  Scientific use still requires
+      resolution, timestep, domain, conservation, and stochastic-realization
+      tests appropriate to that task.
+\item[Validated reference.] The implementation is maintained as a comparison
+      or baseline, but its coordinate patch, cost, dimensionality, or physical
+      assumptions restrict the questions it can answer.
+\item[Verification oracle.] The method is intentionally expensive and is
+      most useful on small grids for checking a faster approximation.
+\item[Research or developing.] The algorithm is implemented and tested, but
+      its production validation is incomplete or problem dependent.  A
+      successful run is evidence of execution, not of mature predictive
+      accuracy.
+\item[Compatibility interface.] The entry point exists to interpret older
+      inputs.  New work should use the task-specific executable named in the
+      module catalogue.
+\item[Not implemented.] The release has no such numerical path.  A similarly
+      named option in another module must not be interpreted as support.
+\end{description}
+
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{@{}p{0.32\linewidth}p{0.25\linewidth}X@{}}
+\toprule
+Method family & Current label & What the label permits \\
+\midrule
+CPU Newtonian WPIC: collisionless, subhalo, and constant-cross-section
+material SIDM tasks & Production, strength-tested within the evidence stated
+in each module & Quantitative use still requires task-specific marker, mesh,
+event-clock, locality, conservation, and realization tests. \\
+Velocity-dependent material-SIDM WPIC & Research path & The collision law and
+event scheduler are implemented, but the manual does not claim a completed
+long-time gravothermal validation. \\
+Constant-cross-section persistent-marker SphDSMC & Production benchmark path
+with finite-time benchmark comparison & The documented comparison tests the stated
+finite interval; it is not evidence for every cross-section law or for an
+unresolved long-time core collapse. \\
+Velocity-dependent persistent-marker SphDSMC & Research path & The source and
+diagnostics are maintained, but a long-time core-validation claim is not made. \\
+Schwarzschild Einstein--Vlasov WPIC & Validated exterior reference & Reliable
+only while the polar coordinate gap remains positive; it does not evolve
+through an apparent horizon. \\
+Ingoing-EF Einstein--Vlasov WPIC & Research production path with fail-closed
+certification & Post-horizon interpretation requires the complete accepted-
+step, provenance, causal-excision, and sensitivity evidence stated in its
+chapter. \\
+Nodal grid EV/VP and explicit finite-volume VP & Validated reference & Useful
+for controlled grid studies within their documented transport and boundary
+limits. \\
+Dense exact finite-angle Boltzmann operator & Verification oracle & Enumerates
+the retained discrete collision channels; ``exact'' does not remove angular,
+velocity-grid, remap, boundary, or time-discretization error. \\
+Reversible, sampled, streamed, canonical-orbit, and SLDG methods & Research or
+developing & Require the method-specific omission, projection, entropy,
+sampling, carrier, and geometry checks before scientific interpretation. \\
+Fokker--Planck/Landau operator & Maintained approximation & Represents a
+small-angle approximation and must be checked against its locality and
+coefficient-resolution assumptions. \\
+GPU WPIC paths & Implemented acceleration with stated parity scope & Use only
+for the tasks listed in the GPU chapter; material-collision multi-GPU
+invariance is not provided. \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\subsection{Coordinates, phase space, and recurring symbols}
+
+VENUS assumes spherical symmetry.  The areal radius \(r\) is defined so that
+a sphere at that coordinate has area \(4\pi r^2\).  The coordinate \(t\)
+denotes the time variable of the active module; the relativistic chapters use
+\(\tau\) for Schwarzschild time and \(v\) for ingoing advanced time so that the
+two cannot be confused.  In particular, \(\tau\) is not used for an orbital
+phase in this manual.  The canonical-orbit chapter writes its normalized
+radial phase as \(\zeta_{\rm orb}\in[0,1)\), while the Hamiltonian SLDG
+chapter uses \(s_{\rm orb}\) for a local, time-like coordinate along an
+orbit.  Angles on the unit sphere are \(\theta\) and \(\phi\), and
+\(\dd\Omega^2=\dd\theta^2+\sin^2\theta\,\dd\phi^2\).
+
+The distribution function \(f\) is phase-space density.  Its arguments depend
+on the module, but \(w\) normally denotes radial momentum or peculiar radial
+velocity, \(L=|\bm r\times\bm v|\) is angular-momentum magnitude, and
+\(\eta=L^2/2\) is the angular coordinate stored by many solvers.  A marker
+index is \(p\); radial, radial-momentum, and angular-grid indices are
+\(i,j,k\); and \(n\) labels a time level.  A half index such as \(i+1/2\)
+denotes a cell face.  Every chapter restates the precise physical meaning and
+units of these quantities before using its equations.
+
+Unless a chapter says otherwise, VENUS uses geometrized relativistic units
+\(G=c=1\), or the explicit Newtonian gravitational constant \(G\) in a
+Newtonian module.  Here \(c\) is the speed of light.  The symbol \(m(r)\)
+denotes enclosed gravitational mass. The symbols \(m_p\) or \(W_p\) denote
+the positive mass or invariant rest-number weight carried by marker \(p\),
+with the convention specified in its module. Enclosed gravitational mass
+includes the energy and binding contributions appropriate to the field
+equations; marker weights specify the represented matter.
+
+\subsection{Indices, derivatives, and operators}
+
+The differential \(\dd x\) means an infinitesimal change or integration
+measure.  A partial derivative is
+\(\partial_x=\partial/\partial x\); an ordinary derivative along a
+characteristic is written \(\dot x=\dd x/\dd t\) or with the time coordinate
+named explicitly.  A prime denotes the radial derivative only where that
+convention is stated.  The symbol \(\nabla_a\) is the spacetime covariant
+derivative: it differentiates tensors while accounting for the changing
+coordinate basis.  Lower-case Latin spacetime indices such as \(a,b\) run
+over four coordinates; repeated tensor indices are summed.  Module-specific
+two-dimensional indices are defined where introduced.
+
+The collision operator is written \(\mathcal C[f]\): it is the rate at which
+collisions change \(f\).  The symbol \(\Delta\) denotes a finite grid width or
+finite change. A norm measures the size of a quantity, and a residual measures
+how closely a numerical result satisfies a stated relation. Each diagnostic
+chapter gives its normalization and acceptance threshold. The threshold sets
+the required numerical accuracy for that calculation.
+
+\subsection{Acronyms and numerical vocabulary}
+
+\begin{description}
+\item[EV, VP, and BP] Einstein--Vlasov, Vlasov--Poisson, and
+      Boltzmann--Poisson.
+\item[SC and EF] Schwarzschild coordinates and ingoing
+      Eddington--Finkelstein coordinates.  In the Schwarzschild description,
+      the spherical metric is diagonal and a sphere at radius \(r\) has
+      area \(4\pi r^2\).  The metric functions evolve with the matter.
+\item[PIC and WPIC] particle-in-cell and weighted particle-in-cell.  Markers
+      move continuously, while their positive represented weights are
+      deposited on a field mesh.
+\item[CIC and TSC] cloud-in-cell and triangular-shaped-cloud deposition.  They
+      are respectively two-point linear and three-point quadratic marker
+      shapes on the selected mesh coordinate.
+\item[DSMC and SphDSMC] direct simulation Monte Carlo and its persistent-
+      marker spherical implementation.  ``Monte Carlo'' means that controlled
+      random sampling estimates collision events.
+\item[CDM and SIDM] collisionless cold dark matter and self-interacting dark
+      matter.
+\item[FP] Fokker--Planck, the small-angle drift--diffusion approximation to a
+      collision operator.
+\item[SLDG and DG] semi-Lagrangian discontinuous Galerkin and discontinuous
+      Galerkin.  A discontinuous Galerkin method represents the solution by a
+      polynomial in each cell without forcing adjacent cell polynomials to
+      share the same boundary value.
+\item[CFL] Courant--Friedrichs--Lewy safety factor, which limits a timestep by
+      the fastest resolved motion or source timescale.
+\item[RK4, KDK, RKL2, and NTC] classical fourth-order Runge--Kutta;
+      kick--drift--kick; second-order Runge--Kutta--Legendre super-time-
+      stepping; and no-time-counter collision sampling.
+\item[RK, AB, SSPRK2, and STS] Runge--Kutta; Adams--Bashforth;
+      two-stage strong-stability-preserving Runge--Kutta; and super-time-
+      stepping.  These are time-integration methods, not new physical models.
+\item[COM, RNG, MFP, and CDF] center-of-mass frame; random-number generator;
+      mean free path; and cumulative distribution function.
+\item[RHS, RMS, and DF] right-hand side of an equation; root-mean-square;
+      and distribution function.
+\item[LC] Levi--Civita regularization, used to retry a numerically stiff close
+      passage in a transformed radial coordinate.
+\item[ADM and GR] Arnowitt--Deser--Misner mass measured at spatial infinity,
+      and general relativity.
+\item[FLRW and TOV] Friedmann--Lema\^itre--Robertson--Walker cosmological
+      geometry, and the Tolman--Oppenheimer--Volkoff stellar-structure
+      equations.
+\item[IC and I/O] initial condition, and input/output.
+\item[CPU, GPU, CUDA, OpenMP, and MPI] central processing unit; graphics
+      processing unit; NVIDIA's CUDA GPU-programming platform; the OpenMP
+      shared-memory programming model; and the Message Passing Interface
+      process-communication standard.
+\item[API and CLI] application programming interface and command-line
+      interface.
+\item[CSV, JSON, SHA-256, PNG, and GIF] comma-separated-value table;
+      JavaScript Object Notation record; the SHA-256 cryptographic content
+      fingerprint; Portable Network Graphics image; and Graphics Interchange
+      Format animation.
+\item[ODE and PDE] ordinary and partial differential equation.
+\item[NFW and EdS] Navarro--Frenk--White halo profile and Einstein--de Sitter
+      cosmological background.
+\item[DAG and RAM] directed acyclic graph, a dependency graph with no closed
+      loop; and random-access memory, the working memory available to a CPU or
+      GPU process.
+\item[IEEE 754] the standard representation and arithmetic rules used for the
+      floating-point numbers stored by the supported binaries.
+\item[IAS and IIT] Institute for Advanced Study, and Indian Institute of
+      Technology.  Their names identify documented computing sites; this
+      manual does not assume that a particular queue or software module is
+      currently available.
+\item[INI and QA] the conventional name for a plain key--value configuration
+      file, and quality assurance.
+\end{description}
+
+\subsection{Plain-language numerical vocabulary}
+
+\begin{description}
+\item[Characteristic.] A trajectory in phase space along which the
+      collisionless distribution is carried.  It is the path of one ideal
+      phase-space point under the current gravitational field.
+\item[Grid, mesh, node, cell, and face.] A grid or mesh is a finite set of
+      locations used to represent a continuous problem.  A node is a stored
+      point, a cell is the interval or volume between neighboring faces, and a
+      face is a cell boundary.  A nodal value and a cell average are different
+      numerical objects even when they use the same coordinates.
+\item[Deposit and interpolate.] Deposition spreads marker-carried matter to
+      nearby mesh locations.  Interpolation performs the complementary task
+      of estimating a field or distribution between stored locations.  The
+      chosen weights determine conservation, smoothness, and boundary behavior.
+\item[Quadrature.] A weighted finite sum that approximates an integral.  Its
+      nodes and weights are part of the numerical resolution.
+\item[Finite volume and flux.] A finite-volume method evolves the amount
+      stored in each cell.  A flux is the amount crossing a cell face per unit
+      time; neighboring cells exchange the same face flux with opposite signs.
+\item[Remap, reconstruction, pullback, and stencil.] A reconstruction builds a
+      within-cell approximation from stored data.  A remap transfers that
+      approximation to another grid or coordinate.  A pullback evaluates the
+      earlier solution at a traced departure point.  A stencil is the local set
+      of stored values used by one such calculation.
+\item[Majorant and accept--reject sampling.] A majorant is a proved upper
+      bound on an event rate.  A trial drawn from that upper rate is accepted
+      with the ratio of the true rate to the bound.  The upper bound guarantees a valid acceptance probability. A violation
+      therefore stops the sampler and requires the rate bound to be corrected.
+\item[Kernel, backend, and frontend.] A kernel is a focused numerical
+      operation.  A backend is one selectable implementation of an operation.
+      A frontend is the task-specific executable and parser that validates a
+      request before calling shared kernels.
+\item[Cadence.] The time or step interval between repeated events such as
+      field reconstruction, collision application, output, or restart writing.
+\item[Resolution and convergence.] Resolution states how finely a continuum
+      is represented.  A convergence study repeats the calculation with finer
+      representations or smaller timesteps and measures whether the answer
+      approaches a stable limit.
+\item[Locality.] A collision approximation is local only when paired objects
+      occupy a region small compared with the physical variation or mean-free-
+      path scale required by that method.
+\item[Atomic write.] Data are first written to a temporary object and made
+      visible under the final name only after the complete write succeeds.
+      This prevents a partial final file from looking complete.
+\end{description}
+
+\subsection{Data objects and evidence words}
+
+An \emph{initial-condition file} contains the state from which a fresh run
+starts.  A \emph{checkpoint} or \emph{restart} contains enough evolved state
+to continue a run.  A \emph{profile} is a saved radial field table; a
+\emph{history} is a time-indexed diagnostic table; and a \emph{ledger} records
+conserved or transferred quantities before and after an operation.  A
+\emph{summary} is the machine-readable final status.  A \emph{manifest}
+records identity, parameters, relationships, and content fingerprints for one
+or more files.  A \emph{sidecar} is a companion file whose state is checked
+against the primary checkpoint or output.  A \emph{certificate} is a
+fail-closed record assembled only after its stated evidence gates pass; it is
+not created from a visual judgement.
+
+``Fail closed'' means that missing, stale, inconsistent, or unauthenticated
+evidence produces failure or ``inconclusive,'' never a pass.  ``Provenance''
+means the recorded chain from source, executable, parameters, initial data,
+and parent artifacts to a result.  ``Deterministic'' means that the stated
+inputs and execution contract reproduce the same discrete choices; it does
+not mean that truncation or sampling error is absent.
+
+\subsection{How code listings are identified}
+
+Every displayed code or command listing is preceded by a \textbf{Listing
+ownership} line.  Its \textbf{Task or tool} field names the executable,
+library consumer, or analysis utility to which the listing belongs.  Its
+\textbf{Implementation} field gives the repository path that owns the shown
+behavior.  Its \textbf{Role} field says whether the listing is an invocation,
+configuration fragment, data schema, or shortened implementation excerpt.
+A shortened excerpt explains logic; the source file, not the excerpt, remains
+authoritative.
+
+Equation prefixes identify the numerical method: for example, EWP denotes
+Einstein--Vlasov weighted particles and IEF denotes ingoing
+Eddington--Finkelstein evolution. Section titles and cross-references connect
+the governing equations to their discretization and implementation.

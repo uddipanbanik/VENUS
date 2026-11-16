@@ -1,0 +1,348 @@
+\section{Release Scope, Capability, and Directory Map}
+
+VENUS is one release with two implementation trees:
+\path{VENUS/cpu} and \path{VENUS/gpu}.  ``CPU'' below means the broad
+reference implementation, including serial, \code{std::thread}, OpenMP, and
+the supported MPI phase-space decomposition.  ``GPU'' means the CUDA/MPI WPIC
+implementation.  The GPU tree accelerates the weighted particle--mesh family, including its
+material and subhalo collision paths. Grid Einstein--Vlasov, grid
+semi-Lagrangian Vlasov--Poisson, canonical-orbit Boltzmann--Poisson, and
+SphDSMC use the CPU implementation. Choose the physical task in the capability
+table before selecting its CPU or GPU executable.
+
+The manual is organized by physical task.  Each module entry identifies its
+equations, numerical representation, task-specific source and executable,
+applicable parameters, IC/restart and output contract, parallel model,
+visualization path, and scientific limitations.  Shared kernels are numerical functions called by several tasks. Their
+algorithms are explained where introduced, and the task executable supplies
+the complete run loop that calls them.  A calculation intended for quantitative interpretation still
+requires the module-specific convergence, conservation, boundary, locality,
+and parallel-equivalence checks stated in its chapter.
+
+\subsection{Capability map}
+
+Every path in the next table is relative to the repository's
+\path{VENUS/cpu} directory.  For example,
+\path{include/ev/config.hpp} means the repository path
+\path{cpu/include/ev/config.hpp}; this convention is confined to this one
+directory table.
+
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{0.28\linewidth}XX@{}}
+\toprule
+Physical/numerical module & CPU implementation & GPU implementation \\
+\midrule
+Einstein--Vlasov & grid semi-Lagrangian modular and stand-alone solvers;
+separate Schwarzschild/ingoing-EF weighted-marker tasks; bound static-shell IC
+and same-event coordinate mapper & not implemented \\
+Static/expanding Vlasov--Poisson & nodal, finite-volume, conservative SLDG,
+Hamiltonian/canonical, and WPIC paths & WPIC kick--drift--kick with CUDA
+deposition, force interpolation, and optional MPI \\
+Boltzmann--Poisson & grid collision operators, canonical events, WPIC, and
+SphDSMC & WPIC material and subhalo collision operators \\
+Constant SIDM & grid/FP or sampled finite-angle paths as configured; WPIC and
+SphDSMC & material-pair Monte Carlo \\
+Velocity-dependent SIDM & power-law and Yukawa/Born models in their documented
+CPU paths & analytic softened power-law and Yukawa--Born material kernels with
+GPU pair sampling; interpolation tables belong to the separate subhalo model \\
+Subhaloes & unequal-mass Plummer scattering/capture in WPIC & unequal-mass
+elastic/capture events with local pair majorants \\
+Collision timestep & mesh-wide reference mode; independent CPU subhalo cells;
+independent equal-mass constant-SIDM shells & mesh-wide reference mode;
+independent subhalo cells; independent material shells for every GPU
+cross-section law \\
+Parallelism & \code{std::thread}, OpenMP; MPI for supported grid/transport
+paths; collision guards are fail-closed where unsupported & CUDA plus optional
+MPI domain/rank work; multi-GPU checks require a scheduler allocation \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\subsection{Directory map}
+
+\codesource{Release directory topology}{\path{Makefile}, \path{cpu/Makefile}, and \path{gpu/CMakeLists.txt}}{Maps the source, build, documentation and output roots maintained by the release}
+\begin{lstlisting}
+VENUS/
+  cpu/       CPU source, task front ends, examples and tools
+  gpu/       CUDA/MPI WPIC source, examples, scripts and documentation
+  docs/      compiled manual, documentation index and module guides
+  notes/     editable manual sources and solver/script catalogues
+  scripts/   release-wide utility and verification scripts
+  output/    intentionally empty CPU/GPU run roots
+\end{lstlisting}
+
+\paragraph{CPU subtree.}
+\codesource{CPU source-tree map}{\path{cpu/Makefile}}{Identifies the CPU task fronts, shared drivers and headers, tools, examples, scheduler templates, and output root owned by the CPU build}
+\begin{lstlisting}
+cpu/
+  src/apps/             one main for each Eulerian/BP/SphDSMC/WPIC task
+  src/drivers/          shared WPIC application engines
+  include/ev/           shared physics, algorithms, parallelism, I/O
+  tools/                IC, restart, analysis, plotting, and GIF utilities
+  python/ev_solver/     readable Python reference implementation
+  examples/initial_data/
+  scripts/slurm/        portable scheduler templates
+  docs/                 detailed CPU method and cluster notes
+  ../output/cpu/        root-level CPU run products
+\end{lstlisting}
+
+\paragraph{GPU subtree.}
+\codesource{GPU source-tree map}{\path{gpu/CMakeLists.txt}}{Identifies the CUDA interfaces, kernels, task fronts, benchmarks, examples, visualization helper, and output root registered by the GPU build}
+\begin{lstlisting}
+gpu/
+  include/venus_gpu/    public WPIC/collision/restart/MPI interfaces
+  src/                  CUDA kernels and the shared task engine
+  tools/                one main per GPU task and restart/table utilities
+  benchmarks/           focused VP and material-SIDM timing programs
+  scripts/              GPU plot/GIF helper
+  docs/                 GPU equations, algorithms, API, and MPI notes
+  ../output/gpu/        root-level GPU run products
+\end{lstlisting}
+
+\paragraph{Build and first-run map.}
+\codesource{Release build and first-run entry points}{\path{Makefile}, \path{cpu/Makefile}, \path{gpu/CMakeLists.txt}, \path{cpu/src/apps/vlasov_poisson/eulerian.cpp}, and \path{gpu/tools/venus_gpu_vlasov_poisson.cu}}{Builds the supported CPU and GPU task fronts and demonstrates their fail-closed Vlasov--Poisson launch interfaces}
+\begin{lstlisting}[language=bash]
+make -C cpu organized-solvers
+make -C cpu cpu-task-solvers-openmp
+make -C cpu cpu-task-solvers-mpi       # Eulerian EV/VP only
+make gpu GPU_ARCH=80
+make gpu-mpi GPU_ARCH=80
+
+cpu/venus_cpu_vlasov_poisson_eulerian \
+  --config cpu/examples/modular/vp_expanding_nfw_gamma2_collisionless.ini
+build/gpu/venus_gpu_vlasov_poisson --help
+\end{lstlisting}
+The detailed installation and launch sections below explain prerequisites,
+architecture selection, configuration, output roots, and scheduler resources.
+
+New calculations should use the task-specific interfaces catalogued below.
+Compatibility dispatchers remain only so older inputs can be interpreted.
+
+\section{Scope and Directory Map}
+
+VENUS evolves a spherically symmetric distribution function
+\[
+  f=f(t,r,w,L),
+\]
+where \(r\) is radius, \(w\) is the radial momentum or peculiar radial velocity
+depending on the model, and \(L=|\bm r\times\bm v|\) is angular-momentum
+magnitude.
+\ifvenusfullcpu
+The CPU tree provides task-specific C++ front ends:
+\begin{itemize}
+\item \code{venus_cpu_einstein_vlasov_eulerian} and
+\code{venus_cpu_vlasov_poisson_eulerian} lock the grid equation;
+\item the \code{venus_cpu_boltzmann_poisson_*} names lock the selected
+Fokker--Planck/Landau or finite-angle backend;
+\item \code{venus_cpu_sidm_sphdsmc_*} separates constant and
+velocity-dependent persistent-marker SIDM; and
+\item the six \code{venus_cpu_*_wpic*} names separate relativistic,
+collisionless, material-SIDM, and subhalo marker tasks.
+\end{itemize}
+The older \code{venus_modular_solver*}, \code{venus_einstein_vlasov*}, and
+\code{run_*} programs are compatibility or specialist interfaces.
+\else
+The marker paths documented here use task-specific names:
+\begin{itemize}
+\item SphDSMC uses \code{venus_cpu_sidm_sphdsmc_constant} or
+\code{venus_cpu_sidm_sphdsmc_velocity_dependent}.
+\item WPIC uses the physical-task names in
+Section~\ref{sec:task-solver-catalogue}.
+\end{itemize}
+The numerical descriptions and limitations appear in the CPU chapters below.
+\fi
+
+\begin{center}
+\footnotesize
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.38\linewidth}>{\raggedright\arraybackslash}p{0.54\linewidth}@{}}
+\toprule
+Path & Contents \\
+\midrule
+\path{src/apps/} & separate task mains for Eulerian, BP, SphDSMC, and WPIC applications \\
+\path{src/drivers/} & shared WPIC application engines used by the task mains \\
+\ifvenusfullcpu
+\path{src/venus_einstein_vlasov.cpp} & self-contained EV cluster source \\
+\fi
+\path{include/ev/common.hpp} & runtime parameter structure and model selectors \\
+\path{include/ev/config.hpp} & config, CLI, environment, and launch-safety parser \\
+\path{include/ev/grids.hpp} & grids, indexing, control-volume edges, quadrature \\
+\ifvenusfullcpu
+\path{include/ev/moments.hpp}, \path{include/ev/metric.hpp} & EV moments and metric constraints \\
+\path{include/ev/vlasov_poisson.hpp} & static/expanding VP field solve, transport, finite-volume option, inflow \\
+\path{include/ev/conservative_sldg_transport.hpp} & conservative source-cell VP SLDG map, polygon deposition, midpoint field, and delayed carrier \\
+\path{include/ev/hamiltonian_sldg_transport.hpp}, \path{include/ev/hamiltonian_orbit_reference.hpp} & Hamiltonian-aligned reconstruction and positive orbit-average reference \\
+\path{include/ev/boltzmann_poisson.hpp} & collision-module dispatch \\
+\path{include/ev/finite_angle_boltzmann.hpp} & shared cross-section and collision-kinematic utilities \\
+\path{include/ev/canonical_orbit_phase_transport.hpp} & finite-volume orbit atlas, frozen-field phase transport, collision lifts, and action-preserving field rebuilds \\
+\path{include/ev/canonical_boltzmann_poisson_event.hpp} & adaptive field/collision event schedule and conservation budgets \\
+\path{include/ev/canonical_particle_ntc_collision.hpp}, \path{include/ev/canonical_reversible_collision.hpp} & parcel-owned NTC and increment-only reversible collision coupling \\
+\path{include/ev/canonical_open_carrier_compression.hpp} & positive local quadrature reduction for continuous collision packets \\
+\path{include/ev/canonical_boltzmann_poisson_restart.hpp} & canonical atlas, packet, random-stream, and event-clock restarts \\
+\else
+\path{include/ev/weighted_vlasov_pic.hpp} & weighted marker initialization, radial deposition, orbit integration, delayed inner return, and restarts \\
+\path{include/ev/weighted_vlasov_pic_collisions.hpp} & local NTC scattering, mean-free-path shell refinement, and sampled collision-time estimates \\
+\path{include/ev/weighted_vlasov_pic_subhalo_collisions.hpp} & unequal-mass whole-object Plummer scattering/capture, remnant merging, and internal-energy ledger \\
+\path{include/ev/weighted_vlasov_pic_event_scheduler.hpp} & independent field and collision clocks \\
+\path{include/ev/weighted_vlasov_pic_phase_remap.hpp} & conservative marker-to-grid reconstruction \\
+\path{include/ev/weighted_pic_boltzmann_event.hpp} & integrated frozen-field transport, NTC collision, and reconstruction events \\
+\path{include/ev/spherical_dsmc_collision.hpp} & direct finite-angle scattering of continuous marker velocities \\
+\path{include/ev/spherical_dsmc_solver.hpp} & marker gravity, radial collision shells, stiff-orbit integration, budgets, and restarts \\
+\fi
+\ifvenusfullcpu
+\path{include/ev/advection.hpp} and \path{include/ev/timestep.hpp} & characteristic pullback, boundaries, adaptive \(w\), timestep scans \\
+\fi
+\path{include/ev/mpi.hpp} and \path{include/ev/parallel.hpp} & MPI \(L\)-slab decomposition and OpenMP/std::thread wrappers \\
+\path{include/ev/output.hpp} & CSV output, metadata, phase projections, restarts \\
+\path{examples/} & publishable example parameter files and binary ICs \\
+\path{scripts/slurm/} & IAS and Indian Institute of Technology Kanpur (IITK)
+Slurm templates \\
+\path{python/ev_solver/} & Python reference solver, reader, plotting, and IC helpers \\
+\path{tools/} & plotting, GIF, IC, and diagnostic scripts \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The modular physics is implemented in \path{include/ev/*.hpp}. Follow the
+selected task main into these headers to connect its input choices to the
+field solve, transport, collisions, and output operations described here.
+
+\section{Build and Quick Start}
+
+Build from the \path{VENUS/cpu} directory:
+\codesource{CPU task-front build}{\path{cpu/Makefile}}{Builds the portable, OpenMP, MPI-enabled collisionless, and debug CPU executable sets documented below}
+\begin{lstlisting}
+cd VENUS/cpu
+make organized-solvers        # all portable task-specific fronts
+make cpu-task-solvers-openmp  # grid/SphDSMC OpenMP fronts
+make cpu-task-solvers-mpi     # Eulerian EV/VP MPI+OpenMP fronts
+make debug       # unoptimized debug builds
+\end{lstlisting}
+The build targets produce the following executables:
+\begin{itemize}
+\ifvenusfullcpu
+\item portable: the unsuffixed \code{venus_cpu_*} task names;
+\item OpenMP: the grid/SphDSMC task names ending in \code{_openmp};
+\item MPI+OpenMP: \path{venus_cpu_einstein_vlasov_eulerian_mpi} and
+\path{venus_cpu_vlasov_poisson_eulerian_mpi}.
+\else
+\item SphDSMC: the \code{venus_cpu_sidm_sphdsmc_*} task names;
+\item WPIC: the six task-specific names in the catalogue.
+\fi
+\end{itemize}
+
+Useful compiler overrides are:
+\codesource{CPU compiler and parallel-runtime overrides}{\path{cpu/Makefile}}{Selects the C++ or MPI compiler wrapper and its matching OpenMP flag without changing task ownership}
+\begin{lstlisting}
+make cpu-task-solvers-openmp CXX=g++ OPENMP_FLAGS=-fopenmp
+make cpu-task-solvers-mpi MPICXX=mpicxx OPENMP_FLAGS=-fopenmp
+\end{lstlisting}
+On macOS with Apple Clang, \code{make organized-solvers} supports systems
+whose compiler lacks OpenMP.
+
+Run the lightweight startup and I/O checks with:
+\codesource{Packaged CPU setup check}{\path{cpu/Makefile}}{Builds the compatibility solver and runs its maintained zero-time startup and output smoke checks}
+\begin{lstlisting}
+make check-setup
+\end{lstlisting}
+\ifvenusfullcpu
+\codesource{Eulerian Vlasov--Poisson zero-time check}{\path{cpu/src/apps/vlasov_poisson/eulerian.cpp}, \path{cpu/include/ev/solver.hpp}, and \path{cpu/examples/modular/vp_bound_infalling_gaussian_shell_train.ini}}{Runs the fail-closed collisionless Newtonian frontend through initialization and output without taking an evolution step}
+\begin{lstlisting}
+./venus_cpu_vlasov_poisson_eulerian \
+  --config examples/modular/vp_bound_infalling_gaussian_shell_train.ini \
+  --t-end 0 --output-dir output/check_vp_shell --threads 2
+\end{lstlisting}
+\else
+\codesource{Eulerian Fokker--Planck zero-time check}{\path{cpu/src/apps/boltzmann_poisson/fokker_planck.cpp}, \path{cpu/include/ev/solver.hpp}, and \path{cpu/examples/modular/bp_sidm_corecollapse_yukawa.ini}}{Runs the fail-closed Fokker--Planck Boltzmann--Poisson frontend through initialization and output without taking an evolution step}
+\begin{lstlisting}
+./venus_cpu_boltzmann_poisson_fokker_planck \
+  --config examples/modular/bp_sidm_corecollapse_yukawa.ini \
+  --t-end 0 --output-dir output/check_bp_sidm --threads 2
+\end{lstlisting}
+\fi
+
+\ifvenusfullcpu
+Run the supplied examples with:
+\codesource{Packaged Eulerian EV, VP, and Fokker--Planck examples}{\path{cpu/src/apps/einstein_vlasov/eulerian.cpp}, \path{cpu/src/apps/vlasov_poisson/eulerian.cpp}, \path{cpu/src/apps/boltzmann_poisson/fokker_planck.cpp}, and \path{cpu/examples}}{Launches the task-locked CPU frontends with the maintained relativistic, collisionless Newtonian, and collisional Newtonian example configurations}
+\begin{lstlisting}
+./venus_cpu_einstein_vlasov_eulerian \
+  --config examples/einstein_vlasov_high_compactness_horizon_formation.ini
+
+./venus_cpu_einstein_vlasov_eulerian \
+  --config examples/einstein_vlasov_low_compactness_virialized_halo.ini
+
+./venus_cpu_vlasov_poisson_eulerian \
+  --config examples/modular/vp_expanding_nfw_gamma2_collisionless.ini
+
+./venus_cpu_boltzmann_poisson_fokker_planck \
+  --config examples/modular/bp_expanding_nfw_gamma1p5_weak_collision.ini
+
+./venus_cpu_boltzmann_poisson_fokker_planck \
+  --config examples/modular/bp_sidm_corecollapse_yukawa.ini
+
+./venus_cpu_vlasov_poisson_eulerian \
+  --config examples/modular/vp_bound_infalling_gaussian_shell_train.ini
+\end{lstlisting}
+
+The solver prints the resolved model and parallel layout at startup.  For
+example,
+\codesource{Resolved solver-layout startup banner}{\path{cpu/include/ev/solver.hpp}}{Reports the selected physics model, parallel backend, threads per rank, MPI size, and global angular-momentum grid size after setup}
+\begin{lstlisting}
+Solver model=vlasov_poisson parallel backend=openmp threads_per_rank=8 mpi_size=4 global_NL=72
+\end{lstlisting}
+is a healthy hybrid EV/VP launch.  For BP collisions, \code{mpi_size} must be
+one in this release.
+\else
+The module chapters below begin with the required plain-language physics
+flowchart and then give a complete runnable command plus the corresponding
+\path{params.ini} or runner parameters.  For a full SphDSMC example, use the
+command above without the \code{--t-end 0} startup-check override.  For WPIC, build the
+runner named in its chapter and use the shown Frank-core or expanding
+    power-law command.  Both marker modules use one process with threaded
+marker/orbit work; do not launch multiple MPI ranks for their collision steps.
+\fi
+
+\section{Configuration Files}
+
+Input files group key--value entries into named sections for readability.
+The parser reads the keys themselves, so section headings organize the file
+while leaving each key's meaning unchanged.  Both \code{key = value} and
+\code{key: value} are accepted.  Unquoted \# and semicolon comments are
+stripped.  Underscores and hyphens are equivalent, so
+\code{bp_collision_flux}, \code{bp-collision-flux}, and the command-line
+option \code{--bp-collision-flux} all refer to the same parameter.
+
+The precedence order is:
+\begin{enumerate}
+\item compiled defaults in \path{include/ev/common.hpp};
+\item the selected config file;
+\item environment overrides: \code{EV_CONFIG}, \code{EV_OUTPUT_DIR},
+\code{EV_SOLVER_OUTPUT_DIR}, \code{EV_RESTART_DIR}, \code{EV_RESTART_FROM},
+\code{EV_THREADS}, \code{EV_SOLVER_THREADS}, and
+\code{EV_ALLOW_MULTI_RANK_LAUNCH};
+\item command-line overrides.
+\end{enumerate}
+In the absence of \code{--config}, the solver searches for
+\path{input/params.ini} and then \path{params.ini} in the current directory and
+next to the executable.  Relative paths inside a config file are resolved
+relative to that config file.
+
+The standard sections are:
+\begin{itemize}
+\item \code{[physics]}: \code{physics_model}, VP background, Poisson source,
+and interpolation mode.
+\item \code{[collisions]}: BP collision operator, cross section, bath,
+coefficient refresh, flux, and integrator.
+\item \code{[initial_data]}: analytic or EVICRWL1 binary initial data, optional
+tracer, and mass normalization.
+\item \code{[grid_for_analytic_initial_data]} or
+\code{[grid_for_binary_initial_data]}: resolution and domain.
+\item \code{[adaptive_w]}: optional one-way expansion of the represented
+momentum domain.  In VENUS this is disabled for binary IC workflows.
+\item \code{[time_integration]}: integrator, CFL, final time, and step cap.
+\item \code{[boundaries]}: inner, outer, momentum, and central-mass controls.
+\item \code{[metric_and_stopping]}: metric floors, compactness stop, active
+cell floors, and distribution floor.
+\item \code{[output]}: output and restart directories and write cadence.
+\item \code{[parallelism]}: thread count and accidental multi-rank guard.
+\end{itemize}

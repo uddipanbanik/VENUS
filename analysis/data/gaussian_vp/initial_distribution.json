@@ -1,0 +1,23 @@
+{
+  "density": "rho=A*exp[-(r-10)^2/(2*1^2)] for7<r<13; zero elsewhere",
+  "velocity": "exp[-((u-u0)^2+v_t^2)/(2*sigma^2)], |u-u0|<3sigma and0<=v_t<3sigma; tangent azimuth uniform",
+  "density_normalization": 0.001133937920682546,
+  "mass": 3.5968447592701334,
+  "N": 1048576,
+  "mean_physical_radial_velocity": 0.0,
+  "velocity_Gaussian_scale": 0.08481562072248405,
+  "reference_escape_speed": 0.8481562072248405,
+  "physical_speed_max": 0.3564475766799962,
+  "K_physical": 0.03715904484509465,
+  "U_self": -0.6053784575277393,
+  "Q_self": 0.12276302330560537,
+  "maximum_particle_self_energy": -0.2242148273613585,
+  "self_bound_fraction": 1.0,
+  "background": "Expanding positive markers represent density contrast with prescribedEdS alpha2/3,t_offset12; static totalpositive density,H=0. Initialselfbinding excludes the external cosmological acceleration.",
+  "radial_grid": {
+    "cells": 512,
+    "minimum": 0.01,
+    "maximum": 10000.0
+  },
+  "generator_sha256": "71b34e41de1576c0bdcff86cd03c5b3b2e8a860b1b2e66bfae741e57806f0d99"
+}

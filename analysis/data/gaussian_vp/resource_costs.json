@@ -1,0 +1,112 @@
+{
+  "static_vp": {
+    "allocations": [
+      {
+        "job": "598781",
+        "name": "venus-narrow-static_vp",
+        "state": "FAILED",
+        "exit_code": "74:0",
+        "start": "2026-11-15T07:20:12",
+        "end": "2026-11-15T07:40:08",
+        "elapsed_seconds": 1196,
+        "allocated_cpu_slots": 32,
+        "requested_memory": "24G",
+        "allocated_tres": "billing=32,cpu=32,gres/gpu=1,mem=24G,node=1",
+        "nodes": "cn113",
+        "partition": "h200preq",
+        "gpu_hours": 0.3322222222222222,
+        "cpu_slot_hours": 10.63111111111111
+      },
+      {
+        "job": "598815",
+        "name": "venus-narrow-static_vp-continuation-1",
+        "state": "FAILED",
+        "exit_code": "74:0",
+        "start": "2026-11-15T08:09:24",
+        "end": "2026-11-15T09:55:48",
+        "elapsed_seconds": 6384,
+        "allocated_cpu_slots": 32,
+        "requested_memory": "24G",
+        "allocated_tres": "billing=32,cpu=32,gres/gpu=1,mem=24G,node=1",
+        "nodes": "cn113",
+        "partition": "h200preq",
+        "gpu_hours": 1.7733333333333334,
+        "cpu_slot_hours": 56.74666666666667
+      },
+      {
+        "job": "598853",
+        "name": "venus-narrow-static_vp-continuation-2",
+        "state": "FAILED",
+        "exit_code": "74:0",
+        "start": "2026-11-15T10:56:24",
+        "end": "2026-11-15T11:10:25",
+        "elapsed_seconds": 841,
+        "allocated_cpu_slots": 32,
+        "requested_memory": "24G",
+        "allocated_tres": "billing=32,cpu=32,gres/gpu=1,mem=24G,node=1",
+        "nodes": "cn113",
+        "partition": "h200preq",
+        "gpu_hours": 0.2336111111111111,
+        "cpu_slot_hours": 7.475555555555555
+      },
+      {
+        "job": "598878",
+        "name": "venus-narrow-static_vp-continuation-3",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "start": "2026-11-15T12:09:23",
+        "end": "2026-11-15T13:09:15",
+        "elapsed_seconds": 3592,
+        "allocated_cpu_slots": 32,
+        "requested_memory": "24G",
+        "allocated_tres": "billing=32,cpu=32,gres/gpu=1,mem=24G,node=1",
+        "nodes": "cn113",
+        "partition": "h200preq",
+        "gpu_hours": 0.9977777777777778,
+        "cpu_slot_hours": 31.92888888888889
+      }
+    ],
+    "total_gpu_hours": 3.3369444444444447,
+    "total_cpu_slot_hours": 106.78222222222223,
+    "scope": "Four unique science allocations. Actual billed CPU slots are taken from sacct. Validation is separate."
+  },
+  "expanding_vp": {
+    "allocations": [
+      {
+        "job": "598783",
+        "name": "venus-narrow-expanding_vp",
+        "state": "FAILED",
+        "exit_code": "74:0",
+        "start": "2026-11-15T07:20:52",
+        "end": "2026-11-15T07:48:33",
+        "elapsed_seconds": 1661,
+        "allocated_cpu_slots": 32,
+        "requested_memory": "24G",
+        "allocated_tres": "billing=32,cpu=32,gres/gpu=1,mem=24G,node=1",
+        "nodes": "cn113",
+        "partition": "h200preq",
+        "gpu_hours": 0.4613888888888889,
+        "cpu_slot_hours": 14.764444444444445
+      },
+      {
+        "job": "598817",
+        "name": "venus-narrow-expanding_vp-continuation-1",
+        "state": "COMPLETED",
+        "exit_code": "0:0",
+        "start": "2026-11-15T08:10:21",
+        "end": "2026-11-15T10:42:21",
+        "elapsed_seconds": 9120,
+        "allocated_cpu_slots": 32,
+        "requested_memory": "24G",
+        "allocated_tres": "billing=32,cpu=32,gres/gpu=1,mem=24G,node=1",
+        "nodes": "cn111",
+        "partition": "h200preq",
+        "gpu_hours": 2.533333333333333,
+        "cpu_slot_hours": 81.06666666666666
+      }
+    ],
+    "total_gpu_hours": 2.9947222222222223,
+    "total_cpu_slot_hours": 95.83111111111111,
+    "scope": "Two unique science allocations. Actual billed CPU slots are taken from sacct. Validation is separate."
+  }
+}

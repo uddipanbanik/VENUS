@@ -1,0 +1,124 @@
+\section{Equation Guide for the Grid-Based EV, VP, and BP Solvers}
+
+\ifvenusfullcpu
+\subsection{Einstein--Vlasov}
+
+The relativistic branch solves the spherically symmetric Einstein--Vlasov
+system in Schwarzschild-like areal coordinates
+\[
+  \dd s^2=-\ee^{2\mu(t,r)}\dd t^2+\ee^{2\lambda(t,r)}\dd r^2+r^2\dd\Omega^2 .
+\]
+The distribution is \(f(t,r,w,L)\), where \(w\) is radial momentum and \(L\)
+is angular-momentum magnitude.  The particle energy is
+\[
+  \epsilon(r,w,L)=\sqrt{1+w^2+\frac{L^2}{r^2}}.
+\]
+The evolved Vlasov equation is characteristic transport,
+\[
+  \partial_t f
+  +\ee^{\mu-\lambda}\frac{w}{\epsilon}\partial_r f
+  +\left(
+      -\lambda_t w-\ee^{\mu-\lambda}\mu_r\epsilon
+      +\ee^{\mu-\lambda}\frac{L^2}{r^3\epsilon}
+    \right)\partial_w f=0 .
+\]
+Thus
+\[
+  \dot r=\ee^{\mu-\lambda}\frac{w}{\epsilon},\qquad
+  \dot w=-\lambda_t w-\ee^{\mu-\lambda}\mu_r\epsilon
+      +\ee^{\mu-\lambda}\frac{L^2}{r^3\epsilon},\qquad
+  \dot L=0 .
+\]
+The current distribution supplies the matter sources.  The radial Einstein
+constraints then reconstruct the metric at every step.  With the code's
+\(L\,\dd L\,\dd w\) measure,
+\[
+  \rho=\frac{2\pi}{r^2}\int\epsilon fL\,\dd L\,\dd w,\quad
+  p=\frac{2\pi}{r^2}\int\frac{w^2}{\epsilon}fL\,\dd L\,\dd w,\quad
+  j=\frac{2\pi}{r^2}\int w fL\,\dd L\,\dd w .
+\]
+The constraints are
+\[
+  m_r=4\pi r^2\rho,\quad
+  \ee^{-2\lambda}=1-\frac{2m}{r},\quad
+  \mu_r=\frac{m/r^2+4\pi r p}{1-2m/r},\quad
+  \lambda_t=-4\pi r\ee^{\lambda+\mu}j .
+\]
+The outer lapse boundary is the Schwarzschild matching condition
+\[
+  \mu(r_{\max})=\frac12\log\left(1-\frac{2m(r_{\max})}{r_{\max}}\right).
+\]
+The run stops when the raw compactness gap \(1-2m/r\) falls below
+\code{gap_stop}.  The shrinking gap makes the Schwarzschild-coordinate
+equations singular, so this stop marks the limit of a trustworthy continuation
+in that chart.  The ingoing EF solver described above supplies horizon
+diagnostics and evolution through a trapped surface.
+\fi
+
+\subsection{Vlasov--Poisson}
+
+The weak-field VP branch uses physical radius \(r\), peculiar radial velocity
+\(w=\dot r-Hr\), and physical angular momentum \(L\).  The static branch sets
+\(H=0\).  The expanding branch uses
+\[
+  a(t)=\left(\frac{t+t_0}{t_0}\right)^\alpha,\qquad
+  H(t)=\frac{\alpha}{t+t_0},\qquad
+  \bar\rho=\frac{3H^2}{8\pi G}.
+\]
+Here \(t_0\) is \code{vp_time_offset}, \(\alpha\) is \code{vp_alpha}, and
+\(G\) is \code{vp_gravity}.
+
+The equations integrated by the code are
+\[
+  \partial_t f +(Hr+w)\partial_r f
+  +\left(\frac{L^2}{r^3}-\Ph_r-Hw\right)\partial_w f=0,
+\]
+\[
+  \frac{1}{r^2}\partial_r(r^2\Ph_r)
+  =4\pi G(\rho-\bar\rho)
+\]
+when \code{vp_poisson_source = total_density} in an expanding run, where
+\(\rho\) is the full physical density represented on the finite grid.  With
+\code{density_contrast}, the finite-box distribution is interpreted as the
+already background-subtracted source and enters the Poisson solve directly.
+The weak-field moments are
+\[
+  \rho=\frac{2\pi}{r^2}\int fL\,\dd L\,\dd w,\quad
+  p=\frac{2\pi}{r^2}\int w^2fL\,\dd L\,\dd w,\quad
+  j=\frac{2\pi}{r^2}\int wfL\,\dd L\,\dd w .
+\]
+The source mass is integrated radially with trapezoids, then
+\[
+  \Ph_r(r_i)=G\frac{M_{\rm src}(r_i)}{r_i^2},
+  \qquad
+  \Ph(r_{\max})=-G\frac{M_{\rm src}(r_{\max})}{r_{\max}}.
+\]
+The force \(\Ph_r\) drives the characteristics; \(\Ph\) is also written to the
+profile file in the metric column named \code{mu}.
+
+\subsection{Boltzmann--Poisson}
+
+The BP branch is VP transport plus a local velocity-space collision source:
+\[
+  \partial_t f +(Hr+w)\partial_r f
+  +\left(\frac{L^2}{r^3}-\Ph_r-Hw\right)\partial_w f=C[f].
+\]
+The implemented evolution families are:
+\begin{itemize}
+\item Einstein--Vlasov grid transport by backward relativistic
+characteristics in a freshly constrained spherical metric;
+\item collisionless VP with nodal interpolation, explicit finite volume,
+cell-integrated conservative/Hamiltonian SLDG transport, or weighted markers;
+\item finite-angle and small-angle grid Boltzmann--Poisson operators;
+\item canonical-orbit Boltzmann--Poisson with finite-volume
+\((\eta,H,\tau)\) transport, local NTC pair sampling, and continuous outgoing
+collision trajectories;
+\item weighted particle--mesh VP/BP with unequal-mass local elastic scattering,
+adaptive field/collision events, material SIDM, or a separate whole-object
+Plummer scattering/capture operator; and
+\item \code{spherical_dsmc}, with persistent spherical markers, physical
+dynamical/collision timesteps, selective LC orbit retry, and local
+continuous-velocity pair scattering.
+\end{itemize}
+The task-specific catalogue in Section~\ref{sec:task-solver-catalogue} gives
+the exact executable and exclusions for each family.

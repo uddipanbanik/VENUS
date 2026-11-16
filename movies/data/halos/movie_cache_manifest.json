@@ -1,0 +1,289 @@
+{
+  "cases": [
+    {
+      "case": "g03_bp",
+      "gamma_i": 0.3,
+      "model": "BP",
+      "encounter_strength": 0.1,
+      "initial_time": 0.0,
+      "final_time": 10000.0,
+      "native_frames": 1002,
+      "cache": "cache/g03_bp.npz",
+      "cache_sha256": "5079e425d155d5cb37db6ac7fe99a7b056430d2f652f3c20160da945b71341a4",
+      "frame_ledger": "cache/g03_bp_source_frames.json",
+      "frame_ledger_sha256": "898857a8eb3705d52becbada90c16238c46a2e34128b9b74c2d7f3a82f3004a3",
+      "example_anchor_profiles_verified": 4,
+      "derivative_method": "21 adjacent native cells: quadratic unweighted log10 density fit; derivative at center; positive full window; boundary half windows omitted.",
+      "selection": "Positive central density and central Neff>=32. The signed slope additionally requires positive density throughout its 21-cell window.",
+      "distinct_native_radius_grids": 1,
+      "maximum_relative_radius_difference": 0.0,
+      "derivative_equivalence": [
+        {
+          "time": 0.0,
+          "maximum_derivative_difference": 0.0
+        },
+        {
+          "time": 100.0,
+          "maximum_derivative_difference": 0.0
+        },
+        {
+          "time": 799.9999999993892,
+          "maximum_derivative_difference": 0.0
+        },
+        {
+          "time": 10000.0,
+          "maximum_derivative_difference": 0.0
+        }
+      ]
+    },
+    {
+      "case": "g05_bp",
+      "gamma_i": 0.5,
+      "model": "BP",
+      "encounter_strength": 0.1,
+      "initial_time": 0,
+      "final_time": 10000,
+      "native_frames": 1001,
+      "cache": "cache/g05_bp.npz",
+      "cache_sha256": "cf542655a0b1380c6daab96d01cd468add424d1cb5cc8b75a54c052d15208d95",
+      "frame_ledger": "cache/g05_bp_source_frames.json",
+      "frame_ledger_sha256": "43743f4fac0e5bd8eb44eeb97e6b7773c5e0f3babcd6ca6f78953051ef91dbab",
+      "example_anchor_profiles_verified": 4,
+      "derivative_method": "21 adjacent native cells: quadratic unweighted log10 density fit; derivative at center; positive full window; boundary half windows omitted.",
+      "selection": "Positive central density and central Neff>=32. The signed slope additionally requires positive density throughout its 21-cell window.",
+      "distinct_native_radius_grids": 1,
+      "maximum_relative_radius_difference": 0.0,
+      "derivative_equivalence": [
+        {
+          "index": 0,
+          "time": 0.0,
+          "maximum_derivative_error": 2.842170943040401e-14
+        },
+        {
+          "index": 1,
+          "time": 9.999999999999993,
+          "maximum_derivative_error": 3.197442310920451e-14
+        },
+        {
+          "index": 10,
+          "time": 100.0,
+          "maximum_derivative_error": 1.4210854715202004e-14
+        },
+        {
+          "index": 80,
+          "time": 800.0,
+          "maximum_derivative_error": 4.973799150320701e-14
+        },
+        {
+          "index": 500,
+          "time": 5000.0,
+          "maximum_derivative_error": 1.865174681370263e-14
+        },
+        {
+          "index": 1000,
+          "time": 10000.0,
+          "maximum_derivative_error": 1.865174681370263e-14
+        }
+      ],
+      "execution": "CUDA",
+      "native_source_dataset": "g05_bp"
+    },
+    {
+      "case": "g05_vp",
+      "gamma_i": 0.5,
+      "model": "VP",
+      "encounter_strength": 0,
+      "initial_time": 0.0,
+      "final_time": 10000.0,
+      "native_frames": 1001,
+      "cache": "cache/g05_vp.npz",
+      "cache_sha256": "dd467d9b6853275b1074a78b2fdbc66c4285438960846c9630683b56705c99d6",
+      "frame_ledger": "cache/g05_vp_source_frames.json",
+      "frame_ledger_sha256": "188eee57a2fa848367b742581d1b68c253d3591ca572595c3747eec2b35bbd23",
+      "example_anchor_profiles_verified": 4,
+      "derivative_method": "21 adjacent native cells: quadratic log10 density fit; derivative at center; positive full window; boundary half windows omitted.",
+      "selection": "Positive central density and central Neff>=32. The signed slope requires positive density throughout its 21-cell window.",
+      "distinct_native_radius_grids": 1,
+      "maximum_relative_radius_difference": 0,
+      "derivative_equivalence": [
+        {
+          "time": 0.0,
+          "maximum_derivative_difference": 2.4868995751603507e-14
+        },
+        {
+          "time": 100.0,
+          "maximum_derivative_difference": 8.215650382226158e-15
+        },
+        {
+          "time": 800.0,
+          "maximum_derivative_difference": 2.842170943040401e-14
+        },
+        {
+          "time": 5000.0,
+          "maximum_derivative_difference": 1.5987211554602254e-14
+        },
+        {
+          "time": 10000.0,
+          "maximum_derivative_difference": 2.1316282072803006e-14
+        }
+      ]
+    },
+    {
+      "case": "g08_bp",
+      "gamma_i": 0.8,
+      "model": "BP",
+      "encounter_strength": 0.1,
+      "initial_time": 0.0,
+      "final_time": 10000.0,
+      "native_frames": 1003,
+      "cache": "cache/g08_bp.npz",
+      "cache_sha256": "52b7efd4c1bdd0f8931642df30036e48fe0999256846c52c4148c032a4c28b2c",
+      "frame_ledger": "cache/g08_bp_source_frames.json",
+      "frame_ledger_sha256": "ee502b2d2df13432b5a3a4529416c02c21c88d5f871f3b60a9622f673fc5f05c",
+      "example_anchor_profiles_verified": 4,
+      "derivative_method": "21 adjacent native cells: quadratic unweighted log10 density fit; derivative at center; positive full window; boundary half windows omitted.",
+      "selection": "Positive central density and central Neff>=32. The signed slope additionally requires positive density throughout its 21-cell window.",
+      "distinct_native_radius_grids": 1,
+      "maximum_relative_radius_difference": 0.0,
+      "derivative_equivalence": [
+        {
+          "time": 0.0,
+          "maximum_derivative_difference": 0.0
+        },
+        {
+          "time": 100.0,
+          "maximum_derivative_difference": 0.0
+        },
+        {
+          "time": 800.0,
+          "maximum_derivative_difference": 0.0
+        },
+        {
+          "time": 10000.0,
+          "maximum_derivative_difference": 0.0
+        }
+      ]
+    },
+    {
+      "case": "g12_bp",
+      "gamma_i": 1.2,
+      "model": "BP",
+      "encounter_strength": 0.1,
+      "initial_time": 0.0,
+      "final_time": 10000.0,
+      "native_frames": 1003,
+      "cache": "cache/g12_bp.npz",
+      "cache_sha256": "c92bf66b8cf6d8c3a4285f56512d0db094c77b82a64d30177f8207f4248414c6",
+      "frame_ledger": "cache/g12_bp_source_frames.json",
+      "frame_ledger_sha256": "f7777eceb1c7e331da14ee3c4a44e547e9c6d0d9220729a9421232445a5b5b65",
+      "example_anchor_profiles_verified": 4,
+      "derivative_method": "21 adjacent native cells: quadratic unweighted log10 density fit; derivative at center; positive full window; boundary half windows omitted.",
+      "selection": "Positive central density and central Neff>=32. The signed slope additionally requires positive density throughout its 21-cell window.",
+      "distinct_native_radius_grids": 1,
+      "maximum_relative_radius_difference": 0.0,
+      "derivative_equivalence": [
+        {
+          "time": 0.0,
+          "maximum_derivative_difference": 0.0
+        },
+        {
+          "time": 100.0,
+          "maximum_derivative_difference": 0.0
+        },
+        {
+          "time": 800.0,
+          "maximum_derivative_difference": 0.0
+        },
+        {
+          "time": 10000.0,
+          "maximum_derivative_difference": 0.0
+        }
+      ]
+    },
+    {
+      "case": "g15_bp",
+      "gamma_i": 1.5,
+      "model": "BP",
+      "encounter_strength": 0.1,
+      "initial_time": 0.0,
+      "final_time": 10000.0,
+      "native_frames": 1002,
+      "cache": "cache/g15_bp.npz",
+      "cache_sha256": "f4e9c99818d6f7886b9c2fc5dc81cd24471a7b4e47d1d4fecd1869a204033a31",
+      "frame_ledger": "cache/g15_bp_source_frames.json",
+      "frame_ledger_sha256": "a9918ae1a061f0d5b07659c7dd661815736fc5880e9ccecc8e142081649a8df4",
+      "example_anchor_profiles_verified": 4,
+      "derivative_method": "21 adjacent native cells: quadratic unweighted log10 density fit; derivative at center; positive full window; boundary half windows omitted.",
+      "selection": "Positive central density and central Neff>=32. The signed slope additionally requires positive density throughout its 21-cell window.",
+      "distinct_native_radius_grids": 1,
+      "maximum_relative_radius_difference": 0.0,
+      "derivative_equivalence": [
+        {
+          "time": 0.0,
+          "maximum_derivative_difference": 0.0
+        },
+        {
+          "time": 100.0,
+          "maximum_derivative_difference": 0.0
+        },
+        {
+          "time": 800.0,
+          "maximum_derivative_difference": 0.0
+        },
+        {
+          "time": 10000.0,
+          "maximum_derivative_difference": 0.0
+        }
+      ]
+    },
+    {
+      "case": "g20_bp",
+      "gamma_i": 2.0,
+      "model": "BP",
+      "encounter_strength": 0.1,
+      "initial_time": 0.0,
+      "final_time": 10000.0,
+      "native_frames": 1004,
+      "cache": "cache/g20_bp.npz",
+      "cache_sha256": "ff2a1ccd001fd19f1e072a4159fac2d52ce97c59be6222b525cf0f0bf4831ea1",
+      "frame_ledger": "cache/g20_bp_source_frames.json",
+      "frame_ledger_sha256": "dcf28e21df63bfa444057154ad176710111d867f3ba89393d09ae7cc1f8d6611",
+      "example_anchor_profiles_verified": 4,
+      "derivative_method": "21 adjacent native cells: quadratic unweighted log10 density fit; derivative at center; positive full window; boundary half windows omitted.",
+      "selection": "Positive central density and central Neff>=32. The signed slope additionally requires positive density throughout its 21-cell window.",
+      "distinct_native_radius_grids": 1,
+      "maximum_relative_radius_difference": 0.0,
+      "derivative_equivalence": [
+        {
+          "time": 0.0,
+          "maximum_derivative_difference": 0.0
+        },
+        {
+          "time": 100.0,
+          "maximum_derivative_difference": 0.0
+        },
+        {
+          "time": 800.0,
+          "maximum_derivative_difference": 0.0
+        },
+        {
+          "time": 10000.0,
+          "maximum_derivative_difference": 0.0
+        }
+      ]
+    }
+  ],
+  "source_profile_inventory_sha256": "f21a079fdf6fce1ff31e85155b46a4d2672bc747301f56463d550d9ef29e58e2",
+  "source_manifest_sha256": {
+    "g03_bp": "898857a8eb3705d52becbada90c16238c46a2e34128b9b74c2d7f3a82f3004a3",
+    "g05_bp": "43743f4fac0e5bd8eb44eeb97e6b7773c5e0f3babcd6ca6f78953051ef91dbab",
+    "g05_vp": "188eee57a2fa848367b742581d1b68c253d3591ca572595c3747eec2b35bbd23",
+    "g08_bp": "ee502b2d2df13432b5a3a4529416c02c21c88d5f871f3b60a9622f673fc5f05c",
+    "g12_bp": "f7777eceb1c7e331da14ee3c4a44e547e9c6d0d9220729a9421232445a5b5b65",
+    "g15_bp": "a9918ae1a061f0d5b07659c7dd661815736fc5880e9ccecc8e142081649a8df4",
+    "g20_bp": "dcf28e21df63bfa444057154ad176710111d867f3ba89393d09ae7cc1f8d6611"
+  },
+  "temporal_sampling": "Distinct native saved times in increasing order; profiles retain their actual radial grids.",
+  "source_scope": "Native profiles associated with the halo example figures.",
+  "source_profile_inventory_encoding": "UTF-8 JSON with sorted keys and compact separators; case order follows cases and each case follows increasing native time; fields case,time,profile,source,sha256."
+}

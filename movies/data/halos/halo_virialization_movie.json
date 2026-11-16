@@ -1,0 +1,83 @@
+{
+  "case": "halo_virialization",
+  "renderer_sha256": "b2d2eab0f4f1c617f1c9e2a16166f8c69ba0216743443371a270ffeb9299fee4",
+  "source_catalog_sha256": "761f62d3b1208f17e1f3c21163254ddfee9d9e0724cdc735056b5e182286c74b",
+  "sources": {
+    "g03_bp": {
+      "rows": 1002,
+      "sha256": "05d9b728cb895c24f78f6567bae2962928c87ed9aa8babe3a27144559136be16",
+      "first_time": 0.0,
+      "last_time": 10000.0,
+      "Q_final": 1.0006135085740615
+    },
+    "g05_bp": {
+      "rows": 1001,
+      "sha256": "d060ac105b40a57d09a3932bf75c7400f754c1b65a13d0cd9edb86fc7605d2e5",
+      "first_time": 0.0,
+      "last_time": 10000.0,
+      "Q_final": 0.9988804244005092
+    },
+    "g08_bp": {
+      "rows": 1003,
+      "sha256": "815c6a035eb7ec8d767ec2e0d538311694ab4718c60c14ede4511efd4e6b4642",
+      "first_time": 0.0,
+      "last_time": 10000.0,
+      "Q_final": 0.9991781277341243
+    },
+    "g05_vp": {
+      "rows": 1001,
+      "sha256": "d78091127a18b08ede01520d54692b8f6a2a67e057d95d82e2f47a950cb1cd03",
+      "first_time": 0.0,
+      "last_time": 10000.0,
+      "Q_final": 0.998673689314683
+    },
+    "gaussian_static_vp": {
+      "rows": 11,
+      "sha256": "685dbd9e71b8453ef2f91c0fa8220910fb049f29749b257ac7d59bbcca3aa4de",
+      "first_time": 0.0,
+      "last_time": 10000.0,
+      "Q_final": 1.480838390734516
+    },
+    "gaussian_expanding_vp": {
+      "rows": 11,
+      "sha256": "a3114322e181a7fe1a34bc2128bb214ec56bee602a9454a63eb9c0054e8a7f28",
+      "first_time": 0.0,
+      "last_time": 10000.0,
+      "Q_final": 1.0195010826619084
+    },
+    "static_g05_bound": {
+      "rows": 5,
+      "sha256": "0c5539dd2d7bc09ffd3dc603aba2cfe694a8f9c634a846b205f4bff3b13c2acc",
+      "first_time": 300.0,
+      "last_time": 10000.0,
+      "Q_final": 1.097224346193287
+    },
+    "gaussian_static_bound": {
+      "rows": 1,
+      "sha256": "827aa9c19cc77c04ebdd09c4355370d279947e0868071d099d43deacf01e7dcb",
+      "first_time": 10000.0,
+      "last_time": 10000.0,
+      "Q_final": 1.0011742089167301
+    }
+  },
+  "native_reveal_frames": 1147,
+  "encoded_frames": 1204,
+  "fps": 24,
+  "duration_seconds": 50.166666666666664,
+  "pixel_size": [
+    1920,
+    864
+  ],
+  "frame_ledger_sha256": "956db9694b1c2782151dcfa416608022e07251245b4eeafbcac8d5e9cbe5b196",
+  "artifacts": {
+    "halo_virialization.mp4": {
+      "sha256": "165e9bbdc29a19a771d2bed91b505d543ed8ea173608d4ca0ba34364a0be2959",
+      "bytes": 995010
+    }
+  },
+  "time_scope": "Sorted union of actual accepted source clocks. Every curve reveals only samples at or before the displayed clock. Initial state appears once and final state is held 2.4 seconds.",
+  "bound_scope": "The purple line joins five stable own-potential selections. A brown square shows the single Gaussian static E_full<0 endpoint using its own gravity. Each selected population has its stated membership; symbols have no connecting lines.",
+  "force_scope": "Four power-law curves use resolved profile quadratures. Gaussian curves use emitted all-marker applied-force moments. Each static bound point uses its own reconstructed gravitational field.",
+  "current_sample_encoding": "Power-law curves mark the latest revealed sample. Gaussian circles show all revealed native snapshots. The open brown square appears only at time10000.",
+  "render_seconds": 8.232467542402446
+}

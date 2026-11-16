@@ -1,0 +1,12 @@
+{
+  "description": "Decimal sorting illustration with persistent labeled records.",
+  "ID": "Fixed record identifier.",
+  "key": "Integer teaching key K used only for the decimal illustration.",
+  "record_semantics": "ID, key and every other record property move together.",
+  "records": [
+    {"id": 1, "key": 21, "color": "#ee2737"},
+    {"id": 2, "key": 13, "color": "#087cff"},
+    {"id": 3, "key": 12, "color": "#00a651"},
+    {"id": 4, "key": 22, "color": "#8b2bc0"}
+  ]
+}

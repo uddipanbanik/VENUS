@@ -1,0 +1,104 @@
+\section{Parallel-Computing Foundations}
+
+A numerical update contains many pieces of work that can sometimes be done at
+the same time.  Examples are moving different markers, integrating different
+angular-momentum planes, or evaluating different radial collision shells.
+Parallel computing assigns those independent pieces to several workers
+while preserving the physical equations and numerical update. It reduces
+elapsed time by doing independent work simultaneously, or distributes arrays
+so a larger calculation fits in memory.
+
+\subsection{Serial work, threads, and processes}
+
+A \emph{serial} program has one execution stream.  A \emph{thread} is an
+additional execution stream inside the same process.  Threads share the same
+memory, so they can read one distribution or marker array without copying it.
+When several threads contribute to the same stored quantity, their writes
+must be coordinated. For a density sum, for example, each thread can first
+accumulate a private partial sum and then combine it with the others.
+OpenMP and the C++ \code{std::thread} library are the two thread mechanisms
+used by the CPU tree.
+
+A \emph{process} has its own memory.  In an MPI program each process is called
+a \emph{rank}.  Ranks exchange data by sending messages or by taking part in
+collective operations.  A collective operation involves every participating
+rank.  For example, \code{MPI_Allreduce} adds each rank's partial density and
+returns the same total density to every rank.  Shared-memory threads are
+appropriate within one node; MPI ranks can also span several nodes whose
+memories are physically separate.
+
+\subsection{Work ownership, synchronization, and reductions}
+
+Safe parallelism begins by giving each output item one unambiguous owner.
+Independent marker pushes can assign different markers to different workers.
+Independent collision shells can assign one complete shell to one worker.
+The grid solvers divide the angular-momentum axis into contiguous MPI slabs,
+so one rank owns all \((r,w)\) cells for its assigned \(L\) values.
+
+A \emph{synchronization point} is a place where workers must wait until a
+shared prerequisite is complete.  The Einstein or Poisson field cannot be
+solved until all matter contributions for that time level have been combined.
+A \emph{reduction} combines many values into one sum, minimum, maximum, or
+other summary.  Floating-point addition is not exactly associative: changing
+the order of the additions can change the last few binary digits.  Therefore
+VENUS distinguishes three useful standards:
+
+\begin{itemize}
+\item \emph{bitwise reproducibility}: every stored bit is identical;
+\item \emph{deterministic discrete choices}: marker ordering, pair choices,
+      and state transitions agree, while reductions may differ by roundoff;
+\item \emph{numerical equivalence}: physical fields and diagnostics agree
+      within a stated tolerance that is smaller than the discretization or
+      sampling uncertainty.
+\end{itemize}
+
+Each module states which standard it requires. Compare its fields, conserved
+totals, and discrete state under that standard before interpreting a change
+in worker count as an acceleration of the same calculation.
+
+\subsection{Load balance and scaling}
+
+\emph{Load balance} asks whether workers receive comparable amounts of work.
+Static grid loops are usually regular, but collision shells can differ greatly
+in population and cost.  Dynamic scheduling lets a worker request another
+shell after finishing its previous one.  It improves utilization without
+changing shell ownership.
+
+\emph{Strong scaling} holds the physical problem and resolution fixed while
+increasing the worker count; ideal elapsed time would fall in inverse
+proportion to that count.  \emph{Weak scaling} increases both problem size and
+worker count so that the work per worker stays roughly fixed.  Neither scaling
+can remain ideal indefinitely.  Thread startup, reductions, messages, memory
+bandwidth, load imbalance, and serial sections eventually dominate.  Faster
+execution is useful evidence about implementation performance, not evidence
+that the physical solution has converged.
+
+\subsection{The VENUS execution models}
+
+VENUS uses three distinct CPU layouts:
+
+\begin{enumerate}
+\item A serial or threaded process for WPIC, SphDSMC, and every collision
+      backend whose complete local shell must have one owner.
+\item OpenMP or \code{std::thread} workers inside that process for independent
+      markers, grid work items, or disjoint collision shells.
+\item MPI \(L\)-slab decomposition for the supported collisionless Eulerian
+      Einstein--Vlasov and Vlasov--Poisson paths, optionally with threads
+      inside each rank.
+\end{enumerate}
+
+A single-process task assigns one process to the complete calculation.
+Launching several copies of that task produces independent simulations, and
+copies sharing an output path can compete for the same files.  The task catalogue and the next
+section state the allowed layout for every executable.  The later GPU chapter
+introduces a fourth execution model and explains separately which tasks can
+use one MPI rank per GPU.
+
+\subsection{Checks required after changing the parallel layout}
+
+For the same initial data and numerical controls, compare conserved totals,
+field arrays, state counts, collision ledgers, random-stream counters, restart
+continuation, and final classifications across worker counts.  Also verify
+that each output directory has exactly one intended writer.  When the module
+does not promise bitwise equality, report the comparison norm and tolerance.
+A speedup result without these checks says nothing about parallel correctness.
