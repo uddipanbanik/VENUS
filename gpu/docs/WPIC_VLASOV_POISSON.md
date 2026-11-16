@@ -24,7 +24,7 @@ The spherical Poisson equation and radial force are
 \frac{1}{r^2}\frac{\partial}{\partial r}
 \left(r^2\frac{\partial\Phi}{\partial r}\right)=4\pi G\rho,
 \qquad
-\Phi_r(r)=\frac{G M(<r)}{r^2}.
+\Phi_r(r)=\frac{G M(\lt r)}{r^2}.
 ```
 
 WPIC approximates phase-space integrals by sums over weighted markers. Their

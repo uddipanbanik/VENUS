@@ -267,7 +267,7 @@ For cell volume $`V`$, the stochastic number of proposals is
 
 ```math
 N_{\rm trial}=\left\lfloor
-\frac{\Delta t_c}{V}\sum_{i<j}B_{ij}+z_{\rm round}
+\frac{\Delta t_c}{V}\sum_{i\lt j}B_{ij}+z_{\rm round}
 \right\rfloor.
 ```
 
