@@ -1,5 +1,12 @@
 # VENUS script and tool reference
 
+A solver advances the physical equations. A restart reads a saved simulation
+state. Diagnostics are quantities used to check or interpret the evolution,
+such as mass, energy or density. Rendering makes figures or movies from saved
+data. A script is a file of commands; the links below identify its purpose.
+
+Additional terms are defined in the [plain-language glossary](../docs/TERMS.md).
+
 Developed by Uddipan Banik, Frank van den Bosch, and Sachiet Kapur
 
 Use this catalogue to find the program for a particular operation: creating

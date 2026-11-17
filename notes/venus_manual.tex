@@ -98,24 +98,25 @@ The code was developed with assistance from the AI models GPT-Sol and Astra.
 \end{center}
 
 \begin{abstract}
-This manual follows the physical equations implemented in VENUS through
-their discretization, numerical update, and software operation.  The production marker methods come first:
-weighted particle-in-cell (WPIC) and persistent-marker spherical direct
-simulation Monte Carlo (SphDSMC).  Relativistic collisionless evolution is
-then derived in Schwarzschild and ingoing Eddington--Finkelstein coordinates,
-followed by the covariant material collision operator and its SC and EF
-sampling algorithms. The Newtonian chapters develop Vlasov--Poisson and
-Boltzmann--Poisson dynamics.  Exact
-finite-angle collision physics precedes small-angle approximations and the
-grid and orbit-based methods.  The later computing part distinguishes the central
-processing unit (CPU) implementation from graphics-processing-unit (GPU)
-acceleration through NVIDIA's CUDA platform, the OpenMP shared-memory model,
-and the Message Passing Interface (MPI) process model.  It also covers initial
-conditions, input and output (I/O), restarts, plotting, Graphics Interchange
-Format (GIF) animations, checks, and failure modes.  Every method states its
-implementation owner, maturity, conservation and locality requirements,
-coordinate or boundary limits, and the evidence needed before a result may be
-interpreted scientifically.
+VENUS follows the distribution of matter over position and velocity as it
+moves under its own gravity. This manual explains the physical equations,
+how they are represented by numerical particles or grid cells, and how to
+build, run and analyze a calculation. Newtonian methods describe weak
+ gravitational fields and speeds small compared with the speed of light.
+Relativistic methods couple matter to the geometry of spacetime and allow
+black hole formation to be studied. Encounter models add the redistribution
+of matter through scattering or capture.
+
+The particle methods begin with weighted particle-in-cell (WPIC), in which
+numerical particles carry mass weights and supply gravity on a radial grid,
+and spherical direct simulation Monte Carlo (SphDSMC), which follows
+persistent particles and samples local encounters. The grid chapters store
+the distribution in position and velocity cells. Each method introduces its
+assumptions, equations, numerical steps, inputs, saved results and accuracy
+checks. Later chapters explain CPU and NVIDIA GPU builds, parallel computing,
+restarts, plotting and movies. Begin with the short examples in the repository
+README and CPU or GPU guide, then use the relevant method chapter to prepare
+a scientific calculation.
 \end{abstract}
 
 \tableofcontents

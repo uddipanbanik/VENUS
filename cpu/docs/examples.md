@@ -1,5 +1,15 @@
 # Examples and initial conditions
 
+An initial condition describes the matter at the start of a calculation.
+An INI file is a plain-text list of settings. An Eulerian method stores matter
+in fixed position-and-velocity cells. WPIC (weighted particle-in-cell) uses
+particles carrying mass weights. SphDSMC (spherical direct simulation Monte
+Carlo) follows persistent particles and randomly samples local encounters.
+VP, BP and EV mean Vlasov--Poisson, Boltzmann--Poisson and Einstein--Vlasov,
+respectively. The [CPU guide](../README.md) introduces these equations.
+
+Additional terms are defined in the [plain-language glossary](../../docs/TERMS.md).
+
 Developed by Uddipan Banik and Frank van den Bosch
 
 All paths are relative to `VENUS/cpu`. Eulerian and SphDSMC tasks read an

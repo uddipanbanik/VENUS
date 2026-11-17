@@ -1,5 +1,14 @@
 # EF evolution with interior particles retained
 
+EF means ingoing Eddington--Finkelstein, a coordinate system that remains
+regular at a black hole horizon. An apparent horizon marks zero outward
+expansion of outgoing light on a chosen slice. A trapped region has both
+future radial light families converging. Excision removes a central numerical
+region behind a causally checked boundary. The metric describes spacetime
+geometry; its constraints are equations that geometry and matter must satisfy.
+
+Additional terms are defined in the [plain-language glossary](../docs/TERMS.md).
+
 The ingoing Eddington–Finkelstein driver accepts `--ef-evolve-interior` to
 evolve all particles inside an apparent horizon. Apply this option to the EF
 command that imports the solved null initial slice. The physical initial data,

@@ -2,11 +2,12 @@
 
 Developed by Uddipan Banik, Frank van den Bosch, and Sachiet Kapur
 
-CUDA is NVIDIA's programming system for computation on a graphics processor
+CUDA is NVIDIA's programming system for computation on a graphics processing unit
 (GPU). This implementation evolves weighted particles in spherical Newtonian
 gravity. Each numerical particle carries a specified amount of physical mass.
 The method is called weighted particle-in-cell (WPIC), because the particles
-supply the gravitational field on a radial grid. Their deposited mass determines the Poisson field, which advances
+supply gravity on a radial grid. Their mass is spread over nearby cells to
+calculate the gravitational field (the Poisson field), which advances
 their trajectories. Local encounters add material scattering or subhalo
 scattering and capture. Follow the steps below from compilation to an actual
 initial state, saved profiles, and analysis. All commands use the
@@ -21,7 +22,9 @@ Perimeter Symmetry recipes, module choices and portable scheduler settings.
 
 ## 1. Build for your GPU
 
-Install CMake 3.18 or newer, CUDA, a compatible C++17 host compiler, and
+A CPU is the computer’s general-purpose processor. CMake prepares the build instructions. The host compiler translates the CPU
+parts of the program; CUDA’s compiler translates the GPU parts. Install
+CMake 3.18 or newer, CUDA, a compatible C++17 host compiler, and
 Python 3.8 or newer. Keep the sibling `cpu/include` tree, which provides the
 reference physics and encounter tables. The analysis environment is shared
 with the CPU tools:
@@ -34,7 +37,8 @@ make gpu GPU_ARCH=80 BUILD_JOBS=8
 ```
 
 `80` selects an A100. Select the CUDA compute capability of the actual device
-when using another GPU. The compiled programs appear in `build/gpu/`.
+when using another GPU. Compute capability is NVIDIA’s device-version number;
+for example, `8.0` becomes the build setting `80`. The compiled programs appear in `build/gpu/`.
 CMake also accepts an explicit source and build directory:
 
 ```bash
@@ -44,16 +48,23 @@ cmake --build build/gpu -j 8
 ctest --test-dir build/gpu --output-on-failure --timeout 120
 ```
 
-Run device tests inside a GPU allocation. MPI is optional and uses a separate
+A GPU allocation is a reservation made through the cluster job scheduler.
+Run device tests inside that allocation. MPI is optional and uses a separate
 build, described in step 6.
 
 ## 2. Choose a physical module and background
 
-VP means collisionless Vlasov--Poisson. BP adds a Boltzmann encounter
-operator. All currently supplied GPU production solvers use WPIC. SIDM means
+VP means collisionless Vlasov--Poisson: particles move in the gravitational
+field that they create. BP means Boltzmann--Poisson: an additional rule changes
+the distribution through encounters. Such a rule is called a collision operator. All currently supplied GPU production solvers use WPIC. SIDM means
 self-interacting dark matter. Einstein--de Sitter (EdS) is the prescribed
 matter-dominated expanding background used here. MPI is the library used by
-separate processes to exchange particle and field data.
+separate processes to exchange particle and field data. MPI stands for Message
+Passing Interface. A process is one running copy of the program; a thread is
+a worker within it. A kernel is a function executed by many GPU threads.
+The [plain-language glossary](../docs/TERMS.md) explains the specialist method
+names below. The [complete run-option reference](../docs/RUN_OPTIONS.md) lists
+the option names for every supplied program.
 
 A subhalo is a bound clump inside a larger halo. The subhalo operator models
 encounters between clumps. Material SIDM instead models scattering between
@@ -79,20 +90,21 @@ add the interaction law appropriate to your question.
 | Relativistic collisional, SIDM or star clusters | Isolated or cosmological | CPU elastic material library has component-tested scope; GPU/stellar encounter implementations are future work | — |
 
 The [full physics selector](../notes/SOLVER_MODULES.md#physics-and-background-selector)
-compares CPU and GPU availability. Relativistic transport requires spacetime
-constraints, geodesic integration and conserved sources together; its CUDA
+compares CPU and GPU availability. Relativistic transport requires the equations for spacetime geometry, trajectories through that
+geometry and the matter that produces gravity to be solved together; its CUDA
 implementation is a separate development task. Adaptive-grid development
 will be distributed when ready.
 
 A static background sets `H=0` while the Poisson field evolves with the
 particles. EdS has `H=(2/3)/(t+12)`. Static particle weights represent total
 density; EdS VP/subhalo weights represent density above or below the prescribed
-homogeneous background, called density contrast. The initial-state
-sidecars bind these conventions to the radial mesh.
+homogeneous background, called density contrast. Here `H` is the fractional expansion rate and `t` is simulation time.
+The initial-state companion files record these conventions and the radial grid.
 
 ## 3. Generate and inspect the input
 
-GPU runs read a compatible **WPIC binary state**, containing marker masses,
+GPU runs read a compatible **WPIC binary state**, a program-defined byte
+format containing marker masses,
 positions, momenta, identities and persistent state. The CPU Eulerian INI and
 `EVICRWL1` grid files describe a different representation. Generate a small
 initial population with the supplied Python tool:
@@ -103,17 +115,18 @@ python3 cpu/tools/generate_bound_gaussian_shell_restart.py \
 ```
 
 This creates `static_vp/restart_state.bin` and
-`expanding_vp/restart_state.bin` below the selected directory, with their
-contracts and generation manifest. The output directory must be fresh.
+`expanding_vp/restart_state.bin` below the selected directory, with companion files describing their format, grid and background, and a
+manifest listing the generated files and parameters. The output directory must be fresh.
 Both files describe the same physical marker realization: a Gaussian density
 shell centered at radius 10, of width 1, with support between radii 7 and 13.
 Their physical positions and velocities agree, while the expanding file stores
-peculiar radial velocity `w=u-Hr`. The generator documents the velocity
+peculiar radial velocity `w=u-Hr`: the physical radial velocity `u` minus
+the expansion velocity `Hr` at radius `r`. The generator documents the velocity
 sampling and mass normalization. The field mesh has 512 logarithmic cells
 between 0.01 and 10000. Repeat those mesh controls when importing either state.
 
-For your own distribution, preserve the native WPIC schema and background
-contract, normalize the represented mass, and verify the sampled density, mean velocity, and velocity dispersion.
+For your own distribution, preserve the WPIC file format and its recorded
+background conventions, normalize the represented mass, and verify the sampled density, mean velocity, and velocity dispersion.
 The [initial-data tutorial](../cpu/examples/modular/vp_bound_gaussian_shell_gpu.md)
 explains the larger research example and CPU/GPU comparison conditions.
 
@@ -139,19 +152,20 @@ completes the velocity update.
 
 | Control | Meaning |
 |---|---|
-| `--restart` | Native input state, accompanied by its matching sidecars |
+| `--restart` | Native input state, accompanied by its matching companion files |
 | `--universe static` or `eds` | Cosmological background and source convention |
 | `--radial-cells`, `--radial-minimum`, `--radial-maximum` | Field/collision mesh matching the state |
 | `--maximum-timestep` | Orbit-step ceiling |
 | `--end-time`, `--output-interval` | Physical endpoint and profile spacing |
-| `--history-every`, `--restart-every` | Accepted-step history/checkpoint cadence |
+| `--history-every`, `--restart-every` | Number of completed steps between history/checkpoint writes |
 | `--output-directory` | Run destination, relative to the launch directory |
 
-Subhalo encounters treat markers as unequal-mass Plummer objects. Select
+Subhalo encounters treat markers as unequal-mass Plummer objects, clumps
+with a prescribed smooth central density profile. Select
 `venus_gpu_subhalo_boltzmann_poisson`, the background-specific initial file,
 the same mesh controls, and positive `--subhalo-collision-strength`. The
 [complete example](../cpu/examples/modular/vp_bound_gaussian_shell_gpu.md#subhalo-encounters)
-adds the object velocity scale, area per mass, collision interval and accuracy limits. The collision CFL limits the timestep
+adds the object velocity scale, area per mass, collision interval and accuracy limits. The collision CFL (Courant--Friedrichs--Lewy) safety factor limits the timestep
 to resolve encounter probabilities. The locality check compares a collision
 cell width with the mean free path, the typical distance between encounters. `--subhalo-adaptive-cell-timestep` advances independent
 collision-cell clocks on the fixed radial mesh.
@@ -187,10 +201,14 @@ probabilities, and the collision shell width must resolve the mean free path.
 
 ## 5. Locate and analyze the saved state
 
+A checkpoint saves the full state so the run can resume. Metadata describes
+the calculation; a JSON file stores named settings and records as text.
+
 The example writes to `output/gpu/first_static_vp/`. Normal products are
 `metadata.json`, `history_gpu.csv`, numbered `profile_*.csv`, terminal status,
 collision histories where applicable, and `restart_state.bin` with its
-contracts. CSV files carry named columns in the documented run code units.
+companion files describing their grid and background. CSV (comma-separated
+values) files are text tables with named columns in the documented run code units.
 Profiles contain density, enclosed mass, mean velocities, velocity dispersions
 and time; histories
 record integrated diagnostics. Profiles are deposited after the final orbit
@@ -208,13 +226,14 @@ The shared renderer reads numbered profiles and writes density and slope
 frames sampled by physical time. For full particle and gravitational-field
 output, select `--phase-space-snapshot-times` from the profile schedule and
 follow [the snapshot guide](docs/PHASE_SPACE_SNAPSHOTS.md). Keep metadata,
-initial state, all sidecars, command arguments and the source revision with
+initial state, all companion files, command arguments and the source revision with
 each run so its normalization and physical model remain recoverable.
 
 To resume, use the complete `restart_state.bin`, the same mesh/background/
 collision controls, and a later `--end-time`. The driver validates existing
 history times before appending. A separate branch uses a fresh destination.
-`SIGUSR1` or `SIGTERM` requests an atomic checkpoint and exits with status 99.
+`SIGUSR1` or `SIGTERM` requests a complete saved-state write followed by exit status 99. The final
+checkpoint name becomes visible only after that write succeeds.
 Density CSV files supply analysis data; the binary state preserves the full
 particle population, clocks and random state required for continuation.
 
@@ -242,10 +261,12 @@ workspaces remain in device memory between output/checkpoint events. MPI
 combines the density and velocity sums from all ranks to reconstruct the
 shared spherical field. Each
 physical collision shell/cell has one owner, which samples its pairs once.
+Here device memory means GPU memory and host memory means CPU memory.
+Migration moves a particle record to the process responsible for its new cell.
 Migration exchanges marker records through host memory, so an MPI installation that directly accesses GPU memory is
 optional. Mesh arrays are replicated; a very small shell count or an uneven
-particle distribution can limit scaling. File output, host orchestration and
-collectives also contribute to runtime. See [the MPI guide](docs/MULTI_GPU.md)
+particle distribution can limit scaling. File output, CPU coordination and operations involving all MPI processes
+also contribute to runtime. See [the MPI guide](docs/MULTI_GPU.md)
 for ownership and scaling details.
 
 ## 7. C++ library interface for developers
@@ -280,7 +301,7 @@ python3 gpu/scripts/render_venus_gpu_density_slope_gif.py --help
 ```
 
 Its input and publication paths are explicit; generated frames live outside
-the solver state and the GIF is published atomically.
+the solver state and the complete GIF replaces the destination only after it has been written successfully.
 
 ## Documentation
 

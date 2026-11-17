@@ -1,5 +1,14 @@
 # Multi-GPU execution
 
+MPI (Message Passing Interface) allows separate running copies of a program
+to exchange data. Each copy is a process, also called a rank. VENUS assigns
+one rank to each GPU. Decomposition divides particles between them; device
+binding selects the GPU used by a rank. A marker is a numerical particle
+with a mass weight. Start with [the GPU guide](../README.md#6-choose-one-gpu-or-one-mpi-rank-per-gpu)
+for build and submission commands.
+
+Additional terms are defined in the [plain-language glossary](../../docs/TERMS.md).
+
 ## Decomposition and device binding
 
 The VENUS GPU module uses one MPI process per GPU. Rank $`a`$ owns a subset

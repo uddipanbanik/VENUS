@@ -1,5 +1,15 @@
 # GPU WPIC collision modules
 
+Weighted particle-in-cell (WPIC) uses numerical particles carrying mass
+weights. Self-interacting dark matter (SIDM) adds encounters between material
+particles. A subhalo is a bound clump inside a larger halo; its encounter law
+describes whole clumps. A cross section is an effective interaction area.
+A Plummer model describes a clump with a smooth central density. A closure
+supplies an assumed relation for unresolved internal quantities. This page
+gives the equations behind the [GPU guide’s](../README.md) collision examples.
+
+Additional terms are defined in the [plain-language glossary](../../docs/TERMS.md).
+
 This chapter documents two physically distinct operators:
 
 1. material SIDM scattering with constant, softened power-law, or

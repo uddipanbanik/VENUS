@@ -1,5 +1,15 @@
 # Relativistic collisions in a spherical gravitational field
 
+Elastic scattering preserves total energy and momentum in a local encounter.
+An orthonormal frame is a local observer’s set of perpendicular, unit-normalized
+time and spatial directions. Four-momentum combines energy and momentum.
+The metric describes spacetime geometry; stress--energy records the matter’s
+energy, momentum and stresses that produce gravity. A cross section is an
+effective interaction area, and isotropic scattering gives equal probability
+per solid angle in the stated frame. This advanced reference uses `G=c=1`.
+
+Additional terms are defined in the [plain-language glossary](TERMS.md).
+
 The collision library evolves elastic scattering together with the
 Einstein–Vlasov trajectories and gravitational field. The trajectory update
 follows motion through the curved spacetime. At an encounter, the code

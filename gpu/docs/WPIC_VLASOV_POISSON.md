@@ -1,5 +1,14 @@
 # GPU weighted Vlasov–Poisson module
 
+Vlasov--Poisson evolves particles in the Newtonian gravitational field that
+they create, with explicit pair encounters omitted. Weighted particle-in-cell
+(WPIC) represents the distribution using particles with mass weights. Their
+mass is spread over a radial grid to calculate gravity. Phase space combines
+position and velocity. Specific angular momentum is angular momentum per
+unit mass. Begin with the [GPU guide](../README.md) for a runnable example.
+
+Additional terms are defined in the [plain-language glossary](../../docs/TERMS.md).
+
 ## 1. Governing equations
 
 For a spherical collisionless distribution in Newtonian gravity,

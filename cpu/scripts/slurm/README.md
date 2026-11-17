@@ -1,5 +1,14 @@
 # Portable VENUS CPU Slurm templates
 
+Slurm is the cluster job scheduler. A process is one running copy of a
+program; threads share its memory. MPI (Message Passing Interface) exchanges
+data between processes, called ranks. OpenMP (Open Multi-Processing) divides
+CPU work between threads. A partition groups cluster resources, an account
+identifies who can use them, and a software module selects installed programs.
+The [first-run cluster guide](../../../docs/CLUSTERS.md) introduces submission.
+
+Additional terms are defined in the [plain-language glossary](../../../docs/TERMS.md).
+
 Developed by Uddipan Banik and Frank van den Bosch
 
 These scripts request computing resources and start the selected VENUS

@@ -1018,6 +1018,12 @@ def plot_inward_reflection_diagnostics(input_dir: Path, outdir: Path) -> Path | 
 
 def plot_phase(input_dir: Path, outdir: Path) -> None:
     """Plot initial/final ``(r,w,g)`` projections with one color floor."""
+    # A run continued from a checkpoint may save only the final projection.
+    # Radial profiles and any available snapshot montage remain usable.
+    required = ("phase_space_initial.csv", "phase_space_final.csv")
+    if not all((input_dir / name).is_file() for name in required):
+        print("Skipping initial/final phase-space comparison: both projections are required.")
+        return
     r0, w0, g0 = load_phase(input_dir / "phase_space_initial.csv")
     r1, w1, g1 = load_phase(input_dir / "phase_space_final.csv")
     floor = max(float(np.max(g0)), float(np.max(g1)), 1.0) * 1.0e-14

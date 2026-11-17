@@ -1,5 +1,14 @@
 # How GPU code differs from CPU code
 
+CPU means central processing unit and GPU means graphics processing unit.
+CUDA is NVIDIA’s GPU programming system. A marker is a numerical particle
+carrying mass. A shell is a radial grid cell. A kernel is a function run by
+many GPU threads, where a thread is one worker executing instructions.
+The [GPU guide](../README.md) gives the build and run commands; this page
+explains their implementation.
+
+Additional terms are defined in the [plain-language glossary](../../docs/TERMS.md).
+
 The CPU and GPU modules implement the same supported force and collision
 formulas. The GPU arranges independent marker, shell and pair calculations
 into parallel kernels. Their memory access, shared sums and exclusive pair

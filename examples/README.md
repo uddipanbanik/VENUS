@@ -1,5 +1,11 @@
 # Build, run, and analyze an example
 
+A solver advances the physical equations. WPIC (weighted particle-in-cell)
+uses particles carrying mass weights. Compactness measures relativistic
+gravity through `2GM/(rc²)` for mass `M` inside radius `r`, with gravitational
+constant `G` and speed of light `c`. Slurm is the cluster job scheduler.
+See the [plain-language glossary](../docs/TERMS.md) for other terms.
+
 These examples introduce the interface in short, reproducible steps. Most run
 for a small physical time so that you can check your installation quickly.
 The low-compactness relativistic example follows the halo for long enough to
@@ -54,7 +60,8 @@ supplies small input generators and diagnostic tools.
 Compiler choices and flags can be passed through `CXX`, `MPICXX`,
 `BASE_CXXFLAGS`, and `OPENMP_FLAGS`. `BUILD_JOBS` sets simultaneous compiler
 processes. On macOS, the build script first checks whether the default compiler links
-a small program. If its SDK is incompatible, it tries the installed macOS 15
+a small program. An SDK (software development kit) supplies the compiler’s system files.
+If that SDK is incompatible, it tries the installed macOS 15
 SDK. Explicit `CXX`, `SDKROOT`, and `BASE_CXXFLAGS` choices take precedence.
 
 | Build script | What it creates |
@@ -66,7 +73,7 @@ SDK. Explicit `CXX`, `SDKROOT`, and `BASE_CXXFLAGS` choices take precedence.
 | `scripts/build/gpu_mpi.sh` | CUDA and distributed programs in `build/gpu-mpi/` |
 | `scripts/build/tools.sh` | C++ input generators and diagnostic utilities |
 
-For CUDA, set `GPU_ARCH` to the GPU compute capability, such as `80` for A100
+For CUDA, set `GPU_ARCH` to the GPU compute capability, NVIDIA’s device-version number, such as `80` for A100
 or `90` for H200. Use the site's compatible compiler, CUDA, and MPI modules. On IAS,
 `source scripts/build/ias_environment.sh` selects the supplied compiler setup
 and preserves the site MPI paths while adding your Python installation.

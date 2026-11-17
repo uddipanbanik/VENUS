@@ -16,6 +16,9 @@ analyzing its output.
 | Reference | Contents |
 |---|---|
 | [Solver manual](venus_manual.pdf) | Derivations, algorithms, code excerpts and complete operating reference |
+| [Plain-language glossary](TERMS.md) | Scientific and computing terms explained in ordinary language |
+| [Complete run options](RUN_OPTIONS.md) | Option names and executable help for every solver family |
+| [Relativistic coordinates](RELATIVISTIC_COORDINATES.md) | Coordinate choices and interpretation of collapse diagnostics |
 | [CPU guide](../cpu/README.md) | CPU builds, task executables and examples |
 | [GPU guide](../gpu/README.md) | CUDA builds, particle data, supported tasks and parallel execution |
 | [Relativistic collision guide](relativistic_boltzmann.md) | Local rates, conservative scattering and SC/EF adapters |

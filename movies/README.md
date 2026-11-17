@@ -1,5 +1,13 @@
 # Simulation movies
 
+A profile shows a quantity, such as density, as a function of radius. A
+physical clock is the simulation time associated with saved data. A cache
+retains data needed to draw frames, and a frame ledger records their times
+and source files. A virial comparison measures the balance between kinetic
+motion and gravitational forces. Rendering turns the saved data into images.
+
+Additional terms are defined in the [plain-language glossary](../docs/TERMS.md).
+
 The movies below show the example simulations. Each title
 gives the actual simulation time. The renderers use saved profiles and their
 physical clocks. The supplied caches and frame ledgers retain the full

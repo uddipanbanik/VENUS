@@ -1,5 +1,14 @@
 # Cluster and parallel execution
 
+A process is one running copy of a program. Threads share its memory.
+OpenMP (Open Multi-Processing) and C++ `std::thread` provide CPU threads;
+MPI (Message Passing Interface) exchanges data between processes. A rank is
+one MPI process. Slurm is the job scheduler. Decomposition means dividing
+the work: an angular-momentum slab is a consecutive range of `L` cells.
+Here `L` is angular momentum per unit mass.
+
+Additional terms are defined in the [plain-language glossary](../../docs/TERMS.md).
+
 Developed by Uddipan Banik and Frank van den Bosch
 
 Start with [Run VENUS on a cluster](../../docs/CLUSTERS.md) for the step-by-step

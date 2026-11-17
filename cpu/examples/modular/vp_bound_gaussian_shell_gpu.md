@@ -1,5 +1,14 @@
 # Bound Gaussian shell for single-GPU VP and BP
 
+VP means Vlasov--Poisson: collisionless evolution in collective Newtonian
+gravity. BP means Boltzmann--Poisson and also includes encounters. A marker
+is a numerical particle carrying mass. A Gaussian shell has a bell-shaped
+density profile in radius. A sidecar is a companion file recording the grid
+and background conventions. Commands below start at the repository root.
+For a short installation example, begin with the [GPU guide](../../../gpu/README.md).
+
+Additional terms are defined in the [plain-language glossary](../../../docs/TERMS.md).
+
 Generate the two background representations of one physical marker realization:
 
 ```bash

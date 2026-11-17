@@ -18,6 +18,50 @@ before small-angle approximations.  Semi-Lagrangian, discontinuous-Galerkin,
 canonical-orbit, and other methods whose validation is still developing are
 placed after the production modules.
 
+\subsection{Terms used throughout the manual}
+
+A \emph{kinetic description} follows matter in position and velocity together,
+called \emph{phase space}. A \emph{distribution function} records the amount
+of matter in that space. Its integrals give quantities such as density and
+momentum; these integrals are called \emph{moments}. A \emph{marker} is a
+numerical particle carrying a specified amount of represented mass.
+A \emph{collisionless} calculation follows the collective gravitational
+field. A \emph{collisional} calculation also changes the distribution through
+encounters. A \emph{cross section} is an effective interaction area used to
+calculate encounter rates.
+
+\emph{Vlasov--Poisson} couples collisionless motion to Newtonian gravity.
+\emph{Boltzmann--Poisson} adds an encounter term. \emph{Einstein--Vlasov}
+couples collisionless matter to relativistic gravity. The \emph{metric}
+describes spacetime distances and times; its \emph{constraints} are equations
+that matter and geometry must satisfy on a chosen time slice.
+Schwarzschild (SC) and ingoing Eddington--Finkelstein (EF) are coordinate
+choices; EF remains regular at a black hole horizon. A \emph{null slice}
+follows a lightlike surface. An \emph{eikonal map} solves the light-surface
+equation to compare coordinate descriptions at the same physical events.
+\emph{Excision} removes a central numerical region behind a causally checked
+inner boundary while accounting for its gravitational mass.
+
+\emph{Discretization} replaces continuous quantities by values on particles
+or grid cells. A \emph{kernel} is a numerical routine, an \emph{operator} is
+a mathematical rule acting on the distribution, and a \emph{backend} is the
+selected implementation. \emph{Quadrature} means numerical integration over
+specified sample points. A \emph{convergence study} checks that improving
+resolution and timestep accuracy leaves the result stable. A \emph{diagnostic}
+is a quantity used to check or interpret a calculation. \emph{Locality} means
+that an encounter occurs at the same physical position; finite-cell pairing
+introduces a spatial approximation that needs checking.
+
+A \emph{build} translates source into an executable program. A \emph{process}
+is a running copy of that program; \emph{threads} share its memory. OpenMP
+(Open Multi-Processing) divides work between CPU threads. MPI (Message
+Passing Interface) exchanges data between processes, called \emph{ranks}.
+CUDA is NVIDIA's software system for GPU calculations. A \emph{checkpoint}
+saves simulation state for a \emph{restart}. An input \emph{contract} states
+the required file format and physical conventions; a \emph{sidecar} is a
+companion file recording them. The repository's \path{docs/TERMS.md} explains
+additional scientific, software and cluster terms.
+
 \subsection{Meaning of the maturity labels}
 
 The labels below describe the calculations and checks available for each
@@ -26,14 +70,14 @@ observables and numerical controls relevant to that problem.
 
 \begin{description}
 \item[Production, strength-tested.] The task has a maintained executable,
-      restart and diagnostic contract, representative successful-run
+      saved-state and diagnostic interface, representative successful-run
       material, and problem-specific checks.  Scientific use still requires
       resolution, timestep, domain, conservation, and stochastic-realization
       tests appropriate to that task.
 \item[Validated reference.] The implementation is maintained as a comparison
       or baseline, but its coordinate patch, cost, dimensionality, or physical
       assumptions restrict the questions it can answer.
-\item[Verification oracle.] The method is intentionally expensive and is
+\item[Small-grid accuracy reference.] The method is intentionally expensive and is
       most useful on small grids for checking a faster approximation.
 \item[Research or developing.] The algorithm is implemented and tested, but
       its production validation is incomplete or problem dependent.  A
@@ -68,14 +112,14 @@ diagnostics are maintained, but a long-time core-validation claim is not made. \
 Schwarzschild Einstein--Vlasov WPIC & Validated exterior reference & Reliable
 only while the polar coordinate gap remains positive; it does not evolve
 through an apparent horizon. \\
-Ingoing-EF Einstein--Vlasov WPIC & Research production path with fail-closed
-certification & Post-horizon interpretation requires the complete accepted-
+Ingoing-EF Einstein--Vlasov WPIC & Research path with required
+accuracy checks & Post-horizon interpretation requires the complete accepted-
 step, provenance, causal-excision, and sensitivity evidence stated in its
 chapter. \\
 Nodal grid EV/VP and explicit finite-volume VP & Validated reference & Useful
 for controlled grid studies within their documented transport and boundary
 limits. \\
-Dense exact finite-angle Boltzmann operator & Verification oracle & Enumerates
+Dense exact finite-angle Boltzmann operator & Small-grid accuracy reference & Enumerates
 the retained discrete collision channels; ``exact'' does not remove angular,
 velocity-grid, remap, boundary, or time-discretization error. \\
 Reversible, sampled, streamed, canonical-orbit, and SLDG methods & Research or
@@ -85,8 +129,8 @@ Fokker--Planck/Landau operator & Maintained approximation & Represents a
 small-angle approximation and must be checked against its locality and
 coefficient-resolution assumptions. \\
 GPU WPIC paths & Implemented acceleration with stated parity scope & Use only
-for the tasks listed in the GPU chapter; material-collision multi-GPU
-invariance is not provided. \\
+for the tasks listed in the GPU chapter. Material-collision MPI runs
+require checking how the result changes with the number of processes. \\
 \bottomrule
 \end{tabularx}
 \end{center}

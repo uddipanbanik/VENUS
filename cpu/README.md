@@ -2,6 +2,7 @@
 
 Developed by Uddipan Banik, Frank van den Bosch, and Sachiet Kapur
 
+A CPU (central processing unit) is the computer’s general-purpose processor.
 Build the programs, choose a physical problem and its initial distribution,
 evolve that distribution, then read and plot the saved results. This guide
 follows those steps, beginning with a small isolated Newtonian example.
@@ -17,9 +18,10 @@ Perimeter Symmetry recipes, module choices and portable scheduler settings.
 
 ## 1. Build the solvers
 
-A build translates the C++ source into executable programs. Install a C++17
-compiler and Python 3.8 or newer. The analysis tools use
-NumPy, Matplotlib, SciPy, Pillow, and ImageIO:
+A compiler translates source code into a program; a build runs that process.
+Install a C++17
+compiler and Python 3.8 or newer. The analysis tools use NumPy and SciPy for calculations, Matplotlib for
+plots, and Pillow and ImageIO for images and animations:
 
 ```bash
 python3 -m venv .venv
@@ -41,8 +43,12 @@ make -C cpu check  # finite C++ numerical tests
 ```
 
 OpenMP lets one process use several CPU cores. MPI lets separate processes
-exchange data, including across computers. Their optional builds need the
-corresponding libraries and compatible compilers. Weighted particle-in-cell
+exchange data, including across computers. OpenMP and MPI stand for Open
+Multi-Processing and Message Passing Interface, respectively. Their optional builds need the
+corresponding libraries and compatible compilers. A process is a running copy
+of a program; threads are workers sharing its memory. Slurm is the cluster
+job scheduler used in the examples. A solver is the program that advances the
+physical equations. Weighted particle-in-cell
 (WPIC) runners use `--threads` to select shared-memory workers.
 The [cluster guide](../docs/CLUSTERS.md) gives tested site recipes;
 the [parallel implementation guide](docs/cluster.md) explains the decomposition.
@@ -59,7 +65,8 @@ subhalos, dark matter particles, or stars are part of the physical question.
 VP means Vlasov--Poisson: the distribution evolves under the gravitational
 field that it creates. BP means Boltzmann--Poisson: an encounter term also
 redistributes the matter. EV means Einstein--Vlasov: matter and the spacetime
-metric evolve together under general relativity. **Phase space** means
+metric, the geometry that determines distances and times, evolve together
+under general relativity. **Phase space** means
 position and velocity considered together.
 An Eulerian grid stores the distribution in fixed phase-space cells. WPIC uses
 weighted particles, also called markers: each carries a specified amount of
@@ -73,6 +80,14 @@ and capture model describes encounters between these clumps. Material SIDM
 models instead describe scattering between the constituent dark matter particles.
 Schwarzschild (SC) and ingoing Eddington--Finkelstein (EF) are coordinate choices
 for relativistic evolution; EF remains regular at a black hole horizon.
+Compactness is `2GM/(rc²)`: enclosed mass `M` divided by radius `r`, with
+gravitational constant `G` and speed of light `c` converting it to a
+dimensionless measure of relativistic gravity.
+An INI file is a plain-text list of named settings. API means application
+programming interface: functions called from another program. A backend is
+the numerical implementation selected to perform a calculation.
+See the [plain-language glossary](../docs/TERMS.md) for other specialist terms
+and the [complete run-option reference](../docs/RUN_OPTIONS.md) for option names.
 
 | Physical category | Background | Executable in `cpu/` | Input |
 |---|---|---|---|
@@ -114,6 +129,10 @@ Isolated Einstein--Vlasov WPIC is already supplied by the two compactness
 runners above. Their compactness labels select initial-data families.
 
 ## 3. Supply an INI file and run a grid calculation
+
+A checkpoint saves the simulation state so it can be resumed. A timestep
+is one advance of the equations; an accepted step is one the solver has
+completed successfully.
 
 Start with an isolated shell in Newtonian gravity:
 
@@ -179,7 +198,7 @@ separates these choices:
 | `inner_boundary`, `outer_boundary`, `momentum_boundary` | Physical/numerical boundary conditions |
 | `t_end`, `dt_max`, `cfl` | End time and timestep constraints |
 | `bp_collision_operator`, cross-section and strength controls | Encounter approximation and interaction law for BP |
-| `output_dir`, `save_every`, `phase_every`, `restart_every` | Destination and accepted-step output/checkpoint cadence |
+| `output_dir`, `save_every`, `phase_every`, `restart_every` | Destination and number of completed steps between output/saved-state writes |
 | `threads` | Shared-memory workers |
 
 Options following `--config` override the INI. Use hyphenated names such as
@@ -205,8 +224,9 @@ to generate this file and connect it to `vp_custom_shell.ini`.
 
 WPIC uses hyphenated command-line options. It builds a fresh particle
 population from the chosen sampler or imports a complete compatible native
-state. A CSV density profile contains averages of the distribution; the
-native binary retains its particles and restart state.
+state. A CSV (comma-separated values) density profile is a text table containing
+averages of the distribution. The native binary file stores the particle
+state in a program-defined byte format and retains the details needed to resume.
 
 Start a small, isolated Vlasov--Poisson cusp calculation:
 
@@ -223,7 +243,7 @@ cpu/venus_cpu_vlasov_poisson_wpic_static \
 mesh and domain, and markers per cell choose the sampling resolution.
 `--maximum-timestep` caps each orbit step. The kick--drift--kick method
 updates velocity, advances position, then completes the velocity update. Profile spacing
-is measured in physical time, while history and checkpoint cadences count
+is measured in physical time, while history and checkpoint intervals count
 accepted steps. This compact example checks operation of the solver.
 Scientific evolution requires marker, mesh, timestep, and boundary studies.
 
@@ -240,6 +260,7 @@ For subhalo scattering and capture, select `venus_cpu_subhalo_wpic`, declare
 `--vp-universe static` or `expanding`, and supply positive
 `--subhalo-collision-strength`. The subhalo controls specify the object
 velocity scale, size per unit mass, and encounter interval. The collision CFL
+(Courant--Friedrichs--Lewy) safety factor
 is a timestep restriction that keeps encounter probabilities resolved.
 `--subhalo-adaptive-cell-timestep` gives collision cells independent clocks.
 These clocks operate on the declared radial mesh.
@@ -249,7 +270,7 @@ For material SIDM select `venus_cpu_sidm_wpic_constant` or
 initial state and positive `--collision-strength`, then choose
 `--sidm-cross-section constant`, `powerlaw`, or `yukawa_born` as allowed by
 the task. Material scattering and subhalo capture have distinct state and
-parameter contracts. Run the selected executable with `--help` before
+required parameter conventions. Run the selected executable with `--help` before
 constructing a new collision model.
 
 For isolated relativistic WPIC, begin with the low-compactness family:
@@ -268,7 +289,8 @@ below follows collapse in Schwarzschild or horizon-penetrating EF coordinates.
 
 ## 5. Find, read, and analyze the output
 
-Each command above names its destination explicitly. Grid output uses
+Metadata describes the calculation; JSON stores named settings and records
+as text. Each command above names its destination explicitly. Grid output uses
 `metadata.json`, `history.csv`, `profiles.csv`, optional phase-space files,
 and complete restart files. `profiles.csv` groups radial rows by `time`.
 Newtonian WPIC writes `profile_*.csv`, `history.csv`, `virial_budget.csv`,
@@ -280,11 +302,11 @@ The relativistic particle examples use `low_compactness_history.csv` and
 Their coordinate-specific binary restart preserves the evolving state.
 
 CSV files have named columns and can be read with NumPy, pandas, or a
-spreadsheet. Consult the header for the actual schema. Radius, density,
+spreadsheet. Consult the header for the actual column definitions. Radius, density,
 mean velocities and velocity dispersions, enclosed mass, and time use the
 run's documented code units, the mass, length, and time scales chosen for
 the equations. The gravitational coupling is set by the input; relativistic runs use
-`G=c=1`. Keep the initial data, input controls, metadata, sidecars, and source
+`G=c=1`. Keep the initial data, input controls, metadata, companion files, and source
 revision with every calculation.
 
 ```bash

@@ -1,5 +1,16 @@
 # Retaining the black-hole interior
 
+Ingoing Eddington--Finkelstein (EF) coordinates allow trajectories to cross
+a black hole horizon regularly. An apparent horizon marks zero outward
+expansion of outgoing light on the chosen slice. Excision removes a deeper
+central numerical region behind a causally checked boundary. The metric
+coefficients `a` and `b` describe spacetime geometry; the equations below use
+`a=1-2m/r`, with enclosed mass `m`, areal radius `r`, and units `G=c=1`.
+Areal radius labels spheres of area `4πr²`. A trapped region has both future
+radial light families converging.
+
+Additional terms are defined in the [plain-language glossary](../../docs/TERMS.md).
+
 The EF driver defaults to `--ef-excision-horizon-fraction 0.1`. At each
 constraint solve it limits the excision radius to at most 10% of the outer
 apparent-horizon areal radius. It retains the existing negative-a threshold

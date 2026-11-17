@@ -1,5 +1,13 @@
 # VENUS example figures
 
+Analysis turns saved simulation output into quantities and figures that help
+interpret the calculation. Reduced data retain the quantities needed for
+these figures. A PDF stores scalable graphics; a PNG stores an image as
+pixels. Reproduction means generating the figures again from the supplied
+data and scripts.
+
+Additional terms are defined in the [plain-language glossary](../docs/TERMS.md).
+
 The twelve example figure pairs are in [../plots](../plots/README.md). This
 directory contains the analysis scripts and reduced simulation output used
 to generate them. The PDF files provide vector graphics; the PNG files

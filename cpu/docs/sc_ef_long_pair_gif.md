@@ -1,5 +1,14 @@
 # Schwarzschild–Eddington–Finkelstein long-run animation
 
+Schwarzschild (SC) and ingoing Eddington--Finkelstein (EF) are two
+coordinate descriptions of relativistic gravity. EF remains regular at a
+black hole horizon. A coordinate map identifies the same physical events
+in both descriptions. A parity certificate records their agreement tests;
+a gate checks those tests before submitting a dependent job. Slurm is the
+cluster job scheduler, and a dependency delays one job until another succeeds.
+
+Additional terms are defined in the [plain-language glossary](../../docs/TERMS.md).
+
 The animation compares a Schwarzschild run with its corresponding EF run.
 It uses their saved profiles and the solved coordinate map to evaluate both
 solutions at the same physical events.

@@ -1,5 +1,17 @@
 # VENUS solver-module catalogue
 
+This is the detailed method reference. For a first calculation, follow the
+[CPU guide](../cpu/README.md) or [GPU guide](../gpu/README.md). VP means
+Vlasov--Poisson (collective Newtonian gravity); BP means Boltzmann--Poisson
+(with encounters); EV means Einstein--Vlasov (relativistic collisionless
+gravity). WPIC uses particles with mass weights; an Eulerian method uses
+fixed cells in position and velocity. A kernel is a numerical routine,
+a backend is an implementation, and an input contract states the required
+file format and physical conventions. “Convergence” means that improving
+resolution and timestep accuracy leaves the result stable.
+
+Additional terms are defined in the [plain-language glossary](../docs/TERMS.md).
+
 Developed by Uddipan Banik, Frank van den Bosch, and Sachiet Kapur
 
 Begin with the physical problem in the selector below, then read that

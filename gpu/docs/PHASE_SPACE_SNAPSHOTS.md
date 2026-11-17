@@ -1,5 +1,14 @@
 # Particle and gravitational-field snapshots
 
+A snapshot saves the state at a selected time. Phase space combines position
+and velocity; a weighted particle carries a specified amount of mass. A
+restart is a saved state that can also continue a run. A callback is the
+function invoked when the solver reaches an output time. A radial moment is
+an integral over particle velocities, such as density or mean velocity.
+Begin with the [GPU guide](../README.md) for the usual profile outputs.
+
+Additional terms are defined in the [plain-language glossary](../../docs/TERMS.md).
+
 The production driver can save all weighted particles and the gravitational
 field evaluated from them at selected profile times. These files retain the
 velocity distribution needed for phase-space and orbital-energy analysis.

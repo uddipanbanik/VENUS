@@ -1,5 +1,13 @@
 # Packaged CPU initial data
 
+Initial data specify the distribution at the start of a calculation. A binary
+file stores numbers in a program-defined byte format; CSV stores a table
+as comma-separated text. A header describes the file contents. Phase space
+combines position and velocity. An INI file is a plain-text list of settings;
+the [CPU guide](../../README.md) explains how to select one.
+
+Additional terms are defined in the [plain-language glossary](../../../docs/TERMS.md).
+
 Developed by Uddipan Banik and Frank van den Bosch
 
 These binary and CSV inputs supply the documented examples. A binary header

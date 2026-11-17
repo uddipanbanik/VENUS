@@ -1,5 +1,15 @@
 # Coupled subhalo field and collision clocks
 
+A collision clock tracks elapsed encounter evolution. A field clock estimates
+how quickly gravity changes at selected locations, called receivers. Coupling
+these clocks lets the timestep respond to both processes. A checkpoint is a
+saved simulation state. KDK means kick--drift--kick: update velocity, advance
+position, then update velocity again. VP means collisionless Vlasov--Poisson;
+SIDM means self-interacting dark matter. This advanced option belongs to the
+subhalo module introduced in the [GPU guide](../README.md).
+
+Additional terms are defined in the [plain-language glossary](../../docs/TERMS.md).
+
 The single-GPU subhalo solver offers an optional field-clock policy through
 `--coupled-receiver-clocks`. The option requires positive subhalo strength,
 `--subhalo-adaptive-cell-timestep`, a positive collision-timescale fraction and

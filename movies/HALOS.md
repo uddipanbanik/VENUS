@@ -1,5 +1,13 @@
 # Halo density and virialization movies
 
+Virialization is the approach toward balance between kinetic motion and
+gravity. A density profile shows mass per volume as a function of radius.
+Code units use the simulation’s chosen mass, length and time scales. A
+subhalo is a bound clump within a larger halo. Rendering creates movie frames
+from the saved simulation output.
+
+Additional terms are defined in the [plain-language glossary](../docs/TERMS.md).
+
 These movies follow the Vlasov–Poisson (VP) and Boltzmann–Poisson (BP)
 calculations in the supplied figures. VP evolves collisionless matter. BP includes
 subhalo encounters with strength 0.1. The initial power-law density index

@@ -1,5 +1,14 @@
 # SIDM core collapse and cold collisionless collapse
 
+SIDM means self-interacting dark matter. A cold distribution starts with
+small random velocity dispersion. Core collapse is continued contraction
+of the central region; collisionless evolution omits explicit encounters.
+NFW means Navarro--Frenk--White, a commonly used cusped halo density profile.
+Velocity variance measures the squared spread about the mean velocity.
+A particle moment is a sum or integral of a quantity over the distribution.
+
+Additional terms are defined in the [plain-language glossary](../docs/TERMS.md).
+
 These four movies follow the SIDM calculations in Figure 10 and the cold
 collisionless calculations in Figure 8. Native density profiles, centered
 radial velocity variance and particle moment histories supply the plotted

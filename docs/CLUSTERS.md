@@ -1,5 +1,14 @@
 # Run VENUS on a cluster
 
+A CPU is the computer’s general-purpose processor; a GPU is a graphics
+processor used for many simultaneous calculations. MPI (Message Passing
+Interface) lets running copies of a program exchange data. A thread is a
+worker within one such copy. WPIC means weighted particle-in-cell, where
+numerical particles carry mass weights. SphDSMC means spherical direct
+simulation Monte Carlo, a particle method that samples local encounters.
+
+Additional terms are defined in the [plain-language glossary](TERMS.md).
+
 A cluster supplies processors, a software environment, and a scheduler that
 reserves those processors for your job. VENUS uses the same physical inputs
 and output formats on a laptop and a cluster. The build selects CPU threads,

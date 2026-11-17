@@ -2,7 +2,7 @@
 
 ## CPU checks
 
-The CPU implementation passes 29 C++ numerical test executables, 117 Python
+The CPU implementation passes 29 C++ numerical test executables, 121 Python
 tests, and the supplied driver, restart, coordinate and scheduler-workflow
 checks. All 23 CPU examples reach their stated endpoints on macOS and IAS
 Linux. Of these, 22 perform finite evolution and the expanding exact-grid
@@ -43,6 +43,21 @@ material SIDM and relativistic output in both supported coordinate systems.
 The Newtonian grid, Schwarzschild and mapped Eddington--Finkelstein tutorial
 runs and their analysis commands pass. Generated density/slope movies are
 checked for legibility and physical labeling.
+
+The direct README commands reach their stated endpoints: nine CPU starting
+runs, one CPU continuation, the custom-distribution CPU example, and three
+single-GPU examples for collisionless gravity, subhalo encounters and material
+SIDM. The reversible Boltzmann--Poisson script and its analysis also pass.
+All documented analysis commands for these runs complete. The GPU
+commands include building each named target on an RTX 2080 Ti. The updated
+manual has resolved references and visually checked opening pages; Markdown
+links, section links and the main guide tables are checked.
+
+The plotting smoke test starts all 49 command-line plotting/analysis tools
+through `--help`. All twelve supplied figure pairs reproduce with identical
+PNG pixels and PDF content after removing the creation timestamp. All seven
+movie-rendering entry points export previews from supplied data. These checks
+exercise imports, command interfaces and small rendering operations.
 
 All 109 shell and Slurm scripts pass syntax checks. The shipped JavaScript
 utility passes its syntax check with IAS Node 24.13.0. The cluster guide

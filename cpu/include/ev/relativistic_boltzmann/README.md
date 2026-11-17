@@ -1,5 +1,16 @@
 # Relativistic material collisions
 
+This is the C++ library reference. An adapter connects the collision routines
+to a coordinate-specific trajectory solver. Elastic encounters preserve local
+energy and momentum; isotropic scattering has equal probability per solid
+angle. A cross section is an effective interaction area. Schwarzschild (SC)
+and ingoing Eddington--Finkelstein (EF) are relativistic coordinates. A
+constraint is an equation the spacetime geometry and matter must satisfy.
+See the [physical explanation](../../../../docs/relativistic_boltzmann.md)
+for the rate equations and the meaning of the local frame.
+
+Additional terms are defined in the [plain-language glossary](../../../../docs/TERMS.md).
+
 This module applies local elastic material collisions to spherical relativistic
 particle distributions. It provides adapters for Schwarzschild and advanced-EF
 coordinates. Each physical material particle has rest mass m_chi. A statistical
