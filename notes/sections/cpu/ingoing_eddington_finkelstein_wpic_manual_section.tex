@@ -290,10 +290,10 @@ there is no Maxwell current or stress, Coulomb mass term, or Lorentz force.
 The letter \(F=A^{-1}\) used for the coordinate map is unrelated to the
 electromagnetic tensor \({\cal F}_{ab}\).
 
-Every spherical particle carries an angular-momentum magnitude \(L\), but its
-angular direction is populated isotropically.  The total angular-momentum
+Every spherical particle carries an angular momentum magnitude \(L\), but its
+angular direction is populated isotropically.  The total angular momentum
 vector \(\boldsymbol J\) and the component \(T_{v\phi}\) vanish.  A black hole
-formed by this module therefore has zero spin; angular-momentum threshold
+formed by this module therefore has zero spin; angular momentum threshold
 below refers to the particle centrifugal barrier, not Kerr spin.
 
 The continuum equations follow the neutral systems described by East and by
@@ -437,7 +437,7 @@ The reusable library supports a regular first slice with no point mass:
  Y(r)=\int_0^r2\pi b(r')r'^2[T_{rr}(r')+S(r')]\,\dd r'. \tag{IEF35}
 \]
 This outward solve infers the Arnowitt--Deser--Misner (ADM) mass.  After that,
-or whenever a black-hole interior is represented, the correct formulation is
+or whenever a black hole interior is represented, the correct formulation is
 the fixed-mass inward solve
 \[
  Y(r)=M_{\rm ADM}
@@ -462,7 +462,7 @@ The distribution function
 \]
 is a scalar on the future unit-mass shell.  Its arguments are advanced time
 \(v\), areal radius \(r\), the covariant canonical radial momentum
-\(P:=p_r>0\), and the conserved squared angular-momentum magnitude \(L^2\).
+\(P:=p_r>0\), and the conserved squared angular momentum magnitude \(L^2\).
 VENUS stores \(\eta:=L^2/2\) and uses
 \[
  \chi(r,\eta):=1+\frac{2\eta}{r^2}.                       \tag{IEF9}
@@ -707,7 +707,7 @@ identifier with that authenticated realization before opening output files.
 An accepted-step audit sidecar is trusted only when its exact
 step number and advanced time match the restart.  A missing, stale, or
 old-schema sidecar does not invent evidence: evolution may continue, but
-black-hole certification remains disabled until a complete new audit exists.
+black hole certification remains disabled until a complete new audit exists.
 Here a sidecar is a separate atomic evidence file tied to the checkpoint; a
 run summary is the machine-readable record of a completed run, and a
 certificate is a separately authenticated record that promotes a scientific
@@ -918,7 +918,7 @@ and therefore
 \]
 Time reversal here means more than replacing the printed time coordinate by
 its negative: every radial velocity or momentum is reversed as well, while
-positions, angular-momentum magnitudes, and invariant weights are retained.
+positions, angular momentum magnitudes, and invariant weights are retained.
 Changing \(t\) without changing \(w\) would not construct the incoming
 solution.
 VENUS does not use that operation to relabel an outgoing production run as its
@@ -2191,7 +2191,7 @@ The present implementation starts with shell support away from \(r=0\).
 Excision, when enabled, removes interior markers only after the local trapped
 region satisfies the conditions above.  When \code{using_origin_parity_inner(params)} is true,
 \code{make_field_grid} deliberately constructs a linear mesh with a true
-\(r=0\) face even if the configured phase-space \code{r_min} is positive;
+\(r=0\) face even if the configured phase space \code{r_min} is positive;
 otherwise it retains the configured finite-radius inner face.  This is a mesh
 convention. EF characteristics follow their ingoing-null equations through
 positive radii. An attempted inner crossing rejects the trial state, and
@@ -2343,7 +2343,7 @@ shell test their respective initial and boundary conditions.
 The threshold family starts from a neutral equilibrium with finite radial
 support.  Its continuum solver is
 \path{cpu/include/ev/weighted_einstein_vlasov_static_shell.hpp}, in namespace
-\code{ev::static_einstein_vlasov}.  The distribution uses a single angular-momentum magnitude and a cutoff
+\code{ev::static_einstein_vlasov}.  The distribution uses a single angular momentum magnitude and a cutoff
 exponent \(1\le k\le8\). The default \(k=1\) is the neutral shell in
 East's static-data construction; \(k>1\) makes the distribution approach
 its support edge more smoothly:
@@ -2354,7 +2354,7 @@ its support edge more smoothly:
                   \delta(L-L_0),
  \qquad C>0,\quad L_0>0,\quad0<E_0<1.               \tag{IEF-S2}
 \end{align}
-Here \(L_0\) is the fixed angular-momentum magnitude in the shell, \(C\) is the positive
+Here \(L_0\) is the fixed angular momentum magnitude in the shell, \(C\) is the positive
 distribution amplitude, \(E_0\) is the cutoff energy, and \(\delta\) is the
 Dirac delta distribution.  The subscript \(+\) means
 \(x_+=\max(x,0)\).  The energy here is the
@@ -2362,12 +2362,12 @@ dimensionless particle Killing energy per unit rest mass in the static
 asymptotically normalized polar metric.  It is not the Newtonian diagnostic
 energy and is distinct from the frozen-metric proxy in (IEF58c).
 In ordinary language, every particle in the continuum shell has the same
-angular-momentum magnitude \(L_0\). The factor \((1-E/E_0)^k\)
+angular momentum magnitude \(L_0\). The factor \((1-E/E_0)^k\)
 sets the fall toward zero at the energy cutoff \(E_0\), and the distribution
 has support at \(E<E_0\). The exponent \(k\) stays fixed during the
 continuum mass rescaling and each comparison of the same solution in both coordinates.  The delta function in
 (IEF-S2) expresses the single value \(L=L_0\), rather than a finite
-angular-momentum width.
+angular momentum width.
 
 Set
 \begin{align}
@@ -2633,11 +2633,11 @@ Every production run should record at least:
 \end{itemize}
 No arbitrary floor should replace \(a\), \(b\), or \(P\) in the equations.
 Loss of \(b>0\), \(P>0\), finite fields, or fixed-\(M\) bookkeeping is a failed
-evolution, not a physical black-hole signal.
+evolution, not a physical black hole signal.
 
-\paragraph{Fail-closed black-hole candidate and certificate.}
+\paragraph{Fail-closed black hole candidate and certificate.}
 An apparent-horizon flag by itself is deliberately not the final
-black-hole classification.  Let \(v_H\) be the first saved advanced time at
+black hole classification.  Let \(v_H\) be the first saved advanced time at
 which the outer apparent horizon is found, let \(v_f\) be the last saved
 advanced time, and let \(M_f=M_{\rm family}\) be the fixed-family ADM mass.
 Define
@@ -2691,7 +2691,7 @@ advanced time.  Sidecar version 2 includes the cumulative local metric check
 other extrema; its weaker excision record marks the accumulated audit
 incomplete.  A resume accepts the sidecar only when those two values match
 the restart.  A missing, stale, or old-format sidecar marks the audit
-incomplete and makes black-hole promotion impossible.  Despite the sidecar's
+incomplete and makes black hole promotion impossible.  Despite the sidecar's
 name, these extrema cover the whole EF evolution, not merely the saved
 post-horizon rows; this is what establishes that positivity and finite fields
 were maintained \emph{through} horizon formation.
@@ -2807,7 +2807,7 @@ Command-line choices may make these bounds tighter but not looser.  Missing
 authentication, a missing independent
 variation, changed physical provenance, a repeat that is not itself a
 candidate, or failure of either spread test leaves the primary run a candidate
-only.  The final angular-momentum bracket accepts
+only.  The final angular momentum bracket accepts
 \path{black_hole_certified}, never a bare candidate; a candidate plus a halo
 is reported as
 \path{inconclusive_due_to_uncertified_black_hole_candidate}.
@@ -3158,7 +3158,7 @@ full moments, or convergence evidence makes the result
 
 There is no universal critical angular momentum for neutral
 Einstein--Vlasov collapse.  It depends on the rest-mass profile, radial
-momentum distribution, angular-momentum distribution, compactness, and on
+momentum distribution, angular momentum distribution, compactness, and on
 which quantity is held fixed as angular momentum changes.  East's value
 \(L_c/M\simeq0.67\) belongs to his charged (\(q_0=1.25\)), near-extremal family and
 must not be used as the expected neutral VENUS answer.
@@ -3179,7 +3179,7 @@ Introduce only the deterministic angular scale \(s_L>0\),
  L_p(s_L)=s_LL_0,\qquad
  \eta_p(s_L)=\frac{s_L^2L_0^2}{2}.                 \tag{IEF59}
 \]
-For this delta-angular-momentum shell, all markers have the same magnitude at
+For this delta-angular momentum shell, all markers have the same magnitude at
 a fixed \(s_L\), while their isotropic angular directions still give zero net
 spacetime angular momentum.  The driver interface is therefore
 \codesource{Angular-family production interface}{\path{cpu/src/drivers/einstein_vlasov_wpic.cpp}}{Authenticated angular rescaling at fixed target ADM mass}
@@ -3196,7 +3196,7 @@ provenance.
 Changing \(L\) at fixed rest weight changes particle energy and hence the
 gravitating mass.  To isolate the centrifugal control, VENUS applies (IEF59),
 then multiplies all invariant marker weights by one common positive
-\(\alpha(s_L)\), leaves their phase-space locations and relative weights
+\(\alpha(s_L)\), leaves their phase space locations and relative weights
 unchanged, solves the Schwarzschild radial constraint, and uses bracketed
 bisection to impose
 \[
@@ -3215,7 +3215,7 @@ For an initially bound family the centrifugal barrier makes a virialized or
 long-lived halo the expected sufficiently high-\(L\) outcome, whereas reducing
 \(L\) favors collapse.  This is the physical ordering to test, not a label to
 impose.  A scan that finds an unbound/dispersing high-\(L\) endpoint has not
-measured the requested black-hole--halo threshold and must be redesigned or
+measured the requested black hole--halo threshold and must be redesigned or
 reported as such.
 
 \paragraph{Preflight before long jobs.}
@@ -3244,7 +3244,7 @@ following:
 \end{enumerate}
 
 First perform a coarse logarithmic or monotone scan to find one intrinsic
-black-hole candidate at low \(s_L\) and one genuinely virialized, positively
+black hole candidate at low \(s_L\) and one genuinely virialized, positively
 bound halo case at high \(s_L\).  The candidate may guide the scout but does
 not yet close a scientific bracket.  Monotonicity must be checked from the
 outcomes rather than assumed.  Only then bisect the same marker realization,
@@ -3257,7 +3257,7 @@ and certify the low endpoint before reporting the final bracket:
 \item classify a virialized halo only when the global family diagnostic has
       \(f_{\rm bind}>0\), bound Lagrangian radii and time-averaged profiles
       remain stable for several dynamical times; missing or nonpositive
-      \(f_{\rm bind}\) fails this halo gate, while black-hole classification
+      \(f_{\rm bind}\) fails this halo gate, while black hole classification
       remains independent of it;
 \item distinguish a dispersing high-\(L\) cloud from a virialized halo using
       escaped rest weight and growing Lagrangian radii;
@@ -3281,16 +3281,16 @@ extractor, a separate scratch copy with reversed radial momenta is evolved
 forward only to supply the negative-\(\tau\) part of the donor history, as
 explained in (IEF45c-1).  The physical SC evolution is never replaced by that
 scratch copy.  If a paired long SC run is retained, it may support the halo
-diagnosis while \(a>0\), but the EF run alone decides post-horizon black-hole
+diagnosis while \(a>0\), but the EF run alone decides post-horizon black hole
 candidate evidence; the independent excision repeats decide whether that
 candidate is certified.
 
 An initial multi-\(s_L\) scout is only a search for a possible low-\(L\)
-black-hole/high-\(L\) halo bracket.  It is not a coordinate-equivalence
+black hole/high-\(L\) halo bracket.  It is not a coordinate-equivalence
 certificate, even though every EF point has an authenticated donor map.  The
 separate \(2\times2\) parity workflow must already have issued the strict
 certificate that authorizes the scout.  A scout bracket is likewise not a
-final threshold until its black-hole endpoint has the separate authenticated
+final threshold until its black hole endpoint has the separate authenticated
 excision sensitivity certificate and nearby points have been repeated at
 finer resolution and with another quiet-PIC realization.  A bare
 \path{black_hole_candidate} never closes the bracket.

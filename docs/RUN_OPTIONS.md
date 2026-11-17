@@ -1,30 +1,20 @@
 # Run options
 
-For a first calculation, use the [CPU guide](../cpu/README.md) or
-[GPU guide](../gpu/README.md). This is the detailed lookup reference. An
-option is a setting typed after a program name; a parser reads those settings.
-INI files store named settings as plain text. A runtime parser is the part
-of the program that reads them when it starts. VP, BP and EV denote the
-Vlasov--Poisson, Boltzmann--Poisson and Einstein--Vlasov equations. WPIC
-uses particles with mass weights; SIDM means self-interacting dark matter.
-
-Additional terms are defined in the [plain-language glossary](TERMS.md).
-
 Use the exact executable name from the [README module tables](../README.md#choose-a-module).
 The sections below give every recognized long-option name in the shared
 runtime parsers, followed by the task-specific executable help text.
 
 An executable selects one equation and encounter family. Choose options
-belonging to that family: collisionless VP uses zero encounter strength,
+belonging to that family: collisionless Vlasov--Poisson (VP) uses zero encounter strength,
 subhalo tasks use subhalo controls, and material tasks use their selected
-SIDM law. Static/expanding and coordinate restrictions are part of that task.
-The shared parser index contains controls for several tasks; their scope is
+self-interacting dark matter (SIDM) law. Static/expanding and coordinate restrictions are part of that task.
+The shared parser index contains controls for several tasks. Their scope is
 set out here and in the [module catalogue](../notes/SOLVER_MODULES.md).
 
 `Flag` means write the option by itself. An integer, number, path or text
 option takes its value as the next command-line argument. `true|false` options
-take that explicit value. The parameter name identifies its stored control;
-the executable help and [manual](venus_manual.pdf) provide physical definitions,
+take that explicit value. The parameter name identifies its stored control.
+The executable help and [manual](venus_manual.pdf) provide physical definitions,
 allowed values and numerical conditions. A numerical rate or cross section
 uses the physical/code-unit convention of its selected module.
 
@@ -32,11 +22,11 @@ uses the physical/code-unit convention of its selected module.
 
 | Task | Option section | Additional physical restrictions |
 |---|---|---|
-| CPU Eulerian EV/VP, grid BP and SphDSMC | [Grid and SphDSMC](#cpu-grid-and-sphdsmc) | Named program fixes equation/operator; its INI is the complete input record |
-| CPU static/expanding VP and subhalo WPIC | [VP/subhalo WPIC](#cpu-vlasov--poisson-and-subhalo-wpic) | Static VP fixes zero expansion and collisions; subhalo task requires positive strength |
+| CPU Eulerian EV/VP, grid Boltzmann--Poisson (BP) and spherical direct simulation Monte Carlo (SphDSMC) | [Grid and SphDSMC](#cpu-grid-and-sphdsmc) | Named program fixes equation/operator; its INI is the complete input record |
+| CPU static/expanding VP and subhalo weighted particle-in-cell (WPIC) | [VP/subhalo WPIC](#cpu-vlasov--poisson-and-subhalo-wpic) | Static VP fixes zero expansion and collisions; subhalo task requires positive strength |
 | CPU material SIDM WPIC | [Material SIDM](#cpu-material-sidm-wpic) | Constant task fixes `constant`; velocity-dependent task selects `powerlaw` or `yukawa_born` |
-| CPU canonical orbit-phase BP | [Canonical orbit-phase](#cpu-canonical-orbit-phase-boltzmann--poisson) | Native source grid restart and orbit-atlas controls; `--evolution-time` is a duration |
-| CPU low/compact EV WPIC | [EV WPIC](#cpu-einstein--vlasov-wpic) | Low task uses `--low-*`; compact task uses `--high-*` and coordinate controls |
+| CPU canonical orbit phase BP | [Canonical orbit phase](#cpu-canonical-orbit-phase-boltzmann--poisson) | Native source grid restart and orbit-atlas controls; `--evolution-time` is a duration |
+| CPU low/compact Einstein--Vlasov (EV) WPIC | [EV WPIC](#cpu-einstein--vlasov-wpic) | Low task uses `--low-*`; compact task uses `--high-*` and coordinate controls |
 | GPU VP/subhalo/material WPIC | [GPU WPIC](#gpu-wpic) | Task-specific help separates collisionless, subhalo and each material law |
 
 For a new grid profile, choose an analytic construction in its INI or use
@@ -47,7 +37,7 @@ envelope in the INI: for example set `gaussian_density_shell=false` and
 
 CPU/GPU WPIC binary inputs retain their particles and schema-specific
 companion files. The Gaussian particle generator accepts `--particles` and
-`--output-directory`; changing a native particle distribution uses that
+`--output-directory`. Changing a native particle distribution uses that
 format's generation/import interface. Eulerian `EVICRWL1` files and WPIC
 particle files are different representations.
 
@@ -407,7 +397,7 @@ Runtime parser: [`cpu/src/drivers/sidm_wpic.cpp`](../cpu/src/drivers/sidm_wpic.c
 | `--yukawa-mphi` | Number | `yukawa_mphi` |
 | `-h` | Flag | Interface control |
 
-## CPU canonical orbit-phase Boltzmann--Poisson
+## CPU canonical orbit phase Boltzmann--Poisson
 
 Runtime parser: [`cpu/src/apps/boltzmann_poisson/canonical_orbit.cpp`](../cpu/src/apps/boltzmann_poisson/canonical_orbit.cpp).
 

@@ -1,19 +1,8 @@
 # Run VENUS on a cluster
 
-A CPU is the computer’s general-purpose processor; a GPU is a graphics
-processor used for many simultaneous calculations. MPI (Message Passing
-Interface) lets running copies of a program exchange data. A thread is a
-worker within one such copy. WPIC means weighted particle-in-cell, where
-numerical particles carry mass weights. SphDSMC means spherical direct
-simulation Monte Carlo, a particle method that samples local encounters.
-
-Additional terms are defined in the [plain-language glossary](TERMS.md).
-
-A cluster supplies processors, a software environment, and a scheduler that
-reserves those processors for your job. VENUS uses the same physical inputs
-and output formats on a laptop and a cluster. The build selects CPU threads,
-MPI processes, or NVIDIA GPUs. The job script requests the corresponding
-resources.
+VENUS uses the same physical inputs and output formats on laptops and
+clusters. Match the build, thread count, MPI layout and GPU architecture to
+the selected solver and requested resources.
 
 Start with the [CPU guide](../cpu/README.md) or [GPU guide](../gpu/README.md)
 to understand your first calculation. This page takes that calculation onto
@@ -24,7 +13,7 @@ to another cluster. All commands begin in the repository root.
 
 | Calculation | Slurm resources | Build |
 |---|---|---|
-| CPU grid, SphDSMC or WPIC in one process | One task, several CPUs per task | `cpu.sh`; optionally `cpu_openmp.sh` for grid/SphDSMC |
+| CPU grid, spherical direct simulation Monte Carlo (SphDSMC) or weighted particle-in-cell (WPIC) in one process | One task, several CPUs per task | `cpu.sh`; optionally `cpu_openmp.sh` for grid/SphDSMC |
 | Distributed collisionless CPU grid | Several tasks, CPUs per task for threads | `cpu_mpi.sh` |
 | One NVIDIA GPU | One task and one GPU | `gpu.sh` |
 | Distributed supported GPU task | One task per GPU, at least two GPUs | `gpu_mpi.sh` |
@@ -38,8 +27,8 @@ speeds up methods with an MPI implementation.
 CPU MPI supports collisionless Einstein--Vlasov and Vlasov--Poisson grid
 methods. CPU WPIC, SphDSMC and collisional grid evolution use one process
 with shared-memory threads. GPU MPI supports expanding collisionless and
-subhalo runs, and static material SIDM runs. The [module tables](../notes/SOLVER_MODULES.md)
-identify these choices. Current GPU solvers use NVIDIA CUDA; CPU solvers
+subhalo runs, and static material self-interacting dark matter (SIDM) runs. The [module tables](../notes/SOLVER_MODULES.md)
+identify these choices. Current GPU solvers use NVIDIA CUDA. CPU solvers
 provide the path on systems with other GPU vendors.
 
 ## 2. Load software, then build
@@ -66,7 +55,7 @@ export PYTHON="$PWD/.venv/bin/python"
 Use a Python installation with the required packages if your site already
 provides one. Store the checkout and run outputs on a shared project or
 scratch filesystem visible to the allocated nodes. Cluster scratch may have
-a retention limit; copy the inputs, outputs and command records you need to
+a retention limit. Copy the inputs, outputs and command records you need to
 permanent storage.
 
 ### IAS Typhon: CPU threads and MPI
@@ -114,7 +103,7 @@ GPU_ARCH=80 bash scripts/build/gpu_mpi.sh
 
 The helper adds `cudatoolkit/12.4` to the IAS compiler/MPI environment.
 `GPU_ARCH=80` generates code for A100. The compiler `nvcc` belongs to the
-CUDA toolkit; an allocated GPU node may supply the runtime and driver while
+CUDA toolkit. An allocated GPU node may supply the runtime and driver while
 having a different toolkit installation. Build where the selected toolkit is
 available, then run those binaries in the GPU allocation. Compilation on a
 login host should follow your site's policy.
@@ -134,7 +123,7 @@ to choose the GPUs rather than setting `CUDA_VISIBLE_DEVICES` yourself.
 
 The supplied environment selects GCC 11.2, NVIDIA HPC-X/CUDA 12.6,
 CMake 3.27.4 and Python 3.11. HPC-X supplies the MPI library. Its compiler
-wrapper defaults to NVIDIA `nvc++`; the helper sets `OMPI_CXX` to the selected
+wrapper defaults to NVIDIA `nvc++`. The helper sets `OMPI_CXX` to the selected
 GCC compiler so CPU MPI builds use the same compiler and flags as the other
 CPU targets. The helper uses
 these module names:
@@ -168,20 +157,20 @@ bash scripts/slurm/sites/submit.sh symmetry-gpu gpu_sidm_power_law_mpi \
   -- --output output/symmetry_gpu_mpi
 ```
 
-CPU examples select `debugq`; these GPU examples select `gpudebugq`.
+CPU examples select `debugq`. These GPU examples select `gpudebugq`.
 Use `mpiexec` inside the allocation with this HPC-X configuration. The
 supplied MPI templates default to `mpiexec`. Each template lets another
 site's compatible installation select `VENUS_MPI_LAUNCHER=srun` explicitly.
 
 Symmetry also provides H200 partitions. Build for `GPU_ARCH=90`, then use
 `symmetry-h200` to select `h200debugq`. Keep an H200 build separate from an
-RTX 2080 Ti build. Release checks cover RTX 2080 Ti and A100; the H200
+RTX 2080 Ti build. Release checks cover RTX 2080 Ti and A100. The H200
 resource recipe needs validation on the selected H200 allocation.
 
 ## 3. Submit, inspect, resume and analyze
 
 The site helper is a small layer over the same indexed example scripts used
-by the portable submission helper. Options before `--` go to Slurm; options
+by the portable submission helper. Options before `--` go to Slurm. Options
 after it go to the example. Choose fresh output folders. If only the MPI GPU
 build is installed, its directory also contains the single-GPU programs:
 
@@ -232,7 +221,7 @@ production scheduler wrapper.
 | Filesystem | A writable shared run directory and enough space for profiles/checkpoints |
 
 Load the site's modules and set `CXX`, `MPICXX`, `CUDACXX`, `PYTHON`,
-`GPU_ARCH` and `BUILD_JOBS` as needed. The site helpers are optional; portable
+`GPU_ARCH` and `BUILD_JOBS` as needed. The site helpers are optional. Portable
 build/run scripts use those choices directly. For example:
 
 ```bash
@@ -256,10 +245,10 @@ The `-B` option forces compilation of that target.
 A build directory remembers its compiler, MPI and CUDA choices in the CMake
 cache. Use a new build directory after changing that toolchain. For example,
 `make gpu-mpi BUILD_DIR=build/h200 GPU_ARCH=90` builds under
-`build/h200/gpu-mpi`; pass that directory through `--gpu-build` when running.
+`build/h200/gpu-mpi`. Pass that directory through `--gpu-build` when running.
 
 The supplied scripts target Slurm. On a PBS/LSF site, retain the build,
-example inputs, and `scripts/run_example.py` command; translate the resource
+example inputs, and `scripts/run_example.py` command. Translate the resource
 header and launcher to that scheduler's documented form. MPI rank ownership,
 restart format and physical model remain those described in the guides.
 

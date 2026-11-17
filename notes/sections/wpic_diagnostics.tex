@@ -251,10 +251,10 @@ python3 cpu/tools/plot_subhalo_virial_1.py --run-dir RUN \
 The tool \path{cpu/tools/plot_initial.py} reads the state actually written
 by a zero-time grid-solver setup. It follows the model name in the metadata
 when selecting relativistic metric panels. A comparison of initial conditions
-therefore uses the same density, velocity moments, and phase-space output
+therefore uses the same density, velocity moments, and phase space output
 that the chosen solver will evolve.
 
-\codesource{Initial-state visualization}{\path{cpu/tools/plot_initial.py}}{Inspect the grid solver's saved initial profiles and phase-space distribution}
+\codesource{Initial-state visualization}{\path{cpu/tools/plot_initial.py}}{Inspect the grid solver's saved initial profiles and phase space distribution}
 \begin{lstlisting}[language=bash]
 python3 cpu/tools/plot_initial.py --input-dir SETUP_OUTPUT \
   --output-dir output/initial_state
@@ -467,6 +467,6 @@ A weighted histogram then gives \(dM/d\epsilon\), retaining the full mass
 at both negative and positive orbital energies. In an expanding run
 \(\Phi\) is the peculiar potential and \(\epsilon_p\) is an instantaneous
 halo binding diagnostic. Subsequent motion and the boundary budget determine
-escape. An energy-dependent phase-space density additionally requires the
+escape. An energy-dependent phase space density additionally requires the
 phase volume of each energy bin. The reconstruction and these conventions
 are described in \path{gpu/docs/PHASE_SPACE_SNAPSHOTS.md}.

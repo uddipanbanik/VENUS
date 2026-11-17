@@ -1,19 +1,10 @@
 # Cluster and parallel execution
 
-A process is one running copy of a program. Threads share its memory.
-OpenMP (Open Multi-Processing) and C++ `std::thread` provide CPU threads;
-MPI (Message Passing Interface) exchanges data between processes. A rank is
-one MPI process. Slurm is the job scheduler. Decomposition means dividing
-the work: an angular-momentum slab is a consecutive range of `L` cells.
-Here `L` is angular momentum per unit mass.
-
-Additional terms are defined in the [plain-language glossary](../../docs/TERMS.md).
-
 Developed by Uddipan Banik and Frank van den Bosch
 
 Start with [Run VENUS on a cluster](../../docs/CLUSTERS.md) for the step-by-step
 IAS Typhon/Apollo and Perimeter Symmetry recipes. This page maps the VENUS CPU task executables onto OpenMP,
-`std::thread`, MPI, and Slurm resources. Physics and parameter definitions
+`std::thread`, Message Passing Interface (MPI), and Slurm resources. Physics and parameter definitions
 are in the [unified manual](../../docs/venus_manual.pdf) and
 [module catalogue](../../notes/SOLVER_MODULES.md).
 
@@ -25,11 +16,11 @@ are in the [unified manual](../../docs/venus_manual.pdf) and
 | Eulerian collisionless Vlasov--Poisson | `_mpi` | one or more `L` slabs | one or more OpenMP threads |
 | Eulerian EV/VP portable | none | one process | `std::thread` |
 | Grid Boltzmann--Poisson collisions | `_openmp` or none | exactly one | OpenMP or `std::thread` |
-| SphDSMC | `_openmp` or none | exactly one | OpenMP or `std::thread` |
-| CPU WPIC | none | exactly one | shared-memory threads where supported |
+| spherical direct simulation Monte Carlo (SphDSMC) | `_openmp` or none | exactly one | OpenMP or `std::thread` |
+| CPU weighted particle-in-cell (WPIC) | none | exactly one | shared-memory threads where supported |
 
 CPU collision calculations use one rank, which owns the coefficients,
-angular-momentum boundary fluxes, random sequence and persistent collision
+angular momentum boundary fluxes, random sequence and persistent collision
 shells. Threads within that rank divide the work. The launcher checks this
 rank requirement before beginning the calculation.
 
@@ -63,27 +54,27 @@ task name so a mismatched physical model fails before output is created.
 The distribution is stored as `f(r,w,L)`. The global `L` grid is divided
 into contiguous slabs:
 
-1. every rank keeps the complete `r` and `w` grids;
+1. every rank keeps the complete `r` and `w` grids.
 2. each rank owns only its local `L` values, quadrature weights, and
-   `f(r,w,L_local)` slab;
+   `f(r,w,L_local)` slab.
 3. each rank integrates local density, pressure/current, and other radial
-   moments;
-4. `MPI_Allreduce` forms the global radial arrays;
-5. all ranks solve or receive the same radial metric/Poisson field; and
+   moments.
+4. `MPI_Allreduce` forms the global radial arrays.
+5. all ranks solve or receive the same radial metric/Poisson field. And
 6. transport proceeds independently on local `L` slabs until the next
    moment reduction.
 
-This layout keeps rank-local phase-space storage contiguous and communicates
+This layout keeps rank-local phase space storage contiguous and communicates
 radial arrays rather than the full distribution. The solver rejects more
-ranks than angular-momentum cells. Distributed restarts record the rank
-layout; restart with the recorded rank count unless the selected reader
+ranks than angular momentum cells. Distributed restarts record the rank
+layout. Restart with the recorded rank count unless the selected reader
 explicitly documents repartitioning.
 
 The MPI path supports:
 
-- Eulerian Einstein--Vlasov;
-- static Eulerian Vlasov--Poisson;
-- expanding Eulerian Vlasov--Poisson; and
+- Eulerian Einstein--Vlasov.
+- static Eulerian Vlasov--Poisson.
+- expanding Eulerian Vlasov--Poisson. And
 - the collisionless VP equation represented by a BP configuration only when
   `bp_collision_operator = none`.
 
@@ -91,20 +82,20 @@ The MPI path supports:
 
 The loop wrapper in `include/ev/parallel.hpp` selects OpenMP when compiled
 with `-fopenmp` and otherwise uses `std::thread`. Work is assigned so that
-each output cell or shell has one writer; reductions use thread-local partial
+each output cell or shell has one writer. Reductions use thread-local partial
 sums.
 
 Threaded work includes:
 
 - EV/VP moment integrals, timestep scans, advection, projections, field
-  diagnostics, and adaptive velocity-support scans;
-- VP finite-volume and semi-Lagrangian transport, Hamiltonian tables, and
-  boundary/escape accounting;
+  diagnostics, and adaptive velocity-support scans.
+- VP finite volume and semi-Lagrangian transport, Hamiltonian tables, and
+  boundary/escape accounting.
 - BP bath/coefficient construction, conservative Fokker--Planck fluxes, RKL2
   stages, positivity repair, exact/reversible/sampled/streamed finite-angle
-  loops, and collision diagnostics;
+  loops, and collision diagnostics.
 - SphDSMC gravity, orbit retries, adaptive shell construction, and independent
-  no-time-counter collision shells; and
+  no-time-counter collision shells. And
 - WPIC orbit pushes and independent collision cells/shells.
 
 Some deterministic mesh-deposition steps remain serial in individual WPIC
@@ -119,9 +110,9 @@ and the shrinking local `L` slab remain efficient.
 
 For grid BP collisions, SphDSMC, and CPU WPIC:
 
-- request `--ntasks=1`;
-- set `--cpus-per-task` to the desired thread count;
-- export `OMP_NUM_THREADS` to the same value for an OpenMP binary; and
+- request `--ntasks=1`.
+- set `--cpus-per-task` to the desired thread count.
+- export `OMP_NUM_THREADS` to the same value for an OpenMP binary. And
 - measure memory use before increasing marker number or thread-private BP
   collision buffers.
 
@@ -142,14 +133,14 @@ ntasks_per_node * cpus_per_task <= physical cores per node
 
 The templates accept these overrides:
 
-- `VENUS_DIR`: CPU source directory;
-- `VENUS_RUN_ROOT`: parent of generated output directories;
-- `CONFIG`: INI parameter file;
-- `OUTPUT_DIR` and `RESTART_DIR`: explicit run locations;
-- `EXECUTABLE`: exact task-specific binary;
-- `VENUS_BUILD=0`: use an existing executable;
-- `VENUS_MAKE_JOBS`: build parallelism;
-- `VENUS_SKIP_MODULES=1`: retain the loaded toolchain; and
+- `VENUS_DIR`: CPU source directory.
+- `VENUS_RUN_ROOT`: parent of generated output directories.
+- `CONFIG`: INI parameter file.
+- `OUTPUT_DIR` and `RESTART_DIR`: explicit run locations.
+- `EXECUTABLE`: exact task-specific binary.
+- `VENUS_BUILD=0`: use an existing executable.
+- `VENUS_MAKE_JOBS`: build parallelism.
+- `VENUS_SKIP_MODULES=1`: retain the loaded toolchain. And
 - `VENUS_PURGE_MODULES=0`: do not purge preloaded modules.
 
 Relative configuration/output paths are resolved from the Slurm submission
@@ -197,7 +188,7 @@ scontrol show partition
 ```
 
 Edit or override partition, account, compiler, MPI, and CUDA/module names.
-The IAS templates provide placeholders for the GCC and Open MPI modules; the
+The IAS templates provide placeholders for the GCC and Open MPI modules. The
 IITK templates keep PARAM-specific names editable. Do not copy module names
 between clusters without checking ABI compatibility.
 
@@ -209,22 +200,22 @@ thread count with `--threads` when that option is supported.
 
 A restart-safe Slurm signal wrapper must:
 
-1. launch the runner in the background;
-2. trap `USR1` or `TERM`;
-3. forward the signal to the child process;
-4. wait for the child to finish its atomic checkpoint; and
+1. launch the runner in the background.
+2. trap `USR1` or `TERM`.
+3. forward the signal to the child process.
+4. wait for the child to finish its atomic checkpoint. And
 5. requeue only the documented administrative checkpoint status.
 
 The expanding WPIC runner distinguishes important terminal states:
 
-- status 97: collision event ordering/cadence cannot be represented safely;
+- status 97: collision event ordering/cadence cannot be represented safely.
 - status 98: the configured shell-width/mean-free-path locality limit is
-  crossed; and
+  crossed. And
 - status 99: an administrative walltime checkpoint was written.
 
 Statuses 97 and 98 require diagnosis of the recorded temporal or spatial
 limit before a continuation can be selected. A tighter collision cadence may also make a saved collision age
-inadmissible; resume from an earlier valid event boundary or begin a fresh
+inadmissible. Resume from an earlier valid event boundary or begin a fresh
 short run.
 
 ## Diagnostics for scaling and correctness
@@ -234,18 +225,18 @@ compiler flags, hardware, timestep/collision cadence, output frequency, and
 separate compute/I/O timings. Compare runs with the same physical and
 discretization parameters. Inspect:
 
-- global mass and energy budgets;
-- EV metric/compactness constraints;
-- phase-space boundary occupancy;
-- BP positivity repair and collision substeps;
-- collision acceptance/majorant diagnostics;
-- SphDSMC or WPIC shell-width/mean-free-path ratios; and
+- global mass and energy budgets.
+- EV metric/compactness constraints.
+- phase space boundary occupancy.
+- BP positivity repair and collision substeps.
+- collision acceptance/majorant diagnostics.
+- SphDSMC or WPIC shell-width/mean-free-path ratios. And
 - restart continuity at a common physical time.
 
 A speed comparison is meaningful only when the two runs apply the same
 physical operators and statistically equivalent collision work.
 
-## IAS Typhon EF production gate
+## IAS Typhon ingoing Eddington--Finkelstein (EF) production gate
 
 The horizon-penetrating WPIC calculation has a sequence of prerequisites. Use
 `scripts/slurm/submit_einstein_vlasov_wpic_parity.sh` first. Its exact
@@ -259,15 +250,15 @@ This gate is for the bound
 `--high-initial-condition energy_cutoff_shell` family. Before either launcher
 is used, local initialize-only and short dynamic tests must fix and validate:
 
-- the static continuum `(C, ell0, y_c)` and its positive binding;
-- one inward kick `(kappa,r_c)` held identical at every angular scale;
-- one target initial ADM mass and an even marker count;
+- the static continuum `(C, ell0, y_c)` and its positive binding.
+- one inward kick `(kappa,r_c)` held identical at every angular scale.
+- one target initial Arnowitt--Deser--Misner (ADM) mass and an even marker count.
 - a low-`L` EF endpoint with an apparent horizon and resolved post-horizon
-  continuation;
+  continuation.
 - a high-`L` endpoint with positive realized binding, small escape, and
-  sustained Jeans/radius/profile evidence for a halo;
+  sustained Jeans/radius/profile evidence for a halo.
 - an exact-face map worldtube `R_B`, full evolution boundary `R_E`, donor
-  duration, timestep, end time, cadence, and initial angular bracket; and
+  duration, timestep, end time, cadence, and initial angular bracket. And
 - successful TSC-support, vacuum-source, `b=1`, four-cell donor/crossing
   clearance, unique crossing, eikonal, analytic-extension, and artifact-hash
   preflight at the largest planned marker realization.
@@ -289,9 +280,9 @@ and scratch from that result.
 Three mass fields are distinct in every mapped run:
 
 - `fixed_family_adm_mass`: the Schwarzschild `tau=0` family normalization,
-  compared to the explicitly chosen target;
+  compared to the explicitly chosen target.
 - `null_slice_conserved_adm_mass`: the evolved donor/null-slice boundary
-  anchor, including numerical donor drift; and
+  anchor, including numerical donor drift. And
 - `initial_deposited_adm_mass`: the EF constraint mass reconstructed from the
   mapped markers at shifted runtime time `v_hat=0`.
 
@@ -319,5 +310,5 @@ two independent deterministic quiet-PIC realizations. The convergence builder
 must authenticate all four single-pair diagnostics before the strict fine
 certificate can pass. Once it does, the scan may coarse-bracket a low-`L`
 black hole and high-`L` halo and then bisect. Near-critical, nonmonotone, or
-insufficient-duration points remain `undetermined`; report a converged
+insufficient-duration points remain `undetermined`. Report a converged
 dimensionless `ell/M_ADM,target` interval, not an unsupported decimal.

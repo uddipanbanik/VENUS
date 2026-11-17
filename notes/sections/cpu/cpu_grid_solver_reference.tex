@@ -3,17 +3,17 @@
 
 The CPU implementation offers three complementary Eulerian descriptions of
 spherical kinetic evolution.  Each stores and transports the distribution in
-a different form and treats phase-space boundaries accordingly.  The choice
+a different form and treats phase space boundaries accordingly.  The choice
 therefore depends on the orbits, boundary fluxes, and collision processes that
 the calculation must resolve.
 
 Here \emph{Eulerian} means that the distribution is stored on a fixed
-phase-space mesh, rather than carried by individual moving markers.  An
+phase space mesh, rather than carried by individual moving markers.  An
 \emph{upwind} face flux takes its distribution value from the side of a cell
 face from which the characteristic flow arrives; the first-order rule uses
 the nearest stored value on that upstream side.
 
-The canonical family uses \(\eta=L^2/2\), the angular-momentum coordinate;
+The canonical family uses \(\eta=L^2/2\), the angular momentum coordinate;
 \(H=\Phi(r)+w^2/2+\eta/r^2\), the one-particle Hamiltonian in a frozen
 potential \(\Phi\); and \(\tau_{\rm orb}\in[0,1)\), the radial-orbit phase
 normalized by one radial period.  The subscript distinguishes this orbit
@@ -21,7 +21,7 @@ phase from the Schwarzschild time \(\tau\) used in the relativistic chapters.
 The canonical chapter denotes this normalized orbit phase by
 \(\zeta_{\rm orb}\).  In a relativistic context, \(\tau\) denotes
 Schwarzschild time.  The orbit atlas tabulates the represented bound orbit families.
-An \emph{open packet} is a continuous phase-space carrier for matter that the
+An \emph{open packet} is a continuous phase space carrier for matter that the
 bound atlas cannot currently represent, such as an unbound or otherwise
 unsupported orbit; VENUS retains and advances that matter instead of silently
 discarding it.
@@ -40,7 +40,7 @@ with first-order upwind radial and radial-velocity face fluxes.  The
 implementation includes reflecting, vacuum-outflow, and prescribed-inflow
 faces, threaded flux construction, and a multidimensional CFL limit. &
 The first-order stencil is diffusive near sharp orbit boundaries.  Long-time
-equilibria require mesh refinement in every occupied phase-space direction,
+equilibria require mesh refinement in every occupied phase space direction,
 and boundary fluxes must be included explicitly in mass and energy budgets. \\
 \addlinespace
 Grid semi-Lagrangian &
@@ -69,7 +69,7 @@ refresh cadence must all be refined together. \\
 For the finite-volume update, a cell \((i,j,k)\) loses the difference of its
 two radial-face fluxes and its two radial-velocity-face fluxes.  This is a
 conservative balance law: a reflecting face returns the appropriate
-velocity-space flux, while an outflow or prescribed-inflow face contributes
+velocity space flux, while an outflow or prescribed-inflow face contributes
 to the recorded boundary budget.  Adding the interior matter to those
 boundary transfers gives the conserved total.  This complete budget is the
 quantity to check after each step.

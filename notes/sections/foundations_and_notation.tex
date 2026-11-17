@@ -18,49 +18,40 @@ before small-angle approximations.  Semi-Lagrangian, discontinuous-Galerkin,
 canonical-orbit, and other methods whose validation is still developing are
 placed after the production modules.
 
-\subsection{Terms used throughout the manual}
+\subsection{Physical and numerical conventions}
 
-A \emph{kinetic description} follows matter in position and velocity together,
-called \emph{phase space}. A \emph{distribution function} records the amount
-of matter in that space. Its integrals give quantities such as density and
-momentum; these integrals are called \emph{moments}. A \emph{marker} is a
-numerical particle carrying a specified amount of represented mass.
-A \emph{collisionless} calculation follows the collective gravitational
-field. A \emph{collisional} calculation also changes the distribution through
-encounters. A \emph{cross section} is an effective interaction area used to
-calculate encounter rates.
+Collisionless relaxation redistributes orbits through the self-consistent
+mean field while preserving the distribution along characteristics.
+Collisional relaxation additionally redistributes momentum and energy through
+the selected encounter law. Vlasov--Poisson, Boltzmann--Poisson and
+Einstein--Vlasov denote the Newtonian collisionless, Newtonian collisional
+and relativistic collisionless systems, respectively. Material
+self-interacting dark matter (SIDM) and extended-subhalo encounters use
+distinct cross sections and conservation budgets.
 
-\emph{Vlasov--Poisson} couples collisionless motion to Newtonian gravity.
-\emph{Boltzmann--Poisson} adds an encounter term. \emph{Einstein--Vlasov}
-couples collisionless matter to relativistic gravity. The \emph{metric}
-describes spacetime distances and times; its \emph{constraints} are equations
-that matter and geometry must satisfy on a chosen time slice.
-Schwarzschild (SC) and ingoing Eddington--Finkelstein (EF) are coordinate
-choices; EF remains regular at a black hole horizon. A \emph{null slice}
-follows a lightlike surface. An \emph{eikonal map} solves the light-surface
-equation to compare coordinate descriptions at the same physical events.
-\emph{Excision} removes a central numerical region behind a causally checked
-inner boundary while accounting for its gravitational mass.
+In a Newtonian module, \(\rho\) is represented mass density and
+\(\rho_{\rm src}\) is the source density in Poisson's equation.
+An isolated static halo uses total density. An expanding module uses its
+stated density contrast or subtracts the prescribed homogeneous density
+\(\bar\rho\). The expansion rate is \(H=\dot a_{\rm H}/a_{\rm H}\), where
+\(a_{\rm H}\) is the cosmological scale factor and the dot is a physical-time
+derivative. Physical radial velocity is \(u=Hr+w\), with peculiar radial
+velocity \(w\) and radius \(r\). The gravitational potential is \(\Phi\).
+Marker mass \(m_p\) and invariant rest weight \(W_p\) follow the convention
+specified by the selected method.
 
-\emph{Discretization} replaces continuous quantities by values on particles
-or grid cells. A \emph{kernel} is a numerical routine, an \emph{operator} is
-a mathematical rule acting on the distribution, and a \emph{backend} is the
-selected implementation. \emph{Quadrature} means numerical integration over
-specified sample points. A \emph{convergence study} checks that improving
-resolution and timestep accuracy leaves the result stable. A \emph{diagnostic}
-is a quantity used to check or interpret a calculation. \emph{Locality} means
-that an encounter occurs at the same physical position; finite-cell pairing
-introduces a spatial approximation that needs checking.
+Relativistic chapters specify the distribution normalization and momentum
+measure on each time slice. Schwarzschild (SC) and ingoing
+Eddington--Finkelstein (EF) coordinates use different momentum variables
+and source measures. Their solved coordinate map identifies the same
+physical events. A coordinate comparison therefore checks both the metric
+and the transformed matter sources. The chapter notation distinguishes
+rest mass, enclosed gravitational mass and the conserved outer
+Arnowitt--Deser--Misner (ADM) mass.
 
-A \emph{build} translates source into an executable program. A \emph{process}
-is a running copy of that program; \emph{threads} share its memory. OpenMP
-(Open Multi-Processing) divides work between CPU threads. MPI (Message
-Passing Interface) exchanges data between processes, called \emph{ranks}.
-CUDA is NVIDIA's software system for GPU calculations. A \emph{checkpoint}
-saves simulation state for a \emph{restart}. An input \emph{contract} states
-the required file format and physical conventions; a \emph{sidecar} is a
-companion file recording them. The repository's \path{docs/TERMS.md} explains
-additional scientific, software and cluster terms.
+Each method chapter defines its additional coefficients and integration
+weights before their equations. The repository's \path{docs/TERMS.md}
+collects the numerical and physical conventions used across the guides.
 
 \subsection{Meaning of the maturity labels}
 
@@ -148,9 +139,9 @@ chapter uses \(s_{\rm orb}\) for a local, time-like coordinate along an
 orbit.  Angles on the unit sphere are \(\theta\) and \(\phi\), and
 \(\dd\Omega^2=\dd\theta^2+\sin^2\theta\,\dd\phi^2\).
 
-The distribution function \(f\) is phase-space density.  Its arguments depend
+The distribution function \(f\) is phase space density.  Its arguments depend
 on the module, but \(w\) normally denotes radial momentum or peculiar radial
-velocity, \(L=|\bm r\times\bm v|\) is angular-momentum magnitude, and
+velocity, \(L=|\bm r\times\bm v|\) is angular momentum magnitude, and
 \(\eta=L^2/2\) is the angular coordinate stored by many solvers.  A marker
 index is \(p\); radial, radial-momentum, and angular-grid indices are
 \(i,j,k\); and \(n\) labels a time level.  A half index such as \(i+1/2\)
@@ -168,10 +159,7 @@ equations; marker weights specify the represented matter.
 
 \subsection{Indices, derivatives, and operators}
 
-The differential \(\dd x\) means an infinitesimal change or integration
-measure.  A partial derivative is
-\(\partial_x=\partial/\partial x\); an ordinary derivative along a
-characteristic is written \(\dot x=\dd x/\dd t\) or with the time coordinate
+An ordinary derivative along a characteristic is written \(\dot x=\dd x/\dd t\) or with the time coordinate
 named explicitly.  A prime denotes the radial derivative only where that
 convention is stated.  The symbol \(\nabla_a\) is the spacetime covariant
 derivative: it differentiates tensors while accounting for the changing
@@ -232,10 +220,9 @@ the required numerical accuracy for that calculation.
       geometry, and the Tolman--Oppenheimer--Volkoff stellar-structure
       equations.
 \item[IC and I/O] initial condition, and input/output.
-\item[CPU, GPU, CUDA, OpenMP, and MPI] central processing unit; graphics
-      processing unit; NVIDIA's CUDA GPU-programming platform; the OpenMP
-      shared-memory programming model; and the Message Passing Interface
-      process-communication standard.
+\item[CUDA, OpenMP, and MPI] NVIDIA's GPU programming platform; the OpenMP
+      shared-memory model; and the Message Passing Interface used by
+      distributed solver tasks.
 \item[API and CLI] application programming interface and command-line
       interface.
 \item[CSV, JSON, SHA-256, PNG, and GIF] comma-separated-value table;
@@ -263,7 +250,7 @@ the required numerical accuracy for that calculation.
 \begin{description}
 \item[Characteristic.] A trajectory in phase space along which the
       collisionless distribution is carried.  It is the path of one ideal
-      phase-space point under the current gravitational field.
+      phase space point under the current gravitational field.
 \item[Grid, mesh, node, cell, and face.] A grid or mesh is a finite set of
       locations used to represent a continuous problem.  A node is a stored
       point, a cell is the interval or volume between neighboring faces, and a

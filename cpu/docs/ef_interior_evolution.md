@@ -1,17 +1,22 @@
-# Retaining the black-hole interior
+# Retaining the black hole interior
 
-Ingoing Eddington--Finkelstein (EF) coordinates allow trajectories to cross
-a black hole horizon regularly. An apparent horizon marks zero outward
-expansion of outgoing light on the chosen slice. Excision removes a deeper
-central numerical region behind a causally checked boundary. The metric
-coefficients `a` and `b` describe spacetime geometry; the equations below use
-`a=1-2m/r`, with enclosed mass `m`, areal radius `r`, and units `G=c=1`.
-Areal radius labels spheres of area `4πr²`. A trapped region has both future
-radial light families converging.
+Use areal radius $`r`$, enclosed gravitational mass $`m`$ and advanced time
+$`v`$, in $`G=c=1`$ units. The ingoing Eddington--Finkelstein (EF) metric is
+$`\mathrm ds^2=-ab^2\mathrm dv^2+2b\mathrm dv\mathrm dr+r^2\mathrm d\Omega^2`$,
+with $`a=1-2m/r`$, $`b>0`$ and the unit-sphere line element
+$`\mathrm d\Omega^2`$. The specific canonical radial momentum is $`P=p_r>0`$,
+and $`\eta=L^2/2`$ for specific angular momentum $`L`$. The excision-cap
+fraction is $`F`$. Outer radius $`r_{\max}`$ carries the conserved
+Arnowitt--Deser--Misner (ADM) mass $`M_{\mathrm{ADM}}`$.
 
-Additional terms are defined in the [plain-language glossary](../../docs/TERMS.md).
+For the observer-density formula, $`u^\alpha`$ is the prescribed observer’s
+four-velocity, $`p_\alpha`$ particle specific four-momentum, and
+$`E=-p_\alpha u^\alpha`$ its measured specific energy. Angular components are
+labeled $`\theta,\phi`$. In the corresponding text block, `dm` is represented
+rest weight, `shape_weight` its cell-assignment fraction, `shell_volume` the
+coordinate shell volume, and `rho_infall` the regular-observer density.
 
-The EF driver defaults to `--ef-excision-horizon-fraction 0.1`. At each
+The ingoing Eddington--Finkelstein (EF) driver defaults to `--ef-excision-horizon-fraction 0.1`. At each
 constraint solve it limits the excision radius to at most 10% of the outer
 apparent-horizon areal radius. It retains the existing negative-a threshold
 (`--ef-excision-a -0.01`) and outward cell buffer
@@ -22,19 +27,19 @@ inner cavity, excision waits until a qualifying trapped boundary exists.
 
 The apparent horizon is located by a=0. Excision places an inner numerical
 boundary deeper in the trapped region. Particles cross a=0 and remain active
-until reaching that boundary. Choosing fraction 1 permits a boundary up to the horizon radius;
-the same trapped-buffer conditions apply to every candidate.
+until reaching that boundary. Choosing fraction 1 permits a boundary up to the horizon radius.
+The same trapped-buffer conditions apply to every candidate.
 The fraction must satisfy 0<F<=1. A radius below the first available cell
-cannot produce an excision surface; resolution must be sufficient. The
+cannot produce an excision surface. Resolution must be sufficient. The
 production pair uses 2048 cells over r=0..48, giving about seven cells within
-the final cap r~0.17. This enables an interior diagnostic; it does not by
+the final cap r~0.17. This enables an interior diagnostic. It does not by
 itself establish convergence of the deepest cells.
 
-With excision enabled, the fixed ADM mass condition retains the gravitational
+With excision enabled, the fixed Arnowitt--Deser--Misner (ADM) mass condition retains the gravitational
 mass of the excised region. The metric extension inside the excision boundary
-serves the numerical scheme; density profiles use retained, resolved cells.
+serves the numerical scheme. Density profiles use retained, resolved cells.
 
-## Evolution through the black-hole interior
+## Evolution through the black hole interior
 
 Add `--ef-evolve-interior --expected-outcome any` to retain every interior marker.
 Each field stage continues to detect the apparent horizon, deposits all
@@ -101,7 +106,7 @@ the excised region. History output appends `active_marker_count`,
 
 `ef_interior_controls.txt` binds fresh checkpoints to the excision policy.
 Resume uses the same policy. Restart version 2 authenticates the excision
-mode; version-1 files denote enabled excision. The policy
+mode. Version-1 files denote enabled excision. The policy
 sidecar binds the radius cap, threshold, and buffer. Comparisons between
 enabled and disabled excision start from the same solved null initial slice.
 Appending to a CSV with an older header is also rejected.

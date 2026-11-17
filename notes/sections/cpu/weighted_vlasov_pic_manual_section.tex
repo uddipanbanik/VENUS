@@ -6,7 +6,7 @@ The task-specific weighted particle-in-cell (WPIC) runners are supported
 production implementations, but that status is not a blanket validation of a
 new physical regime.  Every scientific run still needs marker-count, radial-
 mesh, timestep, collision-cadence, collision-locality, and random-realization
-convergence.  Constant-cross-section material self-interacting-dark-matter
+convergence.  Constant-cross-section material self-interacting dark matter
 (SIDM) runs have the strongest benchmark path.  Velocity-dependent SIDM,
 unequal-weight adaptation, and subhalo capture remain research
 extensions until the problem-specific long-time and population-control tests
@@ -17,7 +17,7 @@ described below have passed.
 \textbf{Physics flow: weighted particle--mesh module}
 \par\smallskip
 \begin{tikzpicture}[node distance=0.22cm]
-\node[physicsflow] (wp1) {Sample persistent weighted markers from the initial spherical phase-space distribution};
+\node[physicsflow] (wp1) {Sample persistent weighted markers from the initial spherical phase space distribution};
 \node[physicsflow,below=of wp1] (wp2) {Deposit every active marker's represented mass onto the radial gravity mesh};
 \node[physicsflow,below=of wp2] (wp3) {Solve the spherical Poisson equation to obtain the gravitational field};
 \node[physicsflow,below=of wp3] (wp4) {Apply a half gravitational kick and move the markers along their collisionless trajectories};
@@ -39,7 +39,7 @@ described below have passed.
 \label{sec:wpic-continuum}
 
 The weighted particle--mesh module represents Vlasov--Poisson and
-Boltzmann--Poisson evolution with moving phase-space markers.  Let
+Boltzmann--Poisson evolution with moving phase space markers.  Let
 \(f(t,r,w,\eta)\) be the mass distribution function, \(r\) physical radius,
 \(w\) radial peculiar velocity, and \(\eta=L^2/2\), where \(L\) is the
 magnitude of specific angular momentum.  Integrating over the spatial angles
@@ -56,6 +56,11 @@ Hubble rate \(H(t)\), the Boltzmann--Poisson equations are
  \left(\frac{2\eta}{r^3}-\Phi_r-Hw\right)\partial_w f=C[f],
                                                                \tag{PIC0b}
 \]
+Here \(\rho_{\rm src}\) is the gravitational source density: total density
+for an isolated static halo, or the prescribed background-subtracted source
+for the expanding module. The enclosed source mass and force follow from
+Poisson's equation.
+
 \[
  \frac1{r^2}\partial_r(r^2\Phi_r)=4\pi G\rho_{\rm src},
  \qquad \Phi_r=\frac{\partial\Phi}{\partial r}.          \tag{PIC0c}
@@ -85,8 +90,8 @@ complete persistent physical and bookkeeping state:
  \qquad \eta_p=\frac{L_p^2}{2},
 \]
 where \(m_p\) is represented mass, \(r_p\) is areal radius, \(w_p\) is radial
-velocity, \(L_p\) is angular-momentum magnitude, and
-\(\eta_p=L_p^2/2\) is the angular-momentum coordinate used by the solver.
+velocity, \(L_p\) is angular momentum magnitude, and
+\(\eta_p=L_p^2/2\) is the angular momentum coordinate used by the solver.
 Furthermore, \(E_{{\rm int},p}\) is unresolved internal energy,
 \(\sigma_{{\rm int},p}\) is its one-dimensional internal velocity dispersion,
 \(I_p\) is a persistent integer identifier, and \(s_p\) records whether the
@@ -108,7 +113,7 @@ implementation is documented in
 Section~\ref{sec:weighted-einstein-vlasov-pic}; it is collisionless and is not
 a substitute for the Newtonian collision paths described here.
 
-This representation is useful when a phase-space cell contains a sharp orbit
+This representation is useful when a phase space cell contains a sharp orbit
 boundary.  Several markers can occupy different positions inside that cell
 and follow their individual characteristics.  Orbit integration and field
 deposition are implemented in \path{cpu/include/ev/weighted_vlasov_pic.hpp}.
@@ -126,7 +131,7 @@ subhalo encounters are in
 
 \subsubsection{Step 1: turn cell mass into marker mass}
 
-The spherical phase-space measure is
+The spherical phase space measure is
 \[
  \dd\Gamma=8\pi^2\,\dd r\,\dd w\,\dd\eta.
 \]
@@ -147,7 +152,7 @@ an initially quiet equal-mass sample is obtained.  Equality is an initializer
 choice, not a collision restriction: restart or adaptive marker populations
 may contain unequal positive masses.
 
-Let \(N_{\rm occupied}\) be the number of source phase-space cells with
+Let \(N_{\rm occupied}\) be the number of source phase space cells with
 positive represented mass, \(N_{\rm per\ cell}\) the requested nominal number
 of markers for each such cell, and \(N_{\rm budget}\) the global upper limit on
 the total marker count.  The nominal marker count is
@@ -162,7 +167,7 @@ tail cell.
 The central source code is:
 \codesource{WPIC marker initializer}
 {\path{cpu/include/ev/weighted_vlasov_pic.hpp}}
-{Converts positive phase-space cell masses into a deterministic weighted-marker
+{Converts positive phase space cell masses into a deterministic weighted-marker
  realization with the same represented total mass}
 \begin{lstlisting}[language=C++]
 cell_mass = 8.0 * PI * PI * f[q]
@@ -201,7 +206,7 @@ its quiet pairs. The literal assignment is
 Here \code{represented_mass_fraction} is the fraction of the source-shell
 mass assigned to the stratum, and \code{stratum_pairs} is its number of
 quiet pairs. The ordinary sampler has one angular stratum with fraction
-one. In collisionless evolution, these masses are quadrature weights
+one. In collisionless relaxation, these masses are quadrature weights
 for the gravitational source. In the subhalo encounter model,
 each is also the physical mass of one subhalo and enters its pair cross
 section. Increasing the number of such markers at fixed source mass
@@ -327,7 +332,7 @@ every raw moment in equation (PIC9).  The Poisson solve includes
 \(M_{\rm hid}\) as central enclosed mass. Equations (PIC8a)--(PIC8c)
 transfer the represented mass continuously between the boundary cloud and
 the unresolved central source as the marker crosses \(r_{\min}\).
-The marker retains its physical mass and phase-space coordinates.
+The marker retains its physical mass and phase space coordinates.
 
 The current Poisson routine represents shell mass as
 \(4\pi r_i^2\rho_i\Delta r_i\).  The adapter therefore passes
@@ -672,7 +677,7 @@ the pair kinetic energy.  The reduced marker variables are updated with
  \qquad
  \eta_p'=\frac{r_p^2}{2}\left[(v_{p,y}')^2+(v_{p,z}')^2\right]. \tag{PIC28}
 \]
-Equation (PIC28) is the angular-momentum redistribution.  Each collision can
+Equation (PIC28) is the angular momentum redistribution.  Each collision can
 move both markers to new values of \(L=\sqrt{2\eta}\).
 
 The main source lines are:
@@ -704,7 +709,7 @@ marker.eta = 0.5 * r * r * (out.y * out.y + out.z * out.z);
 
 \subsubsection{Step 8: schedule orbital motion, field refreshes, and collisions}
 
-The frozen-field event library keeps separate gravitational-field and
+The frozen-field event library keeps separate gravitational field and
 collision clocks.  The first clock measures the elapsed time since the field
 was refreshed.  In \path{weighted_pic_boltzmann_potential_timescale}, its
 deadline uses the represented-mass-weighted root-mean-square field and rate:
@@ -762,13 +767,13 @@ The orbit integrator may take many internal steps during \(\Delta t\).  These
 internal steps only move the markers.  The endpoint distribution is
 reconstructed after a scheduled event.  This arrangement permits accurate
 pericentre integration, including Levi--Civita retries, while keeping the
-number of phase-space remaps small.
+number of phase space remaps small.
 
 The finite cap \(\Delta t_{\rm orbit,max}\) is also a clock-probe interval.
 If the cap arrives before either physical deadline, VENUS deposits only the
 radial mass and velocity moments needed to remeasure \(T_\Phi\) and
 \(T_{\rm coll}\).  It keeps the current gravitational field and does not
-construct the full phase-space array at this probe.  If a newly measured
+construct the full phase space array at this probe.  If a newly measured
 deadline is already shorter than its accumulated age, the corresponding
 event is carried out immediately.  This catches a rapid departure from an
 initial equilibrium without introducing an extra remap at every orbit step.
@@ -797,15 +802,15 @@ VENUS measures the current timescales again and plans the next event with the
 remaining clock ages.
 
 The integrated state keeps both continuous markers and a reconstructed
-phase-space snapshot.  The snapshot contains a cell-average grid and, when
+phase space snapshot.  The snapshot contains a cell-average grid and, when
 needed, a short list of continuous carrier markers described in Step 9.  A
 Boolean flag records whether this combined snapshot describes the current
 markers.  A collision-first event ends with reconstruction, so the flag is
 true.  At a coincident potential-first event, VENUS reconstructs the snapshot,
 solves for the field, and then scatters the markers.  The local collision does
 not change any marker radius or the radial mass profile, so the new field is
-still valid.  The velocity-space snapshot is marked stale and is rebuilt only
-when phase-space output or the next grid synchronization requires it.  This
+still valid.  The velocity space snapshot is marked stale and is rebuilt only
+when phase space output or the next grid synchronization requires it.  This
 uses one velocity reconstruction at that endpoint.
 
 The source expresses this rule directly:
@@ -829,7 +834,7 @@ commit_weighted_pic_event(clock, event);
 The production wrapper calls the same operations through one function:
 \codesource{WPIC Boltzmann event wrapper}
 {\path{cpu/include/ev/weighted_pic_boltzmann_event.hpp}}
-{Assembles transport, deposition, collision sampling, phase-space
+{Assembles transport, deposition, collision sampling, phase space
  reconstruction, and event diagnostics into one accepted update}
 \begin{lstlisting}[language=C++]
 WeightedPICBoltzmannEventDiagnostics diagnostic =
@@ -849,7 +854,7 @@ preserves the physical time remaining to each event after a continuation.
 {Step 9: reconstruct cell-average f(r,w,eta)}}
 
 The marker ensemble is itself a sampled distribution function.  Gravity needs
-the radial deposition in equations (PIC7)--(PIC11).  A phase-space snapshot is
+the radial deposition in equations (PIC7)--(PIC11).  A phase space snapshot is
 reconstructed at a scheduled endpoint, an output, or a restart conversion.
 The event order in Step 8 determines whether that endpoint reconstruction is
 performed before or after the NTC collision update.
@@ -945,7 +950,7 @@ requires the fraction to decrease under refinement.  A velocity outside the
 grid faces always stops the remap, regardless of the carrier bound.
 
 The bridge is called with:
-\codesource{WPIC conservative phase-space remap}
+\codesource{WPIC conservative phase space remap}
 {\path{cpu/include/ev/weighted_vlasov_pic_phase_remap.hpp}}
 {Projects continuous weighted markers onto cell averages while reporting any
  unresolved carrier mass and moment-closure residuals}
@@ -1094,7 +1099,7 @@ make venus_cpu_sidm_wpic_constant
   --eta-cells 96 \
   --eta-grid-power 8 \
   --radial-velocity-maximum 5 \
-  --angular-momentum-maximum 400 \
+  --angular momentum-maximum 400 \
   --sidm-cross-section constant \
   --sidm-sigma0 20.106192982974676 \
   --collision-strength 1 \
@@ -1111,7 +1116,7 @@ of the supplied equal-mass realization, then rescales it to
 the full input mass.  This option is intended only for inexpensive inspection;
 omitting it imports every marker with its
 stored mass unchanged.  A limited import of an unequal-mass restart is
-rejected because number-ranked subsampling could bias its phase-space mass
+rejected because number-ranked subsampling could bias its phase space mass
 profile; import all such markers.  The limited run's core-density diagnostic
 is not quantitatively comparable with the full import or with a different
 marker limit.  The core is defined by the innermost
@@ -1123,7 +1128,7 @@ radius that define ``core.''  Consequently \code{core_density},
 cannot be used as a physical convergence comparison.
 
 The radial profiles use the conservative deposition in equations
-(PIC7)--(PIC11) directly.  Every scheduled phase-space reconstruction is
+(PIC7)--(PIC11) directly.  Every scheduled phase space reconstruction is
 recorded in
 \path{operator_mass_budget.csv}.  Its columns include the event order, marker
 mass before and after, gridded mass, carrier mass, radial-momentum error,
@@ -1180,7 +1185,7 @@ CPU or GPU task. Export requires a completed collision interval,
 \code{collision_event_age=0}, and a distinct output file.
 
 The refinement command divides each numerical marker into equal-mass
-samples at the same phase-space point:
+samples at the same phase space point:
 \codesource{Refine the numerical particle sampling}
 {\path{cpu/tools/refine_weighted_pic_restart.cpp}}
 {Split numerical weights while preserving the represented distribution}
@@ -2074,7 +2079,7 @@ Whole-object capture reduces the marker count by one; elastic scattering
 leaves it unchanged.  Optional
 population control calls the positive local quadrature reduction in
 \path{canonical_open_carrier_compression.hpp}.  Within local phase subcells it
-retains a subset of original phase-space points and solves for nonnegative
+retains a subset of original phase space points and solves for nonnegative
 weights that preserve the selected deposited moments.  For a marker in the
 origin handoff, the hidden-carrier contribution \(h_p\) and every resolved
 face-cloud contribution \(\widetilde a_{pi}\) in equation (PIC8c) are separate
@@ -2089,7 +2094,7 @@ also preserves its specific internal energy \(E_{\rm int}/m\).
 Compression begins only when the total count reaches
 \code{subhalo_compression_trigger_markers}; the run may retain at least
 \code{subhalo_compression_minimum_markers}.  The source-cell preservation flag
-forbids a replacement packet from crossing its original phase-space source
+forbids a replacement packet from crossing its original phase space source
 cell.  Compression is a controlled approximation to the sampled distribution,
 so its counts, residuals, timings, and compressed/uncompressed profile
 differences must be included in the physical convergence study.
@@ -2192,7 +2197,7 @@ calculation still requires:
 \begin{enumerate}
 \item monitor \(\Delta r/\lambda_{\rm mfp}\) and generate a lighter,
       well-sampled core population before a collision region becomes nonlocal;
-\item place newly sampled core representatives at distinct local phase-space
+\item place newly sampled core representatives at distinct local phase space
       points; exact duplicates conserve moments but do not improve spatial
       sampling;
 \item build collision regions from their number density, pair cross sections,
@@ -2823,7 +2828,7 @@ noise scale for the current marker set.
 
 Increase the marker count by factors of two and
 check density, radial current, velocity dispersion, energy drift, and radial
-energy flux.  Also refine the radial mesh, phase-space reconstruction mesh,
+energy flux.  Also refine the radial mesh, phase space reconstruction mesh,
 ordinary timestep, potential and collision clocks, collision-shell
 population, and any population-control threshold.  Repeat stochastic
 comparisons with independent seeds and require deterministic resolution

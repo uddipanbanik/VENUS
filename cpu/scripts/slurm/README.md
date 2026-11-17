@@ -1,27 +1,27 @@
 # Portable VENUS CPU Slurm templates
 
-Slurm is the cluster job scheduler. A process is one running copy of a
-program; threads share its memory. MPI (Message Passing Interface) exchanges
-data between processes, called ranks. OpenMP (Open Multi-Processing) divides
-CPU work between threads. A partition groups cluster resources, an account
-identifies who can use them, and a software module selects installed programs.
-The [first-run cluster guide](../../../docs/CLUSTERS.md) introduces submission.
-
-Additional terms are defined in the [plain-language glossary](../../../docs/TERMS.md).
-
 Developed by Uddipan Banik and Frank van den Bosch
 
 These scripts request computing resources and start the selected VENUS
-executable. MPI tasks divide angular-momentum cells between ranks, while
+executable. Message Passing Interface (MPI) tasks divide angular momentum cells between ranks, while
 shared-memory tasks divide work between threads in one rank. Edit partition, account, and module names after checking `sinfo` and
 `module avail`. Full details are in
 [`../../docs/cluster.md`](../../docs/cluster.md).
 
+The coordinate recipes use areal radius `r`, enclosed mass `m`, Schwarzschild (SC) time
+`tau` and advanced ingoing Eddington--Finkelstein (EF) time `v`, in `G=c=1` units. `R_B` is the map-worldtube
+radius and `R_E` the full evolution boundary. `s_L` Is the multiplicative
+specific angular momentum scale. In the vacuum-extension block, `M_null`
+is conserved null-slice Arnowitt--Deser--Misner (ADM) mass, `a=1-2m/r` and `b` are EF metric functions,
+`A=partial v/partial tau` and `F=1/A` are map derivatives, `T_ab` is
+stress-energy, `r_*` the Schwarzschild tortoise radius, `s=-tau` the donor
+lookback coordinate and `s_B` its boundary value at `R_B`.
+
 | Template | Supported task shape |
 |---|---|
-| `ias_hybrid_ev_vp.sbatch` | IAS MPI+OpenMP Eulerian EV or collisionless VP |
+| `ias_hybrid_ev_vp.sbatch` | IAS MPI+OpenMP Eulerian Einstein--Vlasov (EV) or collisionless Vlasov--Poisson (VP) |
 | `iitk_param_hybrid_ev_vp.sbatch` | IITK PARAM MPI+OpenMP Eulerian EV or collisionless VP |
-| `ias_openmp_bp.sbatch` | IAS one-rank grid BP collision or SphDSMC |
+| `ias_openmp_bp.sbatch` | IAS one-rank grid Boltzmann--Poisson (BP) collision or spherical direct simulation Monte Carlo (SphDSMC) |
 | `iitk_param_openmp_bp.sbatch` | IITK PARAM one-rank grid BP collision or SphDSMC |
 | `ias_einstein_vlasov_wpic.sbatch` | IAS Typhon one-process/88-thread VENUS EV-WPIC Schwarzschild or EF evolution |
 | `ias_einstein_vlasov_wpic_parity_diagnostic.sbatch` | One clean, deliberately single-resolution solved-eikonal audit |
@@ -43,7 +43,7 @@ sbatch --nodes=1 --ntasks=1 --cpus-per-task=32 --export=ALL,EXECUTABLE=venus_cpu
 For SphDSMC, substitute `venus_cpu_sidm_sphdsmc_constant_openmp` or
 `venus_cpu_sidm_sphdsmc_velocity_dependent_openmp`. For finite-angle BP,
 select the exact/reversible/sampled/streamed task front. BP and SphDSMC must
-use `--ntasks=1`; increase `--cpus-per-task` instead. Only Eulerian EV and
+use `--ntasks=1`. Increase `--cpus-per-task` instead. Only Eulerian EV and
 VP have CPU MPI task fronts.
 
 Useful overrides:
@@ -60,11 +60,11 @@ Useful overrides:
 - `VENUS_PURGE_MODULES=0`
 
 Relative configuration/output paths resolve from the Slurm submission
-directory; a relative executable resolves from `VENUS_DIR`. By default the
+directory. A relative executable resolves from `VENUS_DIR`. By default the
 templates create a new run directory outside the source tree. Point
 `VENUS_RUN_ROOT` at project or scratch storage for long runs.
 
-## VENUS Einstein--Vlasov WPIC on IAS Typhon
+## VENUS Einstein--Vlasov weighted particle-in-cell (WPIC) on IAS Typhon
 
 Export `VENUS_SOURCE_ROOT` as the absolute deployed repository path and
 `VENUS_RUN_ROOT` as the absolute simulation-output root before using these
@@ -86,7 +86,7 @@ VENUS_RUN_ROOT=/path/to/project-or-scratch/runs
 `OUTPUT_DIR`, `PHYSICAL_IC`, `COORDINATES`, `EXPECTED_OUTCOME`,
 `VENUS_BUILD`, `VENUS_MAKE_JOBS`, and `VENUS_RUN_ARGS_FILE` are also
 overridable. An argument file contains one literal command-line argument per
-nonblank line; comment lines start with `#`. The launcher owns
+nonblank line. Comment lines start with `#`. The launcher owns
 `--coordinates`, `--expected-outcome`, `--output-dir`, `--physical-ic`, and
 `--threads`, so those switches must not occur in the argument file.
 
@@ -118,7 +118,7 @@ T(r) = 1                         if rc = 0,
 ```
 
 The corresponding controls are `RADIAL_INFALL=kappa` and
-`INFALL_CORE_RADIUS=rc`. They remain identical at every angular-momentum
+`INFALL_CORE_RADIUS=rc`. They remain identical at every angular momentum
 point. Vary only
 
 ```text
@@ -137,7 +137,7 @@ Parity and threshold helpers export `VENUS_REQUIRE_POSITIVE_BINDING=1` for
 every initialize-only, donor, and evolution job. The launcher independently
 reads `summary.json`, requires both fixed-family binding flags, and verifies
 finite positive values satisfying `B=M0-M_ADM` and
-`f_binding=B/M0`. It records `positive_binding_validation.json`; a failed or
+`f_binding=B/M0`. It records `positive_binding_validation.json`. A failed or
 missing audit fails the Slurm step even when the solver process returned zero.
 
 Both production helpers require every `s_L` to be strictly positive.
@@ -169,14 +169,14 @@ Before scheduling long runs, verify locally that:
 
 1. the unperturbed static solution has finite support, `E0<1`, positive
    compactness gap, positive binding, small constraint/Jeans residuals, and
-   adequate vacuum buffer;
+   adequate vacuum buffer.
 2. sampling refinement and at least two quiet realizations reproduce its
-   mass, rest weight, moments, and short-time equilibrium behavior;
+   mass, rest weight, moments, and short-time equilibrium behavior.
 3. the chosen fixed kick remains positively bound and produces a plausible
    low-`L` collapse/high-`L` bound-halo pair rather than an unbound dispersal
-   family;
-4. marker/cell/timestep/domain refinement resolves the strong-field region;
-   and
+   family.
+4. marker/cell/timestep/domain refinement resolves the strong-field region.
+   And
 5. the proposed `R_B`, `R_E`, and donor duration satisfy every crossing,
    vacuum, and provenance gate below.
 
@@ -212,7 +212,7 @@ inside the dense donor history, the numerical worldtube is vacuum, and the
 eikonal map remains nondegenerate. The auxiliary donor uses East's
 `s=-tau` construction and restores `w_physical=-w_reverse` at crossing. The
 runtime additive shift is `v_hat=v+T_donor`, so the imported surface is
-`v_hat=0`; equal coordinate-time labels are never used as an event map.
+`v_hat=0`. Equal coordinate-time labels are never used as an event map.
 
 A fresh EF production run without mapped null data is rejected. Resume keeps
 the restart's coordinate tag and markers and must receive the same null
@@ -228,9 +228,9 @@ inconsistent fixed-family, null-slice, and deposited ADM-mass channels. Its `nul
 accuracy and input identity. The later coordinate comparison measures
 whether the evolved SC and EF solutions agree at the same events.
 
-### Four checks before an angular-momentum scan
+### Four checks before an angular momentum scan
 
-The scan checks the physical initial family, each angular-momentum member,
+The scan checks the physical initial family, each angular momentum member,
 the coordinate extraction and the numerical comparison in this order:
 
 1. **Strict parity-provenance gate.** Before the first threshold `sbatch`,
@@ -264,7 +264,7 @@ the coordinate extraction and the numerical comparison in this order:
 
 The parity helper creates rather than consumes the strict certificate. Its
 fine-A initialize-only job and authenticated donor are the corresponding
-base/setup and production-map gates; the other three coordinate pairs do not
+base/setup and production-map gates. The other three coordinate pairs do not
 fan out until that exact fine-A map passes.
 
 ## Schwarzschild/EF coordinate comparison and refinement
@@ -306,7 +306,7 @@ fine-over-coarse marker and radial refinement, a smaller fine timestep, and
 `R_E`. `PARITY_EXPECTED_EF_OUTCOME` is also mandatory. Use `black_hole` for
 the requested horizon-formation comparison: every mapped EF job must then
 form an apparent horizon before its dependent diagnostic can run. `halo` and
-`any` are available for separately preflighted non-collapse comparisons; a
+`any` are available for separately preflighted non-collapse comparisons. A
 coordinate certificate alone is not evidence that a horizon was exercised.
 
 `VENUS_EIKONAL_SUBSTEPS` has no production default. It must be one positive
@@ -319,7 +319,7 @@ mixed values fail before they can be certified.
 
 The production helper pins its four Slurm scripts and all scientific Python
 tools under the staged `VENUS_SOURCE_ROOT`. It records their submission-time
-SHA-256 values in the controls and source manifests; each job checks the
+SHA-256 values in the controls and source manifests. Each job checks the
 relevant script and tool before and after doing work, and the comparator and
 builder identities are retained in the JSON evidence and certificate.
 Inherited `SBATCH_SCRIPT`, `DIAGNOSTIC_SCRIPT`, `CONVERGENCE_SCRIPT`,
@@ -340,11 +340,11 @@ independent realizations measure sensitivity to particle sampling:
 
 For each matrix entry the dependency chain is:
 
-1. create an immutable coordinate-neutral, initialize-only physical IC;
+1. create an immutable coordinate-neutral, initialize-only physical IC.
 2. evolve its Schwarzschild donor, solve the ingoing eikonal surface, cross
    every marker once, transform `w` to future-directed `P>0`, and authenticate
-   the map;
-3. evolve the mapped EF initial surface with identical physics and provenance;
+   the map.
+3. evolve the mapped EF initial surface with identical physics and provenance.
 4. solve the forward and inverse dynamical coordinate maps and compare the
    pulled-back metric, all stress components and matter moments, and the
    hashed empirical marker measure at identical events.
@@ -358,8 +358,8 @@ four diagnostics -> convergence evidence -> strict fine-A certificate
 ```
 
 The convergence builder requires common continuum, kick, `s_L`, ADM, domain,
-and map controls; distinct A/B IC fingerprints; strict resolution refinement;
-and decreasing metric, stress, moment, and empirical-distribution errors. It
+and map controls. Distinct A/B IC fingerprints. Strict resolution refinement.
+And decreasing metric, stress, moment, and empirical-distribution errors. It
 also authenticates one resolution-independent static-shell signature across
 all four pairs: continuum normalization/support, cutoff energy, invariant
 weight convention, zero post-sampling canonicalization, and fixed kick.
@@ -370,7 +370,7 @@ particle resampling in the 2x2 matrix.
 The builder derives its uncertainty envelope rather than accepting one
 supplied by the user. The terminal strict comparison writes
 `dynamic_coordinate_certificate.json` only on a status-pass result.
-The dense fine SC/EF CSVs are parsed as Python object graphs; both diagnostic
+The dense fine SC/EF CSVs are parsed as Python object graphs. Both diagnostic
 and terminal-certificate jobs therefore request 64 GiB rather than relying on
 the substantially smaller on-disk CSV size.
 
@@ -410,7 +410,7 @@ met its fixed raw-map, composition, and common-domain coverage gates. The
 stronger `STRICT_SUBSTEP_GATE.PASS` marker is possible only when both `32`
 and `64` are present and clean in the same root. Neither marker is a parity
 certificate. This reprocessor cannot create convergence evidence, issue a
-coordinate-parity certificate, or authorize angular-momentum threshold jobs.
+coordinate-parity certificate, or authorize angular momentum threshold jobs.
 All four resolution/realization diagnostics must still pass, the convergence
 builder must still run, and the terminal strict certificate must still be
 authenticated before a threshold campaign is allowed.
@@ -457,7 +457,7 @@ the same-event comparison needed to assess coordinate equivalence.
 Use the paired-long helper for one longer Schwarzschild/EF visualization at
 the **same fine-A scale, resolution, timestep, and quiet realization** as a
 strict parity campaign. This is not a threshold scan, and it does not relax
-the threshold helper's requirement of at least two distinct angular-momentum
+the threshold helper's requirement of at least two distinct angular momentum
 values. No physical or numerical value has a default.
 
 The first submission is a small gate job with
@@ -466,8 +466,8 @@ the gate authenticates its sidecar, numerical evidence, source, binary,
 static family, fine-A physical IC, and fine-A null map. It then queues exactly
 two children behind its own successful exit: Schwarzschild with `expected=any`
 (the polar chart may stop at its gap proxy) and EF with
-`expected=black_hole`. Both use `VENUS_BUILD=0` and new output directories;
-parity evidence is never resumed or overwritten.
+`expected=black_hole`. Both use `VENUS_BUILD=0` and new output directories.
+Parity evidence is never resumed or overwritten.
 
 ```bash
 cd "$VENUS_SOURCE_ROOT/cpu"
@@ -502,7 +502,7 @@ provenance attestation, copied certificate and physical IC, final controls,
 job receipt, and SHA-256 sidecars. Reusing a campaign root or changing a
 staged workflow identity fails before either child can run.
 
-## Bound static-shell angular-momentum scan
+## Bound static-shell angular momentum scan
 
 The threshold helper scans one positively bound static shell with one fixed
 inward kick. It supplies neither a numerical `s_L` grid nor a presumed outcome:
@@ -543,16 +543,16 @@ the measured stress balance, matter distribution and trapped surfaces. A halo en
 realized binding, form no horizon, have small escape, and show sustained
 Lagrangian-radius/profile/compactness stationarity plus resolved anisotropic
 Einstein--Vlasov Jeans balance for multiple dynamical times. An expanding
-high-`L` cloud is `dispersal`, not a halo. A low-`L` black-hole endpoint must
-contain explicit trapped-surface evidence; failure to find a horizon in a
+high-`L` cloud is `dispersal`, not a halo. A low-`L` black hole endpoint must
+contain explicit trapped-surface evidence. Failure to find a horizon in a
 short run is `undetermined`.
 
 Three masses remain separate throughout:
 
 1. `fixed_family_adm_mass` is the normalized Schwarzschild `tau=0` family
-   mass;
+   mass.
 2. `null_slice_conserved_adm_mass` is the donor mass on the extracted null
-   slice; and
+   slice. And
 3. `initial_deposited_adm_mass` is independently reconstructed from the
    imported EF markers at `v_hat=0`.
 
@@ -570,7 +570,7 @@ python3 tools/analyze_einstein_vlasov_wpic.py threshold \
 ```
 
 Only a resolution-, timestep-, domain-, and realization-converged
-lower-`L` black-hole/higher-`L` halo bracket is a threshold result.
+lower-`L` black hole/higher-`L` halo bracket is a threshold result.
 Dispersal or undetermined points do not close the bracket. Near a type-I
 threshold the dwell time can grow as the bracket narrows, so end time and
 late-time halo evidence must also be convergence tested. A final bracket must

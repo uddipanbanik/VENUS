@@ -16,7 +16,7 @@ analyzing its output.
 | Reference | Contents |
 |---|---|
 | [Solver manual](venus_manual.pdf) | Derivations, algorithms, code excerpts and complete operating reference |
-| [Plain-language glossary](TERMS.md) | Scientific and computing terms explained in ordinary language |
+| [Terminology reference](TERMS.md) | Scientific and computing terms explained in ordinary language |
 | [Complete run options](RUN_OPTIONS.md) | Option names and executable help for every solver family |
 | [Relativistic coordinates](RELATIVISTIC_COORDINATES.md) | Coordinate choices and interpretation of collapse diagnostics |
 | [CPU guide](../cpu/README.md) | CPU builds, task executables and examples |
@@ -34,7 +34,7 @@ make -C notes manual
 ```
 
 This publishes `docs/venus_manual.pdf`. To render its pages for visual
-inspection, use `make -C notes render`; the page images are written under
+inspection, use `make -C notes render`. The page images are written under
 `notes/tmp/pdfs/`.
 
 For complete cluster recipes and site modules, see [Run VENUS on a cluster](CLUSTERS.md).

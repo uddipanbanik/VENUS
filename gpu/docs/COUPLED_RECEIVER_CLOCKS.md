@@ -1,33 +1,33 @@
 # Coupled subhalo field and collision clocks
 
-A collision clock tracks elapsed encounter evolution. A field clock estimates
-how quickly gravity changes at selected locations, called receivers. Coupling
-these clocks lets the timestep respond to both processes. A checkpoint is a
-saved simulation state. KDK means kick--drift--kick: update velocity, advance
-position, then update velocity again. VP means collisionless Vlasov--Poisson;
-SIDM means self-interacting dark matter. This advanced option belongs to the
-subhalo module introduced in the [GPU guide](../README.md).
-
-Additional terms are defined in the [plain-language glossary](../../docs/TERMS.md).
-
 The single-GPU subhalo solver offers an optional field-clock policy through
 `--coupled-receiver-clocks`. The option requires positive subhalo strength,
 `--subhalo-adaptive-cell-timestep`, a positive collision-timescale fraction and
 a fresh output segment. The particle checkpoint carries the accumulated
 collision age, sampler counter and timescale estimates into that segment.
-The option defaults to off. Collisionless VP retains its fixed maximum KDK
-step and output/final-time clipping. Material-SIDM and MPI tasks retain their
+The option defaults to off. Collisionless Vlasov--Poisson (VP) retains its fixed maximum KDK
+step and output/final-time clipping. Material-SIDM and Message Passing Interface (MPI) tasks retain their
 separate interfaces.
+
+## Notation
+
+The simulation time is $`t`$. $`r_i`$ Is a radial cell center and
+$`\Phi_{r,i}`$ the radial derivative of the gravitational potential there.
+The orbit-step bound, maximum step and dynamical safety fraction are
+$`\Delta t_{\rm grav},\Delta t_{\max},f_{\rm dyn}`$. The auxiliary frequency
+$`H_*=2/[3(t+12)]`$ is used by this timestep policy in both backgrounds.
+
+For the receiver norm, $`A`$ denotes potential or radial force.
+$`A_{0,k},A_{1,k}`$ Are its values at receiver $`k`$ at the beginning and end
+of observation interval $`h`$. Its represented mass weight is $`\omega_k`$,
+and $`\delta_A`$ is the normalized field change. Shell mass $`M_i`$ and its
+effective marker count $`N_{{\rm eff},i}`$ determine the combined effective
+count $`N_{\rm eff}`$. The numerical precision is $`\epsilon_{\rm fp}`$ and
+the adopted sampling floor is $`\epsilon_{\rm samp}`$.
 
 ## Orbit and field times
 
 The gravitational orbit bound is
-
-```math
-\Delta t_{\rm grav}=\min\!\left[\Delta t_{\max},
- f_{\rm dyn}\min_i\left(|\Phi_{r,i}|/r_i+H_*^2\right)^{-1/2}\right],
-\qquad H_*=\frac{2}{3(t+12)}.
-```
 
 Here `f_dyn` is `--dynamical-fraction`. The minimum includes cells whose
 deposited mass exceeds the existing `10^-12` fraction of deposited source
@@ -36,9 +36,15 @@ update. The angular drift is integrated analytically. The optional bound uses
 the displayed `H_*` term for both supported backgrounds, so static runs also
 receive this additional positive frequency envelope.
 
+```math
+\Delta t_{\rm grav}=\min\!\left[\Delta t_{\max},
+ f_{\rm dyn}\min_i\left(|\Phi_{r,i}|/r_i+H_*^2\right)^{-1/2}\right],
+\qquad H_*=\frac{2}{3(t+12)}.
+```
+
 A receiver is a location weighted by the represented mass that samples the
 change in potential or force. The complete receiver norm applies to expanding
-EdS data with exponent
+Einstein--de Sitter (EdS) data with exponent
 `2/3`, time offset `12`, zero central mass, TSC deposition, retained interior
 mass and an already background-subtracted source. Other backgrounds use the
 fallback maximum relative field-change clock. In particular, static subhalo
@@ -106,7 +112,7 @@ post-step decision.
 
 `--coupled-field-trace` records receiver norms, selected clocks and cadence
 decisions. It requires the receiver policy. Its bounded samples identify the
-fields entering the time estimate; recording them leaves particle states and
+fields entering the time estimate. Recording them leaves particle states and
 random counters unchanged.
 
 ## Gaussian initial data
@@ -114,8 +120,8 @@ random counters unchanged.
 The [bound shell generator](../../cpu/tools/generate_bound_gaussian_shell_restart.py)
 writes static and expanding representations of the same physical particles.
 Their stored internal dispersion and energy are also the subhalo initial
-values. Each background's restart can therefore initialize either VP or BP;
-the task executable and positive collision strength select the evolution.
+values. Each background's restart can therefore initialize either VP or Boltzmann--Poisson (BP).
+The task executable and positive collision strength select the evolution.
 Use the generated mesh, background and initial-condition sidecars unchanged.
 See the [Gaussian example](../../cpu/examples/modular/vp_bound_gaussian_shell_gpu.md)
 for the common initial distribution and VP commands.

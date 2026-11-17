@@ -1,14 +1,26 @@
 # Relativistic collisions in a spherical gravitational field
 
-Elastic scattering preserves total energy and momentum in a local encounter.
-An orthonormal frame is a local observer’s set of perpendicular, unit-normalized
-time and spatial directions. Four-momentum combines energy and momentum.
-The metric describes spacetime geometry; stress--energy records the matter’s
-energy, momentum and stresses that produce gravity. A cross section is an
-effective interaction area, and isotropic scattering gives equal probability
-per solid angle in the stated frame. This advanced reference uses `G=c=1`.
+## Conventions and symbols
 
-Additional terms are defined in the [plain-language glossary](TERMS.md).
+Use $`G=c=1`$ and metric signature $`(-,+,+,+)`$. Radius $`r`$ is areal
+radius, $`m(r)`$ enclosed gravitational mass, $`\tau`$ Schwarzschild (SC) time and $`v`$
+advanced ingoing Eddington--Finkelstein (EF) time. SC metric functions $`\mu,\lambda`$ satisfy
+$`\mathrm ds^2=-e^{2\mu}\mathrm d\tau^2+e^{2\lambda}\mathrm dr^2+r^2\mathrm d\Omega^2`$.
+EF functions $`a=1-2m/r,b>0`$ satisfy
+$`\mathrm ds^2=-ab^2\mathrm dv^2+2b\mathrm dv\mathrm dr+r^2\mathrm d\Omega^2`$.
+Here $`\mathrm d\Omega^2`$ denotes the unit-sphere line element and
+$`\mathrm d\Omega`$ in a scattering law is the scattering solid-angle element.
+$`T_{rr}`$ is the covariant radial stress component. $`S`$ Is the EF source
+combination defined below. The frame subscript $`U`$ denotes the prescribed
+regular observer. Packet indices are $`i,j`$. Greek indices label spacetime
+components and hatted components refer to a local orthonormal frame.
+
+The proposal rate is $`R`$, acceptance probability $`\mathcal P_{ij}`$,
+carried optical depth $`\mathcal T`$, and residual exposure $`h`$. The local
+symbols $`A,V`$ in the proposal formula select the coordinate-dependent lapse
+factor and cell volume. They are distinct from the coordinate-map derivatives
+used in the coordinate reference. Symbols introduced for the material law,
+packet weights and frame momenta are defined immediately below.
 
 The collision library evolves elastic scattering together with the
 Einstein–Vlasov trajectories and gravitational field. The trajectory update
@@ -59,6 +71,8 @@ Define the specific invariant pair flux
 $`\mathcal F_{ij}=\sqrt{(p_i\cdot p_j)^2-1}`$, where the dot product uses
 the metric. The numerical pair encounter rates are
 
+Here $`U`$ is uniform on $`(0,1)`$, and $`\mathcal T`$ is carried optical depth. If the wait exceeds remaining exposure $`h`$, subtract $`Rh`$ and finish the cell. Otherwise advance its coordinate clock by the wait and process one proposal. Empty and one-packet cells advance without collision draws.
+
 ```math
 \begin{aligned}
 &\Gamma_{ij}^{\rm SC}=\max(W_i,W_j)\frac{\Sigma}{m_\chi}\frac{e^\mu\mathcal F_{ij}}{V\epsilon_i\epsilon_j},\\
@@ -98,8 +112,6 @@ changes the particles, and the next proposal uses those changed particles.
 R=\frac{A\Sigma}{V}q_{\max}N(N-1)D_{\max}^2,\qquad \mathcal T=-\ln U,\qquad \Delta t_{\rm trial}=\mathcal T/R.
 ```
 
-Here $`U`$ is uniform on $`(0,1)`$, and $`\mathcal T`$ is carried optical depth. If the wait exceeds remaining exposure $`h`$, subtract $`Rh`$ and finish the cell. Otherwise advance its coordinate clock by the wait and process one proposal. Empty and one-packet cells advance without collision draws.
-
 **4. Choose and lift a pair.** Unbiased integer rejection draws two distinct indices. Two independent tangential azimuths lift their spherical momenta into physical local four-momenta. Compute the invariant flux and the slice factor $`B_{ij}=\mathcal F_{ij}/(\epsilon_i\epsilon_j)`$ on SC or $`B_{ij}=\mathcal F_{ij}/(P_iP_j)`$ on EF. An independent uniform draw accepts with
 
 ```math
@@ -112,7 +124,7 @@ The unordered selection probability $`2/[N(N-1)]`$ times $`R\mathcal P_{ij}`$ gi
 
 **6. Project and continue.** Divide outgoing local momenta by $`m_\chi`$. Store SC radial momentum $`w`$ and $`\eta=r^2|p_\perp|^2/2`$, where $`p_\perp`$ is transverse specific momentum. EF stores $`P=\epsilon_U+w_U`$, evaluated as $`\chi/(\epsilon_U-w_U)`$ for inward motion to preserve positivity. Renew optical depth after every accepted or rejected proposal, then recompute the current rate. Packet/proposal caps and representable-clock guards bound the update.
 
-**7. Reconstruct the outgoing field.** After all cell batches, the code deposits outgoing stress and solves the Einstein constraints. SC retains its positive polar-areal gap stop. EF retains every active particle and requires the isolated vacuum outer boundary. The EF source uses $`T_{rr}=V_0^{-1}\sum_iW_iP_i`$ and $`S=V_0^{-1}\sum_iW_i\chi_i/P_i`$. It records an independent regular-centre ADM reconstruction before reapplying the conserved outer ADM condition. The source-feedback residual is returned to the caller.
+**7. Reconstruct the outgoing field.** After all cell batches, the code deposits outgoing stress and solves the Einstein constraints. SC retains its positive polar-areal gap stop. EF retains every active particle and requires the isolated vacuum outer boundary. The EF source uses $`T_{rr}=V_0^{-1}\sum_iW_iP_i`$ and $`S=V_0^{-1}\sum_iW_i\chi_i/P_i`$. It records an independent regular-centre Arnowitt--Deser--Misner (ADM) reconstruction before reapplying the conserved outer ADM condition. The source-feedback residual is returned to the caller.
 
 **8. Commit or retain the incoming state.** The entry points operate on a copy and replace the caller only after the complete update passes. A failed conditioning, capacity, boundary, or field check preserves the incoming markers, clocks, and random state. [`eb::serialize_cell`](../cpu/include/ev/relativistic_boltzmann/eb_restart.hpp) restores a model-bound local collision cell. A coupled restart additionally needs the global markers, field/grid controls, global time, next ID, and all persistent clocks.
 

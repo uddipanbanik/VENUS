@@ -32,7 +32,7 @@ representations of the same physical system:
 \begin{enumerate}
 \item a finite-volume distribution on an orbit grid, used for long intervals
       of collisionless motion; and
-\item continuous phase-space packets created by recent collisions, used until
+\item continuous phase space packets created by recent collisions, used until
       they can be placed on the orbit grid with a conservative map.
 \end{enumerate}
 
@@ -48,7 +48,7 @@ In spherical symmetry we use
   H=\Phi(r)+\frac{w^2}{2}+\frac{\eta}{r^2}.             \tag{CBP1}
 \]
 Here \(w=v_r\), \(L=r v_t\), and \(H\) is the specific Hamiltonian in the
-current gravitational potential.  The phase-space measure is
+current gravitational potential.  The phase space measure is
 \[
   \dd\Gamma=8\pi^2\,\dd r\,\dd w\,\dd\eta.             \tag{CBP2}
 \]
@@ -83,7 +83,7 @@ finite-volume cells in equation~(CBP3).  Its construction first fixes angular
 momentum and energy, then resolves orbital phase and the overlap with the
 collision grid.  These four steps are described below.
 
-\paragraph{Step 1: angular-momentum planes.}
+\paragraph{Step 1: angular momentum planes.}
 
 Each Eulerian \(\eta\) cell is integrated with a small Gaussian rule.  The
 first cell uses a left Gauss--Radau rule, so one plane lies exactly at
@@ -92,10 +92,10 @@ Gauss--Legendre points.  These endpoint planes give direct support to radial
 orbits and to the largest represented angular momentum.
 
 The rule selection appears in the atlas builder:
-\codesource{Canonical orbit-atlas angular-momentum quadrature}
+\codesource{Canonical orbit-atlas angular momentum quadrature}
 {\path{cpu/include/ev/canonical_orbit_phase_transport.hpp};
  \path{cpu/include/ev/phase_space_cells.hpp}}
-{Chooses endpoint-inclusive Gauss--Radau planes at the two angular-momentum
+{Chooses endpoint-inclusive Gauss--Radau planes at the two angular momentum
  boundaries and Gauss--Legendre planes in interior cells}
 \begin{lstlisting}[language=C++]
 if (eta_cell == 0)
@@ -122,7 +122,7 @@ action is
 \]
 Energy-row faces are placed through monotone edges in \(J_r\).  An optional
 positive weight based on the initial \(f(H,\eta)\) concentrates rows where
-the phase-space mass is large.  The row stores both its action interval and
+the phase space mass is large.  The row stores both its action interval and
 its energy interval.  During a later Poisson rebuild, the action edges define
 the corresponding energy edges in the new potential.
 
@@ -365,7 +365,7 @@ trial count.
 The implementation follows these equations directly:
 \codesource{Canonical-orbit no-time-counter sampler}
 {\path{cpu/include/ev/canonical_orbit_phase_transport.hpp}}
-{Draws distinct local phase-space samples and accepts each trial against the
+{Draws distinct local phase space samples and accepts each trial against the
  shell's verified relative-speed--cross-section majorant}
 \begin{lstlisting}[language=C++]
 clock += -std::log(rng.uniform_open()) / trial_rate;
@@ -534,12 +534,12 @@ An outgoing packet with \(H'>0\) lies above the bound-orbit atlas.  It remains
 an explicit open-orbit packet.  The characteristic integrator advances it,
 the collision sampler includes it while it is inside the radial domain, and
 the escape ledger records it after it crosses the outer boundary.  Separate
-counters classify open packets caused by high energy, angular-momentum
+counters classify open packets caused by high energy, angular momentum
 support, a missing row, an energy gap, or an orbit-geometry failure.
 
 \subsubsection{Keeping the continuous packet list compact}
 
-Many small collision packets may occupy nearly the same local phase-space
+Many small collision packets may occupy nearly the same local phase space
 region.  VENUS replaces each such group by a positive quadrature supported on
 a subset of the existing packet locations.  Positions and velocities remain
 physical packet states.  The new nonnegative weights preserve fourteen group
@@ -550,7 +550,7 @@ moments:
  \eta, q\eta, H, H^2,\qquad q=\frac{r^3}{3}.          \tag{CBP26}
 \end{align*}
 These constraints preserve mass, radial momentum, radial and tangential
-kinetic moments, radial kinetic-energy flux, the squared-angular-momentum
+kinetic moments, radial kinetic-energy flux, the squared-angular momentum
 moment \(\eta=L^2/2\), and the first
 two Hamiltonian moments.  The factors with \(q\) preserve the same quantities
 under radial cloud-in-cell deposition.
@@ -566,7 +566,7 @@ amplifying roundoff.  Every group recomputes equation~(CBP26) after reduction.
 A group whose moment matrix is ill-conditioned or whose residual exceeds the
 requested tolerance keeps its original packets.
 
-Packet ordering is made deterministic from marker identity and phase-space
+Packet ordering is made deterministic from marker identity and phase space
 coordinates before the reduction, so a fixed platform and random seed retain
 the same packet order across supported OpenMP thread counts.
 

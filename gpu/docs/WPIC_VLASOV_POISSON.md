@@ -1,17 +1,50 @@
 # GPU weighted Vlasov–Poisson module
 
-Vlasov--Poisson evolves particles in the Newtonian gravitational field that
-they create, with explicit pair encounters omitted. Weighted particle-in-cell
-(WPIC) represents the distribution using particles with mass weights. Their
-mass is spread over a radial grid to calculate gravity. Phase space combines
-position and velocity. Specific angular momentum is angular momentum per
-unit mass. Begin with the [GPU guide](../README.md) for a runnable example.
+## Notation
 
-Additional terms are defined in the [plain-language glossary](../../docs/TERMS.md).
+Here $`t`$ is physical time, $`r`$ radius, $`f`$ the mass distribution,
+$`\rho`$ mass density, $`\Phi`$ gravitational potential, and
+$`\Phi_r=\partial\Phi/\partial r`$. Newton’s constant is $`G`$.
+The enclosed gravitational source mass is $`M(r)=M(<r)`$, and $`M_c`$ is a
+prescribed central point mass. The radial velocity is $`w`$ in a static run
+and peculiar radial velocity in an expanding run. Specific angular momentum
+is $`L`$, with stored coordinate $`\eta=L^2/2`$.
+
+Marker index $`p`$ labels mass $`m_p`$ and coordinates $`r_p,w_p,\eta_p`$.
+Cell index $`i`$ labels center $`r_i`$, faces $`r_{i\pm1/2}`$, width
+$`\Delta r_i`$ and volume $`\Delta V_i`$. The volume coordinate is
+$`q=r^3/3`$, and $`a_{pi}`$ is the assigned fraction of marker mass.
+Cell sums $`M_i,P_i,R_{2,i},T_{2,i}`$ are mass, radial momentum, raw radial
+second moment and summed tangential second moment. The line density is
+$`\lambda_i=M_i/\Delta r_i`$. Its within-cell mass intercept is $`A_i`$.
+$`r_a,r_b`$ Bound an interval in that cell. These $`\lambda_i,A_i`$ are
+Newtonian reconstruction quantities.
+
+The inner/outer mesh radii are $`r_{\min},r_{\max}`$. The first volume face
+and center are $`q_f,q_0`$, their transition width is $`\delta q`$, and $`s`$
+is the clipped transition coordinate. The resolved assignment fraction is
+$`f_{\rm resolved}`$. $`M_{\rm mesh}`$ And $`M_{\rm hidden}`$ are the resolved
+and inner-carrier portions of one marker’s mass.
+
+Cosmological scale factor $`a(t)`$ gives $`H=\dot a/a`$, background density
+$`\bar\rho`$, comoving radius $`x=r/a`$ and canonical radial momentum $`p=aw`$.
+The same letter $`p`$ is a marker index only when used as a subscript or sum
+index. The scale-factor parameters are exponent $`\alpha`$ and time offset
+$`t_0`$. The drift integral is $`S(t_n,t_{n+1})`$. Superscripts $`n,n+1/2,n+1`$
+label step stages. A star labels the free-drift endpoint. The timestep is
+$`\Delta t`$, and $`R`$ is a reflecting wall radius. In the code excerpts,
+`a0` and `a1` are the scale factors at the step endpoints, `dt` is the
+step length, `drift` is $`S`$, and `Nr` is radial cell count.
 
 ## 1. Governing equations
 
 For a spherical collisionless distribution in Newtonian gravity,
+
+Here $`f`$ is the distribution function, $`r`$ is physical radius, $`w`$
+is radial velocity in a static background, and $`L`$ is specific angular
+momentum. The gravitational potential is $`\Phi`$, the mass density is
+$`\rho`$, and $`G`$ is Newton's gravitational constant. In an expanding
+background, $`w`$ denotes peculiar radial velocity, as defined in Section 5.
 
 ```math
 \frac{\partial f}{\partial t}
@@ -20,12 +53,6 @@ For a spherical collisionless distribution in Newtonian gravity,
  \frac{\partial f}{\partial w}=0,
 \qquad \eta=\frac{L^2}{2}.
 ```
-
-Here $`f`$ is the distribution function, $`r`$ is physical radius, $`w`$
-is radial velocity in a static background, and $`L`$ is specific angular
-momentum. The gravitational potential is $`\Phi`$, the mass density is
-$`\rho`$, and $`G`$ is Newton's gravitational constant. In an expanding
-background, $`w`$ denotes peculiar radial velocity, as defined in Section 5.
 
 The spherical Poisson equation and radial force are
 
@@ -36,7 +63,7 @@ The spherical Poisson equation and radial force are
 \Phi_r(r)=\frac{G M(\lt r)}{r^2}.
 ```
 
-WPIC approximates phase-space integrals by sums over weighted markers. Their
+weighted particle-in-cell (WPIC) approximates phase space integrals by sums over weighted markers. Their
 mass weights source the radial density and Poisson field. A collisionless
 characteristic keeps marker mass and $`\eta`$ fixed and evolves only
 $`(r,w)`$.
@@ -103,8 +130,8 @@ M_{\rm mesh}+M_{\rm hidden}=m_p.
 ```
 
 This is an algebraic mass identity for every marker. The halo production
-drivers enable this path. The particles continue to move through the origin;
-the first mesh face defines the radius below which the force uses a uniform
+drivers enable this path. The particles continue to move through the origin.
+The first mesh face defines the radius below which the force uses a uniform
 central-density approximation.
 
 ## 3. Conservative spherical Poisson solve
@@ -118,7 +145,7 @@ also provides a positive quadratic line-mass reconstruction.
 M(r)=M_{i-1/2}+\lambda_i(r-r_{i-1/2}).
 ```
 
-A CUDA inclusive scan forms $`M_{i+1/2}`$; independent threads evaluate
+A CUDA inclusive scan forms $`M_{i+1/2}`$. Independent threads evaluate
 center force:
 
 ```cpp
@@ -146,7 +173,7 @@ $`\rho-\bar\rho`$, where $`\bar\rho=3H^2/(8\pi G)`$ and $`H=\dot a/a`$.
 The source mass at the first face therefore contains the central particle
 mass, a prescribed point mass $`M_c`$, and the background subtraction
 $`-4\pi\bar\rho r_{\min}^3/3`$. This subtraction changes the gravitational
-source; the physical mass accounting retains the particle masses.
+source. The physical mass accounting retains the particle masses.
 
 For $`0<r<r_{\min}`$, the force joins continuously to the first face:
 
@@ -228,7 +255,7 @@ ev::advance_central_drift_with_walls(
 This calculation includes trajectories that cross the inner wall and would
 otherwise return outside it during the same step. In a static background,
 each free reflection preserves $`w^2+L^2/r^2`$. With origin parity, the
-physical inner boundary is $`r=0`$; a radial particle crosses the origin
+physical inner boundary is $`r=0`$. A radial particle crosses the origin
 with the corresponding change of sign in its radial velocity.
 
 For exactly radial motion, $`L=0`$, the drift advances the signed coordinate
@@ -253,7 +280,7 @@ the solver rejects a radial step that reaches or crosses it.
 The collisionless production runner uses the fixed step supplied by
 `--maximum-timestep`. Only a shorter exact landing on the next output or final
 time is allowed. Fixed-step KDK is time symmetric and therefore gives bounded
-energy error in a constant potential; a cell-dependent step would break that
+energy error in a constant potential. A cell-dependent step would break that
 symmetry. Collisional task runners may still apply a dynamical orbit ceiling
 because collision-event splitting has already broken the collisionless
 fixed-step map.
@@ -283,7 +310,7 @@ deposit -> Poisson -> half kick + exact drift
 
 Marker arrays, mesh, moments, scans, field, and rollback buffer remain on the
 GPU. Host transfers occur for requested profiles, diagnostics, and restarts.
-For collisional evolution, the driver can keep the incoming particle state
+For collisional relaxation, the driver can keep the incoming particle state
 while testing an orbit endpoint. It accepts that endpoint or restores the
 incoming state and shortens the step to a newly inferred collision deadline.
 
@@ -308,7 +335,7 @@ status 99 after the accepted particle state has been saved.
 
 ## 7. Multiple GPUs
 
-One MPI rank owns one GPU and a subset of markers. Each field solve is
+One Message Passing Interface (MPI) rank owns one GPU and a subset of markers. Each field solve is
 
 ```text
 local GPU deposition
@@ -317,15 +344,15 @@ local GPU deposition
  -> local marker push
 ```
 
-Markers remain on their owning GPU during Vlasov–Poisson stepping; only the
+Markers remain on their owning GPU during Vlasov–Poisson stepping. Only the
 radial moments are exchanged. KDK requires two such reductions. Scaling is therefore controlled by local marker work,
-the two moment all-reductions, mesh size, and rank imbalance; measure both
+the two moment all-reductions, mesh size, and rank imbalance. Measure both
 strong and weak scaling for the intended configuration.
 
 ## 8. CPU/GPU numerical correspondence
 
 The CPU and GPU paths use the same volume-coordinate clouds, conservative
-spherical Poisson discretization, exact central-motion drift, analytic EdS
+spherical Poisson discretization, exact central-motion drift, analytic Einstein--de Sitter (EdS)
 drift integral, boundary maps, and checkpoint variables. CUDA atomics and MPI
 reductions need not accumulate floating-point terms in the CPU order, so
 continuous fields should be compared with scale-aware tolerances. Marker IDs,

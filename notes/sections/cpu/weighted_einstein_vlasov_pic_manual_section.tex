@@ -8,14 +8,14 @@ parameter file cannot silently switch between those physical problems.  The
 module contains no SIDM collision operator and does not evolve an expanding
 cosmological background.  Schwarzschild coordinates approach a coordinate
 singularity as \(2m/r\rightarrow1\); the module therefore diagnoses horizon
-approach but is not a horizon-penetrating black-hole evolution scheme.
+approach but is not a horizon-penetrating black hole evolution scheme.
 
 \noindent\textbf{Maturity and validation.}
 The task-specific runners implement the Schwarzschild weighted
 particle-in-cell (WPIC) method.  The low-compactness task compares
 Einstein--Vlasov and Vlasov--Poisson evolution from the same sampled initial
 positions and momenta.  Each module assigns the weights required by its own
-phase-space measure.  Quantitative collapse results require joint refinement
+phase space measure.  Quantitative collapse results require joint refinement
 of marker number, radial mesh, timestep, omitted-weight control, and sampling
 realization, together with constraint, mass, binding, and outcome checks.
 Horizon-penetrating evolution belongs to the EF module.
@@ -63,7 +63,7 @@ the distribution.  A marker stores
 \]
 Here \(m_p\) is invariant rest-number weight, \(w_p\) is orthonormal radial
 momentum measured by a local static observer, \(L_p\) is the conserved
-angular-momentum magnitude, \(I_p\) is a persistent identifier, and
+angular momentum magnitude, \(I_p\) is a persistent identifier, and
 \(\epsilon_p\) is energy per unit rest mass in that local orthonormal frame.
 
 Because \(w\) is orthonormal rather than canonical, the invariant reduced
@@ -89,7 +89,7 @@ There is one explicit interface exception.  Markers returned by
 \path{cpu/include/ev/weighted_einstein_vlasov_static_shell.hpp} already carry the
 fully invariant quadrature weight.  For its continuum distribution
 \(f=C(1-E/E_0)_+^k\delta(L-L_0)\), \(C\) is the distribution amplitude,
-\(L_0>0\) is the single angular-momentum magnitude carried by the shell,
+\(L_0>0\) is the single angular momentum magnitude carried by the shell,
 \((x)_+=\max(x,0)\) keeps only the positive part, and \(\delta\) is the Dirac
 delta distribution that enforces \(L=L_0\).
 The cutoff power satisfies \(1\le k\le8\), with default \(k=1\).
@@ -270,7 +270,7 @@ With \(L=\sqrt{2\eta}\), a collisionless marker follows
   +e^{\mu-\lambda}\frac{L^2}{r^3\epsilon}.              \tag{EWP15}
 \]
 The three terms in equation (EWP15) are the time-dependent radial-metric
-term, gravitational/lapse force, and angular-momentum barrier.  Rest weight
+term, gravitational/lapse force, and angular momentum barrier.  Rest weight
 \(m_p\) and \(\eta_p\) remain invariant.
 
 An ordinary fourth-order Runge--Kutta step advances most markers.  Near a true
@@ -298,7 +298,7 @@ endpoint leaves the Schwarzschild patch, the complete trial is discarded and
 \(\Delta\tau\) is bisected, up to the configured bisection cap.  The
 \code{gap_stop} value is a requested Schwarzschild coordinate-patch stopping
 proxy; it is not substituted into the field equations and is neither an
-apparent-horizon finder nor a certified black-hole event.
+apparent-horizon finder nor a certified black hole event.
 
 The predictor starts from a copy, while the full push starts again from the
 original ensemble.  The following selected source lines show those time
@@ -355,7 +355,7 @@ six fields
 \[
  (m_p,r_p,w_p,\eta_p,I_p,S_p).
 \]
-The first four entries are the invariant weight and phase-space variables
+The first four entries are the invariant weight and phase space variables
 defined in equation (EWP2), \(I_p\) is the 64-bit persistent marker identifier,
 and \(S_p\) is the 64-bit source-cell identifier that records the sample's
 origin.  On reading, the driver rejects an incorrect tag or version, an
@@ -368,7 +368,7 @@ in the output directory.  Before evolving, check finite positive invariant
 weights, unique identifiers, support within the radial domain and
 particle-shape stencil, convergence of the invariant-weight fixed point,
 initial constraint residuals, ADM mass, compactness, binding diagnostics, and
-quiet-pair identities where applicable.  A fixed-ADM or angular-momentum
+quiet-pair identities where applicable.  A fixed-ADM or angular momentum
 family must retain the same authenticated base realization and be repeated
 under marker, mesh, and timestep refinement.
 

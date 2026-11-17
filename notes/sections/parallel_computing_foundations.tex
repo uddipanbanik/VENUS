@@ -2,7 +2,7 @@
 
 A numerical update contains many pieces of work that can sometimes be done at
 the same time.  Examples are moving different markers, integrating different
-angular-momentum planes, or evaluating different radial collision shells.
+angular momentum planes, or evaluating different radial collision shells.
 Parallel computing assigns those independent pieces to several workers
 while preserving the physical equations and numerical update. It reduces
 elapsed time by doing independent work simultaneously, or distributes arrays
@@ -32,7 +32,7 @@ memories are physically separate.
 Safe parallelism begins by giving each output item one unambiguous owner.
 Independent marker pushes can assign different markers to different workers.
 Independent collision shells can assign one complete shell to one worker.
-The grid solvers divide the angular-momentum axis into contiguous MPI slabs,
+The grid solvers divide the angular momentum axis into contiguous MPI slabs,
 so one rank owns all \((r,w)\) cells for its assigned \(L\) values.
 
 A \emph{synchronization point} is a place where workers must wait until a

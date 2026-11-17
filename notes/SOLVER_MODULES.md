@@ -1,17 +1,5 @@
 # VENUS solver-module catalogue
 
-This is the detailed method reference. For a first calculation, follow the
-[CPU guide](../cpu/README.md) or [GPU guide](../gpu/README.md). VP means
-Vlasov--Poisson (collective Newtonian gravity); BP means Boltzmann--Poisson
-(with encounters); EV means Einstein--Vlasov (relativistic collisionless
-gravity). WPIC uses particles with mass weights; an Eulerian method uses
-fixed cells in position and velocity. A kernel is a numerical routine,
-a backend is an implementation, and an input contract states the required
-file format and physical conventions. “Convergence” means that improving
-resolution and timestep accuracy leaves the result stable.
-
-Additional terms are defined in the [plain-language glossary](../docs/TERMS.md).
-
 Developed by Uddipan Banik, Frank van den Bosch, and Sachiet Kapur
 
 Begin with the physical problem in the selector below, then read that
@@ -33,7 +21,7 @@ tasks, while compatibility dispatchers continue to read older inputs.
   quantitative result requires the convergence, boundary, restart, parallel,
   and target-physics checks stated for that module.
 - **Formula/kernel scope** means that the local operator implements the stated
-  analytic law and pair invariants; trajectory-level convergence remains a
+  analytic law and pair invariants. Trajectory-level convergence remains a
   separate requirement.
 - **Reference/compatibility** means that the path is retained for comparison
   or older inputs and is not the primary interface.
@@ -48,13 +36,13 @@ The relativistic isolated calculations evolve their spacetime metric.
 
 | Physical category | Background | CPU modules | GPU modules |
 |---|---|---|---|
-| Non-relativistic collisionless | Static | Eulerian VP; **static VP WPIC** | Static VP WPIC, single GPU |
-| Non-relativistic collisionless | Expanding | Eulerian VP; expanding VP WPIC | EdS VP WPIC, single GPU or MPI |
-| Non-relativistic collisional: subhalo scattering and capture | Static or expanding | Subhalo WPIC; grid BP with the chosen encounter approximation | Subhalo WPIC: static/EdS on one GPU, EdS with MPI |
-| Non-relativistic collisional: self-interacting dark matter | Static | Constant or velocity-dependent SIDM WPIC and SphDSMC; grid BP | Constant, softened power-law and Yukawa--Born SIDM WPIC, single GPU or MPI |
+| Non-relativistic collisionless | Static | Eulerian Vlasov--Poisson (VP); **static VP weighted particle-in-cell (WPIC)** | Static VP WPIC, single GPU |
+| Non-relativistic collisionless | Expanding | Eulerian VP; expanding VP WPIC | Einstein--de Sitter (EdS) VP WPIC, single GPU or Message Passing Interface (MPI) |
+| Non-relativistic collisional: subhalo scattering and capture | Static or expanding | Subhalo WPIC; grid Boltzmann--Poisson (BP) with the chosen encounter approximation | Subhalo WPIC: static/EdS on one GPU, EdS with MPI |
+| Non-relativistic collisional: self-interacting dark matter | Static | Constant or velocity-dependent SIDM WPIC and spherical direct simulation Monte Carlo (SphDSMC); grid BP | Constant, softened power-law and Yukawa--Born SIDM WPIC, single GPU or MPI |
 | Non-relativistic collisional: material/encounter models | Expanding | Grid BP with explicitly selected cross section and background | Expanding subhalo model above; material SIDM GPU runners use static halos |
 | Non-relativistic collisional: globular and nuclear star clusters | Model-dependent | Small-angle Fokker--Planck/Landau machinery and encounter kernels; stellar relaxation requires a suitable gravitational encounter model and validation | A dedicated stellar relaxation solver is future work |
-| Relativistic collisionless | Isolated, evolving spacetime | Eulerian EV; low-compactness EV WPIC; high-compactness EV WPIC in Schwarzschild or ingoing EF coordinates | A relativistic CUDA solver is future work |
+| Relativistic collisionless | Isolated, evolving spacetime | Eulerian Einstein--Vlasov (EV); low-compactness EV WPIC; high-compactness EV WPIC in Schwarzschild or ingoing ingoing Eddington--Finkelstein (EF) coordinates | A relativistic CUDA solver is future work |
 | Relativistic collisionless | Cosmological expansion | A cosmological EV runner is future work | Future work |
 | Relativistic collisional: subhalos | Isolated or expanding | A relativistic subhalo scattering/capture runner is future work | Future work |
 | Relativistic collisional: self-interacting dark matter | Isolated | Covariant local elastic-collision library coupled to SC/EF streaming; component-tested API | Future work |
@@ -79,7 +67,7 @@ for the library's rate, locality, restart, and validation scope.
 | Grid BP, streamed reversible | `venus_cpu_boltzmann_poisson_reversible_streamed` or `_openmp` | CPU | Streamed-reversible task |
 | Grid BP, finite-angle compatibility selector | `venus_cpu_boltzmann_poisson_finite_angle` or `_openmp` | CPU | Compatibility selector |
 | Expanding prompt-cusp BP task | `venus_cpu_boltzmann_poisson_expanding_prompt_cusp` or `_openmp` | CPU | Expanding exact finite-angle task; finite-box caveat |
-| Canonical orbit-phase BP | `venus_cpu_boltzmann_poisson_canonical_orbit` or `_openmp` | CPU | Orbit-atlas task; method-specific convergence required |
+| Canonical orbit phase BP | `venus_cpu_boltzmann_poisson_canonical_orbit` or `_openmp` | CPU | Orbit-atlas task; method-specific convergence required |
 | Constant-cross-section SphDSMC SIDM | `venus_cpu_sidm_sphdsmc_constant` or `_openmp` | CPU | Implemented for the documented finite-time scope |
 | Velocity-dependent SphDSMC SIDM | `venus_cpu_sidm_sphdsmc_velocity_dependent` or `_openmp` | CPU | Formula/kernel scope; convergence required per run |
 | Low-compactness Einstein--Vlasov WPIC | `venus_cpu_einstein_vlasov_wpic_low_compactness` | CPU | Low-compactness completed example |
@@ -107,7 +95,7 @@ contract.
 Each preferred executable has its own task source and distinct main function.
 Shared physics remains in `cpu/include/ev/` plus `cpu/src/drivers/` on CPU,
 and in `gpu/include/venus_gpu/` plus `gpu/src/` on GPU. The canonical-orbit
-task keeps its task-specific orbit-atlas engine beside its main; the other
+task keeps its task-specific orbit-atlas engine beside its main. The other
 CPU fronts are thin selectors over the shared grid or WPIC engines.
 
 | Task main | Source file |
@@ -122,7 +110,7 @@ CPU fronts are thin selectors over the shared grid or WPIC engines.
 | CPU BP sampled reversible | `cpu/src/apps/boltzmann_poisson/reversible_sampled.cpp` |
 | CPU BP streamed reversible | `cpu/src/apps/boltzmann_poisson/reversible_streamed.cpp` |
 | CPU expanding prompt cusp | `cpu/src/apps/boltzmann_poisson/expanding_prompt_cusp.cpp` |
-| CPU canonical orbit-phase BP | `cpu/src/apps/boltzmann_poisson/canonical_orbit.cpp` |
+| CPU canonical orbit phase BP | `cpu/src/apps/boltzmann_poisson/canonical_orbit.cpp` |
 | CPU constant SphDSMC | `cpu/src/apps/sidm/sphdsmc_constant.cpp` |
 | CPU velocity-dependent SphDSMC | `cpu/src/apps/sidm/sphdsmc_velocity_dependent.cpp` |
 | CPU low-compactness EV WPIC | `cpu/src/apps/einstein_vlasov/wpic_low_compactness.cpp` |
@@ -158,7 +146,7 @@ reciprocal scalar interactions with a certified differential envelope.
 This library has finite component validation. Its model-bound restart stores
 a local collision cell. Continuous collision chronology, full coupled restart
 and compact-halo convergence require further validation. The current
-black-hole applications use collisionless Einstein--Vlasov evolution. See the
+black hole applications use collisionless Einstein--Vlasov evolution. See the
 [module guide](../docs/relativistic_boltzmann.md) for the slice measures,
 spatial-locality domain, API and compilation requirements.
 
@@ -167,7 +155,7 @@ spatial-locality domain, API and compilation requirements.
 ## 1. Eulerian Einstein--Vlasov
 
 **Physics scope and exclusions.** This grid module evolves
-a spherical phase-space density on an `(r,w,L)` grid in a dynamical
+a spherical phase space density on an `(r,w,L)` grid in a dynamical
 polar-areal spacetime. It is intended for resolved distribution-function and
 metric studies. It is separate from the weighted-marker low/high programs and
 requires its own resolution, constraint, boundary, and parallel checks.
@@ -187,7 +175,7 @@ the earlier distribution with the prescribed radial and momentum boundaries.
 It then recomputes moments and metric and writes diagnostics and a restart.
 
 **Source and task lock.** The front ends are
-`venus_cpu_einstein_vlasov_eulerian`, `_openmp`, and `_mpi`; shared implementation lives in
+`venus_cpu_einstein_vlasov_eulerian`, `_openmp`, and `_mpi`. Shared implementation lives in
 `cpu/include/ev/{moments,metric,characteristic_integrators,advection,timestep,
 solver_evolution}.hpp`. The front end requires
 `physics_model=einstein_vlasov` and rejects VP/BP or collision settings.
@@ -200,13 +188,13 @@ controls are invalid here.
 
 **IC/restart and output.** Analytic or `binary_rwl` data initialize the grid.
 The module writes `metadata.json`, `history.csv`, `profiles.csv`, optional
-phase-space snapshots, and versioned serial or rank-manifest restarts.
+phase space snapshots, and versioned serial or rank-manifest restarts.
 
 **Parallelism.** Serial/std::thread, OpenMP, and the supported MPI `L`-slab
 decomposition are available. MPI ranks all-reduce radial matter fields.
 
 **Visualization, example, and limitation.** Use
-`cpu/tools/plot_einstein_vlasov_outputs.py`; the example INIs are
+`cpu/tools/plot_einstein_vlasov_outputs.py`. The example INIs are
 `cpu/examples/einstein_vlasov_*`. These are controlled starting problems,
 not long-time convergence results.
 
@@ -230,7 +218,7 @@ peculiar-velocity equation, with the background and Poisson source convention
 specified in the manual.
 
 **Algorithm.** Integrate density from the grid, accumulate enclosed mass,
-and reconstruct the potential. The selected nodal, finite-volume, or SLDG
+and reconstruct the potential. The selected nodal, finite volume, or SLDG
 method transports the distribution with the specified boundary rule and,
 where implemented, a midpoint field. Carrier and flux ledgers record matter
 transferred between representations or across faces. The solver then writes
@@ -256,7 +244,7 @@ SLDG ledgers when those algorithms are selected.
 
 **Parallelism.** Serial, OpenMP, and collisionless MPI `L` slabs are
 supported. The selected integrator still needs its own parallel-equivalence
-study; MPI compilation alone is insufficient.
+study. MPI compilation alone is insufficient.
 
 **Visualization, example, and limitation.** Use
 `cpu/tools/spherical_profile_rendering.py` for named-column profile tables or
@@ -283,7 +271,7 @@ and diffusion coefficients.
 
 **Algorithm.** Complete the Vlasov/Poisson transport stage, then construct
 the local collision moments that determine velocity drift and diffusion.
-Projecting these coefficients to velocity-space faces gives conservative
+Projecting these coefficients to velocity space faces gives conservative
 Chang--Cooper/upwind fluxes. The solver integrates those fluxes explicitly or
 with RKL2 super-time-stepping, checks positivity and conservation, and records
 the operator budgets.
@@ -303,7 +291,7 @@ subhalo capture controls do not.
 **IC/restart and output.** It consumes the Eulerian phase-grid IC/restart and
 writes grid outputs plus collision coefficient/flux and invariant ledgers.
 
-**Parallelism.** Use one MPI rank with OpenMP/std::thread workers; distributed
+**Parallelism.** Use one MPI rank with OpenMP/std::thread workers. Distributed
 collision coefficient and `L`-ghost exchange are not implemented.
 
 **Visualization, example, and limitation.** Use
@@ -320,17 +308,17 @@ exchange is not implemented.
 **Physics scope and exclusions.** This grid task covers exact
 quadrature, reversible, sampled reversible, and streamed reversible Eulerian
 finite-angle collision operators. These are alternative discretizations of
-`C_B[f]`; they are not SphDSMC or weighted-marker pair updates.
+`C_B[f]`. They are not SphDSMC or weighted-marker pair updates.
 
 **Equations.** `partial_t f+{f,H}=C_B[f]`, with
 `C_B at v = int d^3v_* int dOmega u (dSigma/dOmega)
 [f(v')f(v_*')-f(v)f(v_*)]`. Constant, softened-gravity, power-law, and
 Yukawa--Born kernels have distinct total and differential cross sections.
 
-**Algorithm.** (1) Perform the selected Vlasov transport stage; (2) assemble
-radial collision cells and the requested angular quadrature/proposal; (3)
-evaluate loss and gain or reversible increments; (4) subcycle/stream within
-the majorant and positivity limits; (5) remap outgoing states; (6) close mass,
+**Algorithm.** (1) Perform the selected Vlasov transport stage. (2) assemble
+radial collision cells and the requested angular quadrature/proposal. (3)
+evaluate loss and gain or reversible increments. (4) subcycle/stream within
+the majorant and positivity limits. (5) remap outgoing states. (6) close mass,
 momentum, energy, omission, and sampling-error ledgers.
 
 **Source and task lock.** Use the backend-specific primary binary:
@@ -356,7 +344,7 @@ requires the Yukawa differential kernel, not an isotropic alias.
 operator mass/energy budgets, collision work/omission diagnostics, and
 backend-specific ledgers.
 
-**Parallelism.** One MPI rank only; shared-memory reductions are supported
+**Parallelism.** One MPI rank only. Shared-memory reductions are supported
 where the selected backend permits them.
 
 **Visualization, example, and limitation.** The prompt-cusp figure tool is
@@ -381,7 +369,7 @@ registered operator cadence and current minimum collision quadrature.
 **Source and task lock.** Use
 `venus_cpu_boltzmann_poisson_expanding_prompt_cusp`. It requires expanding
 Boltzmann--Poisson, the finite-angle prompt-cusp operator family, and a
-nonzero collision strength; static, collisionless, FP, and SphDSMC inputs are
+nonzero collision strength. Static, collisionless, FP, and SphDSMC inputs are
 rejected.
 
 **Parameters and invalid combinations.** `gamma_i`, expansion convention,
@@ -395,7 +383,7 @@ OpenMP workers.
 
 **Visualization and domain.** Use `cpu/tools/spherical_profile_rendering.py`
 for the emitted profiles. A finite radial box defines the resolved physical
-domain; an asymptotic outer slope requires domain refinement.
+domain. An asymptotic outer slope requires domain refinement.
 
 **Required checks.** Use a grid/box/quadrature hierarchy before interpreting
 the prompt cusp or outer transition quantitatively.
@@ -408,7 +396,7 @@ covers a finite interval and does not reach a gravothermal catastrophe.
 
 **Equations.** Markers sample material particles under spherical Poisson
 gravity. For a local pair, the collision exposure is proportional to
-`u Sigma_ij dt/V_shell`, with constant `sigma/m=sigma0`; elastic center-of-mass
+`u Sigma_ij dt/V_shell`, with constant `sigma/m=sigma0`. Elastic center-of-mass
 scattering conserves pair mass, momentum, and kinetic energy.
 
 **Algorithm.** Sort persistent markers by radius to compute enclosed mass
@@ -432,13 +420,13 @@ kernel.
 versioned persistent-particle restart. It writes `metadata.json`,
 `profiles.csv`, `history.csv`, `operator_mass_budget.csv`, and restart state.
 Current versions 6/7 retain the next collision timestep and a fingerprint of
-the collision law, shell controls, timestep fraction, seed and collision mode;
-version 7 also retains the paper-exact fractional remainders. Exact continuation
+the collision law, shell controls, timestep fraction, seed and collision mode.
+Version 7 also retains the paper-exact fractional remainders. Exact continuation
 rejects changed collision controls. Versions 2–5 import their physical ensemble
 and available remainders, reconstruct the first collision limit, and record
 that legacy reconstruction in metadata.
 
-**Parallelism.** Exactly one MPI task; use OpenMP threads inside the task.
+**Parallelism.** Exactly one MPI task. Use OpenMP threads inside the task.
 
 **Visualization, example, and limitation.** Use
 `render_frank_venus_sphdsmc_gif.py` and example case 06, whose configured
@@ -464,7 +452,7 @@ isotropic angle with a velocity-dependent majorant and the selected angular
 sampler.
 
 **Source and task lock.** Use
-`venus_cpu_sidm_sphdsmc_velocity_dependent`; it requires a nonconstant law and
+`venus_cpu_sidm_sphdsmc_velocity_dependent`. It requires a nonconstant law and
 rejects paper-exact constant mode, grid operators, WPIC, and subhalo capture.
 
 **Parameters/invalid combinations.** Select exactly one supported law and its
@@ -488,7 +476,7 @@ for each law.
 **Physics scope and exclusions.** This weighted-marker task compares
 relativistic Einstein--Vlasov and Newtonian VP evolution from the same
 low-compactness sample of positions and momenta, using the weights appropriate
-to each phase-space measure. The paired evolution measures the Newtonian limit.
+to each phase space measure. The paired evolution measures the Newtonian limit.
 
 **Equations and algorithm.** Marker weights are invariant along the
 relativistic characteristics. Each step deposits relativistic moments, solves
@@ -496,7 +484,7 @@ the constraints, pushes markers with a self-consistent field, and writes a
 paired EV/VP comparison. See the weighted EV PIC manual section.
 
 **Source and task lock.** Use
-`venus_cpu_einstein_vlasov_wpic_low_compactness`; implementation is shared with
+`venus_cpu_einstein_vlasov_wpic_low_compactness`. Implementation is shared with
 `weighted_einstein_vlasov_pic.hpp`. The task fixes the low scenario and
 rejects high-scenario and collisional options.
 
@@ -509,11 +497,11 @@ invalid.
 rotating EV/VP restart are supported. Outputs include low-compactness history
 and profiles for both equations.
 
-**Parallelism.** Shared-memory threads; distributed MPI is not supported.
+**Parallelism.** Shared-memory threads. Distributed MPI is not supported.
 
 **Visualization, example, and limitation.** Use the low branch of
 `render_weighted_einstein_vlasov_pic_profile_gifs.py` and example case 01.
-The supplied resolution is a virialized-halo example; precision EV/VP density
+The supplied resolution is a virialized-halo example. Precision EV/VP density
 agreement requires a marker/radial/time convergence hierarchy.
 
 **Required checks.** Establish marker/radial/time convergence and verify the
@@ -540,8 +528,8 @@ vacua, asymptotic lapse matching, positive binding, and scale covariance. Its
 shifted rank-one sampler emits exactly the requested even marker count as
 adjacent `(+w,-w)` invariant-weight pairs with unique persistent IDs and
 source IDs. Those weights already contain `exp(lambda)` and must not be
-canonicalized again. A zero kick at `s_L=1` is the equilibrium regression;
-the threshold family applies one fixed inward kick and varies only `s_L`
+canonicalized again. A zero kick at `s_L=1` is the equilibrium regression.
+The threshold family applies one fixed inward kick and varies only `s_L`
 before fixed-ADM normalization.
 
 **Separate coordinate modules.** The compatibility include
@@ -567,7 +555,7 @@ geometry, inward momentum and dispersions, radial grid/boundary, resolution,
 cadence, and threads apply. The static shell adds
 `--high-energy-cutoff-amplitude`, `--high-energy-cutoff-ell0`,
 `--high-energy-cutoff-central-y`, an even `--high-markers`, and
-`--high-sampling-realization`; its fixed kick uses
+`--high-sampling-realization`. Its fixed kick uses
 `--high-radial-infall` and optional `--high-infall-core-radius`.
 `--high-specific-angular-momentum` is rejected for this authenticated
 delta-`ell0` family. `--high-angular-momentum-scale` rescales its realized
@@ -587,7 +575,7 @@ donor, but it is not by itself valid null initial data. A fresh EF run requires
 `s=-t` donor copy, stores every accepted field, solves the ingoing eikonal and
 integrating factor, and intersects every persistent marker worldline exactly
 once. The physical incoming SC run itself is not reversed. Outside a horizon,
-the same-event marker variables obey `P=e^lambda(w+epsilon)>0`; the dynamical
+the same-event marker variables obey `P=e^lambda(w+epsilon)>0`. The dynamical
 metric map is `a=e^-2lambda`, `b=e^(lambda+mu)/A` with `A=partial_t v>0`.
 The manifest-hashed artifact preserves marker rest weights, IDs and `eta` and
 records distinct coordinate-specific realized fingerprints. Raw equal marker
@@ -604,19 +592,19 @@ authenticated. The subsequent EF evolution uses the entire `R_E` mesh.
 restart and coordinate-specific history/profile schema. Schwarzschild output
 records the compactness gap and its pre-horizon stop proxy. EF output records
 `a`, `b`, apparent-horizon time/radius, trapped-region/excision bookkeeping,
-fixed ADM mass, and post-horizon duration. `--expected-outcome any` makes a
+fixed Arnowitt--Deser--Misner (ADM) mass, and post-horizon duration. `--expected-outcome any` makes a
 scientifically legitimate halo endpoint distinct from a crashed scheduler
 job.
 Both production coordinate paths require a vacuum outer domain. A trial that
 would carry positive rest weight beyond it is rejected before commit and the
 last accepted state is saved. The Schwarzschild high-compactness outcome is
 `sc_outer_boundary_evolution_limit`, with accepted time and rejected trial
-duration under `schwarzschild_evolution_status`; it satisfies no completed
-black-hole or halo classification. Library outflow bookkeeping remains
+duration under `schwarzschild_evolution_status`. It satisfies no completed
+black hole or halo classification. Library outflow bookkeeping remains
 available to callers supplying a consistent exterior matter/lapse model.
 
 **Parallel execution.** Both kernels use one process with shared-memory
-threads; distributed MPI is unsupported. The Slurm parity helper executes a
+threads. Distributed MPI is unsupported. The Slurm parity helper executes a
 two-resolution by two-independent-PIC-realization SC-donor/EF-consumer DAG,
 builds authenticated convergence evidence, and issues a strict same-event
 certificate. The angular scan is blocked until that certificate passes, holds
@@ -624,7 +612,7 @@ the initial ADM mass fixed, and reports target- and measured-ADM
 normalizations before attempting an outcome bracket.
 
 The scan is scientifically released only after local preflight identifies a
-positively bound, sustained high-`L` halo endpoint and a low-`L` EF black-hole
+positively bound, sustained high-`L` halo endpoint and a low-`L` EF black hole
 endpoint from the same static shell and fixed kick. A high-`L` escape is
 dispersal, not the halo side of the requested threshold. The continuum/kick,
 target mass, map/evolution radii, donor duration, end time, and angular bracket
@@ -635,7 +623,7 @@ follow from the chosen static shell and its preflight checks.
 three-panel SC/EF overlay and the high branch of
 `render_weighted_einstein_vlasov_pic_profile_gifs.py` for a single-coordinate
 sequence. The paired renderer shows same-event curves before the SC chart
-limit and clearly labelled EF-only frames afterward; it plots
+limit and clearly labelled EF-only frames afterward. It plots
 `log10(rho)` versus `log10(r)`, logarithmic density slope versus `log10(r)`,
 and `2m/r` versus linear `r`. Coordinate equivalence means equality at mapped events: the
 continuum scalar distribution with its momentum Jacobian, the finite-marker
@@ -647,9 +635,9 @@ dynamically relevant, non-excised matter remains within the radial domain.
 East's charged-shell threshold is not a neutral prediction.
 
 **Required checks.** Establish marker, radial, timestep, domain, excision, and
-thread-count convergence; verify both radial constraints and the vacuum
-continuation; reproduce a static transformed solution; compare pre-horizon
-invariants between coordinates; and repeat the angular-momentum bracket at
+thread-count convergence. Verify both radial constraints and the vacuum
+continuation. Reproduce a static transformed solution. Compare pre-horizon
+invariants between coordinates. Repeat the angular momentum bracket at
 increased resolution before interpreting it as a physical threshold.
 
 ## 10. Static and expanding Vlasov--Poisson WPIC
@@ -659,8 +647,8 @@ Newtonian backgrounds with a self-consistent gravitational field and zero
 explicit encounter strength. It is the explicit
 collisionless counterpart of the subhalo runner.
 
-**Equations.** Marker characteristics discretize the expanding VP equations;
-the field uses spherical deposition, enclosed mass, and the documented
+**Equations.** Marker characteristics discretize the expanding VP equations.
+The field uses spherical deposition, enclosed mass, and the documented
 analytic scale-factor drift.
 
 **Algorithm.** Generate or import markers, deposit their mass and moments,
@@ -672,7 +660,7 @@ restart state, then repeat the collisionless update.
 isolated system. It fixes the expansion rate to zero and records the total
 density as the Poisson source. Use `venus_cpu_vlasov_poisson_wpic_expanding`
 for the prescribed expanding background. Both use the same numerical routines.
-Shared code is `weighted_vlasov_pic.hpp`; the executable fixes collision
+Shared code is `weighted_vlasov_pic.hpp`. The executable fixes collision
 strength to zero and rejects every SIDM/subhalo collision option.
 
 **Parameters/invalid combinations.** `gamma_i`, marker/radial resolution,
@@ -681,14 +669,14 @@ and threads apply. Positive material or subhalo collision strength is invalid.
 
 **IC/restart and output.** Analytic power-law sampling or the versioned WPIC
 restart is used. Outputs are `profile_NNNNN.csv`, history, metadata,
-`radial_mesh_contract.txt`, and `restart_state.bin`; no collision ledger is
+`radial_mesh_contract.txt`, and `restart_state.bin`. No collision ledger is
 required.
 
 **Parallelism.** CPU shared-memory only for this runner.
 
 **Visualization, example, and limitation.** Use
 `render_weighted_pic_pure_gamma_gifs.py` or
-`render_weighted_vlasov_pic_equilibrium_gif.py`; the supplied expanding
+`render_weighted_vlasov_pic_equilibrium_gif.py`. The supplied expanding
 controls are starting points within their stated marker and mesh resolution.
 
 **Required checks.** Establish marker-number, cloud-order, background,
@@ -703,7 +691,7 @@ energy. It is not microscopic material SIDM.
 
 **Equations.** The encounter rate uses the calibrated velocity- and
 mass-dependent Plummer scatter/capture cross sections. Elastic outcomes use
-the center-of-mass map; capture replaces two objects by one while conserving
+the center-of-mass map. Capture replaces two objects by one while conserving
 mass and momentum and transferring reduced-mass orbital energy into internal
 energy/compaction.
 
@@ -716,7 +704,7 @@ the source, so the solver redeposits and refreshes the field when required.
 Mass, pair-invariant, locality, and cadence checks precede a restart containing
 the clocks and counters.
 
-**Source and task lock.** Use `venus_cpu_subhalo_wpic`; implementation is in
+**Source and task lock.** Use `venus_cpu_subhalo_wpic`. Implementation is in
 `weighted_vlasov_pic_subhalo_collisions.hpp` and the weighted-PIC event code.
 The lock requires positive subhalo strength and rejects material SIDM and grid
 collision operators.
@@ -736,13 +724,13 @@ status records to the WPIC schema.
 cell to one worker for its complete interval. Cell membership and local random
 counters preserve the event sequence across thread counts. Diagnostics reduce
 in cell order after all cells finish. A failed call leaves partial in-memory
-state that the caller must discard; the driver propagates the failure before
+state that the caller must discard. The driver propagates the failure before
 updating event clocks or writing a new checkpoint.
 
 **Visualization, example, and limitation.** Use
 `render_weighted_pic_subhalo_{comparison,physical_time,collision_age,
 strength_scan}_gif.py` and example case 04. The example is configured to
-`t=50`; population-level conclusions require ensemble and resolution studies.
+`t=50`. Population-level conclusions require ensemble and resolution studies.
 
 **Required checks.** Establish ensemble, resolution, collision-cell,
 long-time population, and capture-compaction convergence.
@@ -751,11 +739,11 @@ long-time population, and capture-compaction convergence.
 
 **Physics scope and exclusions.** This task uses weighted markers to sample microscopic
 material SIDM with constant `sigma/m`. The packaged deep-collapse example
-has an explicitly documented late nonlocal-shell warning; post-warning
+has an explicitly documented late nonlocal-shell warning. Post-warning
 structure is not locality-resolved science.
 
 **Equations.** Pair exposure in an adaptive shell is proportional to
-`u (m_i+m_j) (sigma/m)/2`; isotropic elastic center-of-mass scattering
+`u (m_i+m_j) (sigma/m)/2`. Isotropic elastic center-of-mass scattering
 preserves represented mass, radial momentum, and kinetic energy.
 
 **Algorithm.** Import or generate weighted markers, deposit their matter,
@@ -765,7 +753,7 @@ Reconstruction refreshes the field when required. The collision rate,
 invariants, effective marker count, and `Delta r/lambda` are checked before
 checkpointing.
 
-**Source and task lock.** Use `venus_cpu_sidm_wpic_constant`; code is in
+**Source and task lock.** Use `venus_cpu_sidm_wpic_constant`. Code is in
 `weighted_vlasov_pic_collisions.hpp`, event scheduling, phase remap, and Frank
 restart import. The lock requires constant material SIDM and rejects subhalo,
 power-law, Yukawa, SphDSMC, and grid modes.
@@ -798,16 +786,16 @@ Yukawa--Born velocity dependence. No supplied long-time example establishes
 core evolution for either law.
 
 **Equations.** Power-law scattering replaces the constant law by the
-documented softened `sigma(u)/m`; Yukawa--Born uses its velocity-dependent
+documented softened `sigma(u)/m`. Yukawa--Born uses its velocity-dependent
 total cross section and forward-peaked differential angular CDF.
 
 **Algorithm.** It follows module 12, recomputing the speed-dependent pair
 majorant and drawing the law-specific outgoing angle at each collision event.
 The CPU velocity-dependent path retains the mesh-wide reference collision
-clock; its shell-local optimization is not enabled in this release.
+clock. Its shell-local optimization is not enabled in this release.
 
 **Source and task lock.** Use
-`venus_cpu_sidm_wpic_velocity_dependent`; it requires `powerlaw` or
+`venus_cpu_sidm_wpic_velocity_dependent`. It requires `powerlaw` or
 `yukawa_born` and rejects constant, subhalo, SphDSMC, and grid modes.
 
 **Parameters/invalid combinations.** For power law, specify normalization,
@@ -816,7 +804,7 @@ amplitude and shape parameters after converting the physical law to simulation
 units, and select the Yukawa differential kernel. A
 Yukawa total law with isotropic angular scattering is invalid.
 
-**IC, output, parallelism, and visualization.** These match module 12; use the
+**IC, output, parallelism, and visualization.** These match module 12. Use the
 Frank WPIC renderers and SIDM analyzers, with one shared-memory process.
 
 **Limitation.** Local formula and pair-invariant agreement does not establish
@@ -825,7 +813,7 @@ long-time relaxation or converged core evolution.
 **Required checks.** Establish constant-matched relaxation-time, Maxwellian,
 core-evolution, locality, marker-number, and ensemble comparisons for each law.
 
-## 14. Canonical orbit-phase Boltzmann--Poisson
+## 14. Canonical orbit phase Boltzmann--Poisson
 
 **Scope and exclusions.** This CPU task evolves a distribution on a bound-orbit
 atlas in canonical phase and couples transport to local finite-angle collision
@@ -836,13 +824,13 @@ events and a self-consistent Poisson field. It is not the Eulerian
 on a bound-orbit atlas in phase, lifts finite-angle collision gain/loss into
 orbit cells/open packets, compresses positive packets, and rebuilds the
 Poisson field at events. One update (1) transports the atlas in canonical
-phase; (2) selects local NTC collision pairs; (3) maps outgoing states back to
-bound atlas cells or open packets; (4) closes mass, momentum, and energy
-ledgers; (5) compresses positive packets; (6) reconstructs radial moments and
-the field; and (7) advances event clocks and writes output/restart state.
+phase. (2) selects local NTC collision pairs. (3) maps outgoing states back to
+bound atlas cells or open packets. (4) closes mass, momentum, and energy
+ledgers. (5) compresses positive packets. (6) reconstructs radial moments and
+the field. And (7) advances event clocks and writes output/restart state.
 
 **Source and task lock.** Use
-`venus_cpu_boltzmann_poisson_canonical_orbit`; its main is
+`venus_cpu_boltzmann_poisson_canonical_orbit`. Its main is
 `cpu/src/apps/boltzmann_poisson/canonical_orbit.cpp`. Shared
 implementation is in the `canonical_*` headers. The task uses its
 orbit-atlas command-line schema and rejects substitution of a modular INI or a
@@ -861,7 +849,7 @@ and MPI decomposition do not apply.
 **IC/restart, output, parallelism, and visualization.** A versioned Eulerian
 grid restart and a stationary Eddington table always construct the source
 atlas. An optional canonical restart restores the evolved atlas and event
-state; it replaces neither source input. Output includes `history.csv`, `profiles.csv`,
+state. It replaces neither source input. Output includes `history.csv`, `profiles.csv`,
 `operator_mass_budget.csv`, and atomic
 `restart_state.bin`. The task uses one shared-memory process. Use
 schema-compatible profile, density/slope, and invariant tools.
@@ -883,7 +871,7 @@ timesteps to assess the reference calculation's field and diagnostic errors.
 # GPU modules
 
 The GPU code is a distinct CUDA implementation. It shares restart contracts
-and selected CPU reference formulae; it does not call the CPU evolution loop.
+and selected CPU reference formulae. It does not call the CPU evolution loop.
 Initial particle states are generated on the host and imported through the
 shared restart format, allowing CPU and GPU comparisons to start from the
 same sampled population.
@@ -897,11 +885,11 @@ orbit, or SphDSMC.
 **Equations.** It discretizes spherical VP with CIC/TSC deposition,
 `dPhi/dr=G M(<r)/r^2`, and static/expanding KDK characteristics.
 
-**Algorithm.** (1) Read and upload a WPIC restart; (2) deposit spherical
-moments on the device; (3) scan enclosed mass and reconstruct force/potential;
+**Algorithm.** (1) Read and upload a WPIC restart. (2) deposit spherical
+moments on the device. (3) scan enclosed mass and reconstruct force/potential.
 (4) fixed-step KDK push, including analytic expanding drift, with shortening
-only at output/final time; (5) apply boundaries;
-(6) output/download only at requested profiles/checkpoints; (7) repeat without
+only at output/final time. (5) apply boundaries.
+(6) output/download only at requested profiles/checkpoints. (7) repeat without
 collision scheduling.
 
 **Source and task lock.** Use `venus_gpu_vlasov_poisson` or
@@ -927,7 +915,7 @@ all-reduces radial moments and writes a gathered ID-sorted checkpoint.
 **Visualization, example, and limitation.** Use the common WPIC renderers or
 `gpu/scripts/render_venus_gpu_density_slope_gif.py` for its documented
 run-directory organization. The supplied restart example illustrates CPU/GPU
-handoff; long-time agreement still requires profile and convergence studies.
+handoff. Long-time agreement still requires profile and convergence studies.
 
 **Limitations.** `benchmark_vlasov_poisson_gpu` is the focused performance
 executable. Delayed-inner and wider boundary/background modes are absent.
@@ -941,9 +929,9 @@ CPU module 11, not material SIDM.
 **Equations and algorithm.** The same calibrated pair areas, COM scatter,
 capture energy, compaction, event clocks, locality, and counter-RNG semantics
 as CPU module 11 are implemented in CUDA. Device prefix/majorant arrays remain
-cached until capture changes their inputs; MPI owns physical radial cells and
+cached until capture changes their inputs. MPI owns physical radial cells and
 migrates markers after capture. Reference mode uses one mesh-wide collision
-step; `--subhalo-adaptive-cell-timestep` gives each cell its own CFL clock and
+step. `--subhalo-adaptive-cell-timestep` Gives each cell its own CFL clock and
 the GPU batches several local steps per launch, stopping early after capture.
 
 **Source and task lock.** Use `venus_gpu_subhalo_boltzmann_poisson` or `_mpi`.
@@ -961,7 +949,7 @@ Outputs add `collision_history_gpu.csv` and completion, walltime, locality, or
 cadence status records.
 
 **Parallelism.** One GPU or one rank per GPU. Fixed-clock MPI globally reduces
-the collision-frequency maximum; adaptive MPI advances uniquely owned cells
+the collision-frequency maximum. Adaptive MPI advances uniquely owned cells
 locally inside the common outer batch. Migration and gathered restart define
 the remaining supported MPI scope.
 
@@ -979,19 +967,19 @@ and long-time statistical convergence across the selected parameter space.
 material SIDM law. The material scheduler is not rank-count invariant.
 
 **Equations.** The collision exposure is the material Boltzmann rate
-`u Sigma_ij(u)` with elastic COM scattering; the three laws are detailed in
+`u Sigma_ij(u)` with elastic COM scattering. The three laws are detailed in
 modules 19--21.
 
-**Algorithm.** (1) Read/upload restart; (2) VP KDK to the selected collision
-deadline; (3) radius-bin markers into fixed-occupancy local shells; (4) form
-the material collision majorant; (5) draw/accept pairs and outgoing angles;
-(6) update device markers; (7) audit invariants and write collision history;
+**Algorithm.** (1) Read/upload restart. (2) VP KDK to the selected collision
+deadline. (3) radius-bin markers into fixed-occupancy local shells. (4) form
+the material collision majorant. (5) draw/accept pairs and outgoing angles.
+(6) update device markers. (7) audit invariants and write collision history.
 (8) checkpoint clocks/RNG state. Reference mode uses one mesh-wide collision
 step. `--sidm-adaptive-shell-timestep` gives every fixed-occupancy shell an
 independent clock and refreshes its velocity majorant after each local step.
 The disjoint partner assignments give every unordered pair equal inclusion
 probability `1/m`, with `m=N-1` for even shell population `N` and `m=N` for
-odd `N`. Acceptance and its CFL bound use `m/V`; the physical mean-free-path
+odd `N`. Acceptance and its CFL bound use `m/V`. The physical mean-free-path
 diagnostic retains `(N-1)/V`. At most one collision per marker per local step
 makes collision-CFL convergence a required check.
 
@@ -1009,7 +997,7 @@ GPU WPIC products plus a material collision ledger and terminal status.
 
 **Parallelism.** Single-GPU execution is supported. `_mpi` names select the
 one-rank-per-GPU build, but generic material scheduling is not rank-count
-invariant; multi-GPU results require statistical and ownership checks.
+invariant. Multi-GPU results require statistical and ownership checks.
 
 **Visualization and limitation.** Use the generic density/slope/dispersion
 GIF and SIDM analyzer. `benchmark_material_sidm_gpu` is the focused
@@ -1025,7 +1013,7 @@ studies.
 constant `sigma/m` and isotropic scattering. Quantitative trajectories require
 the locality and convergence checks below.
 
-**Equation/algorithm.** `sigma(u)/m=sigma0`; pair exposure and elastic COM
+**Equation/algorithm.** `sigma(u)/m=sigma0`. Pair exposure and elastic COM
 scattering follow modules 12 and 18.
 
 **Parameters and invalid combinations.** `sigma0`, strength, shell/CFL/event
@@ -1043,7 +1031,7 @@ softened power-law material cross section. Quantitative trajectories require
 the comparisons and convergence checks below.
 
 **Equation/algorithm.** The documented `sigma(u)/m` power law replaces
-`sigma0` in the local pair majorant; outgoing directions remain isotropic for
+`sigma0` in the local pair majorant. Outgoing directions remain isotropic for
 this law.
 
 **Parameters and invalid combinations.** Normalization, reference speed,
@@ -1059,11 +1047,11 @@ locality, marker-number, timestep, seed, and rank-count convergence.
 
 **Physics scope and exclusions.** `venus_gpu_sidm_yukawa_born` and `_mpi` lock module 18 to
 the velocity-dependent, forward-peaked Yukawa--Born kernel. The total cross
-section and inverse angular CDF are implemented; quantitative trajectories
+section and inverse angular CDF are implemented. Quantitative trajectories
 require the checks below.
 
 **Equation/algorithm.** The Born total cross section determines the rate and
-the normalized differential cross section determines the outgoing angle; see
+the normalized differential cross section determines the outgoing angle. See
 the GPU collision-equation section for the explicit expressions and stable
 inverse CDF.
 
@@ -1078,11 +1066,11 @@ core-evolution convergence studies.
 ## 22. GPU compatibility dispatcher, MPI, restart, and benchmarks
 
 `run_wpic_subhalo_gpu` and `_mpi` remain compatibility auto-mode names for old
-launchers. They must report the resolved task and fail on ambiguous mixtures;
-new commands should use modules 16--21. `wpic_restart.cpp` owns the portable
-checkpoint; `wpic_mpi.cpp` owns one-rank-per-GPU synchronization. The focused
+launchers. They must report the resolved task and fail on ambiguous mixtures.
+New commands should use modules 16--21. `wpic_restart.cpp` owns the portable
+checkpoint. `wpic_mpi.cpp` Owns one-rank-per-GPU synchronization. The focused
 performance programs are `benchmark_vlasov_poisson_gpu` and
-`benchmark_material_sidm_gpu`; `benchmark_wpic` remains the compatibility
+`benchmark_material_sidm_gpu`. `benchmark_wpic` Remains the compatibility
 aggregate. Benchmarks measure speed, not physical convergence.
 
 ## Backend exclusions

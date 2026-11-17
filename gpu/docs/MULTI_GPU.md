@@ -2,12 +2,18 @@
 
 MPI (Message Passing Interface) allows separate running copies of a program
 to exchange data. Each copy is a process, also called a rank. VENUS assigns
-one rank to each GPU. Decomposition divides particles between them; device
+one rank to each GPU. Decomposition divides particles between them. Device
 binding selects the GPU used by a rank. A marker is a numerical particle
 with a mass weight. Start with [the GPU guide](../README.md#6-choose-one-gpu-or-one-mpi-rank-per-gpu)
 for build and submission commands.
 
-Additional terms are defined in the [plain-language glossary](../../docs/TERMS.md).
+## Notation
+
+Rank index $`a`$ labels marker set $`P_a`$. $`|P_a|`$ Is its population and
+$`N_p`$ the total marker count. Marker $`p`$ has mass $`m_p`$ and assigns
+fraction $`a_{pi}`$ to radial cell $`i`$. The local and global cell masses are
+$`M_i^{(a)}`$ and $`M_i`$. `Nr` is radial cell count, so `O(Nr)` refers to
+communication proportional to the radial mesh size.
 
 ## Decomposition and device binding
 
@@ -28,7 +34,7 @@ venus_gpu::WpicState local_state(local_markers);
 
 The helper constructs a node-local communicator and selects the GPU matching
 the local MPI rank. A scheduler may expose one physical GPU as logical device
-zero inside each task; those logical devices still refer to distinct
+zero inside each task. Those logical devices still refer to distinct
 accelerators.
 
 ## Global Vlasov–Poisson field
@@ -75,11 +81,11 @@ extensions to this transfer stage.
 The following four choices preserve the physical cell and random trial
 identity under a change in rank count:
 
-1. collision cells retain their global CPU cell number after slab ownership;
-2. random draws use `(seed, epoch, global cell, substep, trial, dimension)`;
+1. collision cells retain their global CPU cell number after slab ownership.
+2. random draws use `(seed, epoch, global cell, substep, trial, dimension)`.
 3. fixed-clock reference mode globally reduces the largest marker trial
    frequency, while adaptive mode lets each uniquely owned cell advance its
-   own local clock inside the common operator batch;
+   own local clock inside the common operator batch.
 4. captures stop the affected cell, compact the local population, and rebuild
    the exact proposal before that unfinished cell resumes.
 
@@ -112,13 +118,13 @@ workspaces are released while MPI remains available.
 
 ## Scaling considerations
 
-Collisionless Vlasov--Poisson exchanges only `O(Nr)` moment arrays; its main
+Collisionless Vlasov--Poisson exchanges only `O(Nr)` moment arrays. Its main
 scaling limits are the two all-reductions per KDK step and load imbalance in
 the local marker push. Use `venus_gpu_vlasov_poisson_mpi` when no collision
 operator is required.
 
 Subhalo collisions add host-staged marker migration. Fixed-clock mode also
-adds a global maximum for every mesh-wide collision substep; adaptive-cell
+adds a global maximum for every mesh-wide collision substep. Adaptive-cell
 mode removes that per-substep collective but retains outer-batch and
 diagnostic collectives. A short or collision-heavy calculation may
 therefore run more slowly on several GPUs than on one. Measure the intended
@@ -127,5 +133,5 @@ choosing a rank count. Report strong scaling at fixed total problem size and
 weak scaling at fixed markers per GPU separately.
 
 For a collisionless run, selecting the collisionless task prevents collision
-scheduling entirely; ranks still perform the global field reductions and
+scheduling entirely. Ranks still perform the global field reductions and
 independently push their local marker partitions.

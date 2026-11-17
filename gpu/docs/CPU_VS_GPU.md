@@ -1,18 +1,12 @@
 # How GPU code differs from CPU code
 
-CPU means central processing unit and GPU means graphics processing unit.
-CUDA is NVIDIA’s GPU programming system. A marker is a numerical particle
-carrying mass. A shell is a radial grid cell. A kernel is a function run by
-many GPU threads, where a thread is one worker executing instructions.
-The [GPU guide](../README.md) gives the build and run commands; this page
-explains their implementation.
-
-Additional terms are defined in the [plain-language glossary](../../docs/TERMS.md).
-
 The CPU and GPU modules implement the same supported force and collision
 formulas. The GPU arranges independent marker, shell and pair calculations
 into parallel kernels. Their memory access, shared sums and exclusive pair
 updates determine the execution order described here.
+
+In the floating-point associativity example, `a`, `b` and `c` are arbitrary
+floating-point operands. Their values have no separate physical meaning.
 
 ## Cores versus CUDA threads
 
@@ -74,9 +68,9 @@ and CUDA double atomics can add the same terms in different orders. Therefore
 in the last bits even though both implement the same discretization. CPU/GPU
 comparisons should distinguish four increasingly macroscopic levels:
 
-1. exact discrete state: IDs, states, counts, RNG counters, event ledgers;
-2. roundoff-tolerant continuous state: `r`, `w`, field moments;
-3. conservation and convergence;
+1. exact discrete state: IDs, states, counts, RNG counters, event ledgers.
+2. roundoff-tolerant continuous state: `r`, `w`, field moments.
+3. conservation and convergence.
 4. statistical/profile agreement for long chaotic Monte-Carlo evolution.
 
 Discrete checkpoint fields should agree whenever both backends use the same
@@ -91,13 +85,13 @@ measured rounding differences of the parallel sums.
 Deposition is many-to-one, so double-precision atomics protect shell moments.
 Collision updates are two-to-two and need exclusive marker ownership.
 
-The material SIDM module draws a round of disjoint partner assignments each
-substep; every thread owns both endpoints. Each unordered pair has inclusion
+The material self-interacting dark matter (SIDM) module draws a round of disjoint partner assignments each
+substep. Every thread owns both endpoints. Each unordered pair has inclusion
 probability `1/m`, where `m=N-1` for even shell population `N` and `m=N` for
 odd `N`. Acceptance and its collision CFL use `m/V`, so the pair marginals
 give the physical Boltzmann collision rate. The mean-free-path diagnostic
 uses physical partner density `(N-1)/V`. The one-event-per-marker local step
-requires collision-CFL convergence; CPU/GPU comparisons use conservation,
+requires collision-CFL convergence. CPU/GPU comparisons use conservation,
 convergence, and statistical ensembles.
 
 For adaptive material collisions, the host retains one elapsed-time clock per
@@ -119,23 +113,23 @@ preserves the definition of each trial across the two implementations.
 
 Threads in a warp share an instruction stream. If some reflect, scatter, or
 capture while others do not, the warp serializes those branches. The KDK
-boundary loop is short and bounded; scatter/capture branches operate in large
+boundary loop is short and bounded. Scatter/capture branches operate in large
 batches. The adaptive Plummer material-deflection quadrature remains CPU-only
 because its deeply divergent control flow is poorly matched to the present GPU
 batch design.
 
 ## Kernel launch, I/O, and synchronization costs
 
-Large marker loops amortize launch overhead; very small runs may not. Output
-forces a device synchronization, so production output is sparse. With MPI,
+Large marker loops amortize launch overhead. Very small runs may not. Output
+forces a device synchronization, so production output is sparse. With Message Passing Interface (MPI),
 each KDK step performs two `O(Nr)` moment all-reductions. Subhalo collisions
-currently host-stage marker migration into radial ownership slabs; this is
+currently host-stage marker migration into radial ownership slabs. This is
 correct but can make two GPUs slower than one for short collision-heavy
 intervals.
 
 ## Multiple GPUs
 
-One MPI rank binds to one GPU. VP markers stay distributed while only field
+One MPI rank binds to one GPU. Vlasov--Poisson (VP) markers stay distributed while only field
 moments are reduced. Before a subhalo collision, active markers migrate to the
 rank owning their radial collision cell. Global cell numbers key the RNG, preserving a trial's identity when its cell
 moves between ranks. A global maximum supplies the common fixed reference

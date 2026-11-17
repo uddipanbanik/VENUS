@@ -1,21 +1,52 @@
 # Einstein--Vlasov coordinates and collapse diagnostics
 
-Einstein--Vlasov couples collisionless matter to relativistic gravity.
-Schwarzschild (SC) and ingoing Eddington--Finkelstein (EF) are coordinate
-choices for that evolution; EF remains regular at a black hole horizon.
-Polar--areal coordinates use a radius whose sphere has area `4πr²`. A
-null slice follows a lightlike surface; advanced time labels incoming light
-surfaces. The metric specifies spacetime distances and times. Its constraint
-equations relate the gravitational field to the matter on a slice.
-Throughout the formulas below, `G=c=1`; `m` is enclosed gravitational mass
-and `r` is areal radius, so `2m/r` is dimensionless compactness.
-
-Additional terms are defined in the [plain-language glossary](TERMS.md).
-
 Run commands from the repository root. Begin with the [CPU guide](../cpu/README.md)
 and the [named module catalogue](../README.md#choose-a-module) for build, input
 and output examples. This reference develops the coordinate map and the
 conditions for interpreting collapse and halo diagnostics.
+
+## Coordinate-map notation
+
+Use geometrized units $`G=c=1`$, with Newton’s constant $`G`$ and speed of
+light $`c`$, and metric signature $`(-,+,+,+)`$.
+
+The coordinate-map notation uses Schwarzschild time $`\tilde t=\tau`$,
+advanced ingoing Eddington--Finkelstein (EF) time $`v`$, and areal radius $`r`$. The functions $`\mu,\lambda`$
+are the SC metric coefficients, while $`a,b`$ are the EF metric coefficients
+defined in the metric equations below. Tensor indices $`a,b`$ in $`g^{ab}`$ run over the time and
+radial coordinates. There they are indices rather than metric coefficients.
+The exterior Schwarzschild vacuum mass is $`M`$, and $`r_\ast`$ denotes its
+tortoise radius. The map derivatives are $`A=\partial_{\tilde t}v`$ and
+$`F=1/A`$. The diagnostic $`\tau_{\mathrm{inverse}}`$ is SC time recovered by
+the inverse map. For the marker measure, $`W_p`$ is invariant rest weight,
+$`\psi`$ is an arbitrary test function and $`\widehat f[\psi]`$ is its
+weighted sum over markers. The variable $`u=\log P`$ used by the EF integrator
+is distinct from the relative speed $`u`$ in the collision sections.
+
+The local SC energy is $`\epsilon=\sqrt{1+w^2+2\eta/r^2}`$, where $`w`$ is
+local radial specific momentum and $`\eta=L^2/2`$ for specific angular momentum
+$`L`$. The EF momentum is $`P=p_r>0`$. $`a=1-2m/r`$ Is the compactness gap.
+The energy density and radial pressure are $`\rho,p_r`$. The tangential sum is
+$`p_{t,\mathrm{sum}}=p_\theta+p_\phi`$. $`R_J`$ denotes the radial Jeans
+residual. Momentum $`p_r`$ and pressure $`p_r`$ are distinguished by their
+explicit physical context.
+
+The fixed-family rest mass, Arnowitt--Deser--Misner (ADM) mass and target normalization mass are
+$`M_0,M_{\mathrm{ADM}},M_{\mathrm{family}}`$. Newtonian diagnostic energies use
+kinetic energy $`K`$ and force virial $`W=-\int\rho r\Phi_r\,\mathrm d^3x`$.
+The extracted slice mass is $`M_{\mathrm{null}}`$ and donor duration
+$`T_{\mathrm{donor}}`$ gives $`\widehat v=v+T_{\mathrm{donor}}`$.
+$`R_{\mathrm B},R_{\mathrm E}`$ are map-worldtube and evolution-boundary radii.
+$`v_{\mathrm{AH}},r_{\mathrm{AH}}`$ are first apparent-horizon time and radius.
+$`v_{\mathrm{final}}`$ Is final saved time and $`r_{\mathrm{exc}}`$ excision radius.
+
+The bound shell uses cutoff energy $`E_0`$, local support variable
+$`y=\log E_0-\mu`$, maximum radial momentum $`W(r)`$, fixed angular momentum
+$`\ell_0`$, proper rest density $`n_0`$ and rest-mass profile $`M_0(r)`$.
+$`R_{\mathrm{out}}`$ is outer support radius and $`M=m(R_{\mathrm{out}})`$.
+The kick amplitude and taper radius are $`\kappa,r_c`$. $`s_L`$ Rescales angular
+momentum. $`N_r`$ is radial resolution and $`N_{\mathrm{marker}}`$ marker count.
+These scalar uses of $`W`$ are separate from invariant marker weights $`W_p`$.
 
 ## Einstein--Vlasov coordinate modules
 
@@ -25,7 +56,7 @@ exposes two distinct implementations:
 
 - [`weighted_einstein_vlasov_pic_schwarzschild.hpp`](../cpu/include/ev/weighted_einstein_vlasov_pic_schwarzschild.hpp)
   evolves the polar--areal variables and stops before
-  $`2m/r=1`$, where that chart becomes singular;
+  $`2m/r=1`$, where that chart becomes singular.
 - [`weighted_einstein_vlasov_pic_eddington_finkelstein.hpp`](../cpu/include/ev/weighted_einstein_vlasov_pic_eddington_finkelstein.hpp)
   evolves the canonical future-directed null-slice momentum $`P=p_r>0`$,
   solves the neutral advanced-null constraints, detects $`a=1-2m/r=0`$,
@@ -45,7 +76,7 @@ first evolves a deterministic Schwarzschild donor history, solves the ingoing
 eikonal equation, and intersects that null hypersurface with every marker
 worldline. Here the eikonal equation is simply the equation requiring the
 surface to be made of light rays. The resulting null-slice file records both
-its provenance and SHA-256 content hashes; that checked file, rather than the
+its provenance and SHA-256 content hashes. That checked file, rather than the
 raw spacelike IC, initializes the EF run.
 
 In polar--areal coordinates,
@@ -53,7 +84,6 @@ In polar--areal coordinates,
 ```math
 ds^2=-e^{2\mu}\,d\tilde t^2+e^{2\lambda}\,dr^2+r^2d\Omega^2.
 ```
-
 
 The future ingoing coordinate satisfies
 $`g^{ab}\partial_a v\,\partial_b v=0`$, with the advanced root
@@ -74,7 +104,6 @@ The forward equation is the full ingoing eikonal equation:
 -e^{-2\mu}(\partial_{\tilde t}v)^2+e^{-2\lambda}(\partial_r v)^2=0.
 ```
 
-
 The displayed positive root chooses future-directed, inward-moving null
 surfaces. In a dynamical spacetime, neither direction of the map is a static
 tortoise-radius substitution: the forward or inverse eikonal equation must be
@@ -82,10 +111,10 @@ solved through the relevant spacetime history.
 
 The same-event checker evolves the logarithms of the map Jacobians, not the
 Jacobians directly. Along a forward null ray,
-$`\frac{d\log A}{dr}=-\partial_{\tilde t}\bigl[e^{\lambda-\mu}\bigr]`$; along an inverse ray with
+$`\frac{d\log A}{dr}=-\partial_{\tilde t}\bigl[e^{\lambda-\mu}\bigr]`$. Along an inverse ray with
 $`q=1/(ab)`$, $`\frac{d\log F}{dr}=\partial_v q`$. Thus $`A=\exp(\log A)>0`$ and
 $`F=\exp(\log F)>0`$ by construction. This is the exact tangent equation. It
-prevents a stiff explicit step from inventing a negative Jacobian; it does
+prevents a stiff explicit step from inventing a negative Jacobian. It does
 not excuse insufficient resolution. The strict history check compares
 otherwise identical $`n`$- and $`2n`$-substep traces using the raw changes in
 coordinate time and in $`\log A`$ or $`\log F`$, each at the unchanged $`2\times10^{-5}`$
@@ -112,7 +141,7 @@ spatial interpolant, together with timestep refinement of the characteristic
 integration. Any nonfinite Jacobian or inverse composition fails closed. The
 separate composition gate uses
 $`\frac{|\tau_{\mathrm{inverse}}-\tau|}{\max(1,|\tau|,|\tau_{\mathrm{inverse}}|)}`$ and
-$`\left|\mathrm{expm1}(\log A+\log F)\right|`$, both at the default $`5\times10^{-4}`$ ceiling; this
+$`\left|\mathrm{expm1}(\log A+\log F)\right|`$, both at the default $`5\times10^{-4}`$ ceiling. This
 normalization is not applied to the raw $`n`$-versus-$`2n`$ eikonal changes.
 
 At a common event, the radial covector (the momentum component conjugate to
@@ -128,8 +157,8 @@ finite Runge--Kutta stage can change the required sign of $`P`$. Positive $`P`$
 means future directed, not necessarily inward moving: the sign of
 $`\frac{dr}{dv}=\frac b2\left[a-\frac{1+2\eta/r^2}{P^2}\right]`$ distinguishes infall, a turning point,
 and outward motion. A distribution function is a scalar, meaning that its
-value is unchanged at the same mapped event and momentum, with phase-space
-measure relation $`dP/P=dw/\epsilon`$. A finite WPIC state represents
+value is unchanged at the same mapped event and momentum, with phase space
+measure relation $`dP/P=dw/\epsilon`$. A finite weighted particle-in-cell (WPIC) state represents
 the empirical measure
 
 ```math
@@ -142,13 +171,13 @@ unique IDs/source IDs, invariant weights and $`\eta`$, and mapped positions and
 momenta, while separately checking the metric pullback (the explicit
 Jacobian change of tensor components) and every covariant
 stress-tensor component on the same events. A comparison is inconclusive if
-the forward or inverse eikonal, event coverage, phase-space Jacobian, empirical
+the forward or inverse eikonal, event coverage, phase space Jacobian, empirical
 measure, tensor pullback, or resolution/PIC convergence evidence is absent.
 At each sampled SC time, the candidate common domain is the one unbroken
 radial interval attached to the common outer worldtube. Only a genuine stored-
 history boundary or the $`a>10^{-3}`$ chart cutoff may end it. A failed forward
 or inverse solve, failed composition, or failed metric identity remains an
-unexplained hole inside the claimed interval and fails the certificate; it
+unexplained hole inside the claimed interval and fails the certificate. It
 cannot be used to shrink the domain until the remaining points look good. The
 certifier chooses the longest contiguous block of radially adequate time
 slices. Its strict defaults require at least 95% radial coverage on every
@@ -157,7 +186,7 @@ at least 64 mapped events, at least three complete times, and no holes or
 interior re-entry. Field and tensor norms are rebuilt using only this declared
 domain. In-domain maxima decide the gate, while separate all-attempted maxima
 and exclusion counters preserve every failure outside it. The common domain
-never extends past the SC chart; later post-horizon EF events have no
+never extends past the SC chart. Later post-horizon EF events have no
 Schwarzschild-chart counterpart. The required
 marker table proves the sampled distribution on the imported initial null
 slice. Later mapped metric and every stress/moment component are checked, but
@@ -168,7 +197,7 @@ distribution equality unless its
 
 The null mapper may use a vacuum worldtube $`R_{\mathrm B}`$ strictly inside the EF
 evolution boundary $`R_{\mathrm E}`$. $`R_{\mathrm B}`$ must be an exact mesh face with four-cell
-matter/crossing clearance. The eikonal is solved only through $`R_{\mathrm B}`$; on the
+matter/crossing clearance. The eikonal is solved only through $`R_{\mathrm B}`$. On the
 initial null slice, the verified vacuum interval $`R_{\mathrm B}<r\le R_{\mathrm E}`$ is continued
 exactly with $`m=M_{\mathrm{null}}`$, $`a=1-2M_{\mathrm{null}}/r`$, $`A=F=b=1`$, zero stress, and the
 Schwarzschild tortoise difference. This analytic continuation is initial-data
@@ -176,7 +205,7 @@ construction only—the EF solver subsequently evolves the complete $`R_{\mathrm
 domain. Both radii, the extension index, map/full-grid fingerprints, vacuum
 residuals, and artifact hashes are authenticated on import and resume.
 Here “worldtube” means the fixed-radius surface $`r=R_{\mathrm B}`$ followed through
-time; it is the boundary where the SC and EF clocks are normalized.
+time. It is the boundary where the SC and EF clocks are normalized.
 
 If the extracted surface has the worldtube label $`v=-T_{\mathrm{donor}}`$, runtime output
 uses only the shifted origin $`\widehat v=v+T_{\mathrm{donor}}`$, so its imported initial
@@ -184,8 +213,8 @@ surface is $`\widehat v=0`$. This shift changes no tensor or momentum component.
 
 Mapped-run summaries keep three masses deliberately separate. The
 Schwarzschild $`\tau=0`$ normalization is `fixed_family_adm_mass` and defines the
-chosen fixed-ADM angular-momentum family. The evolved donor value on the
-extracted null slice is `null_slice_conserved_adm_mass`; it is not reset to the
+chosen fixed-ADM angular momentum family. The evolved donor value on the
+extracted null slice is `null_slice_conserved_adm_mass`. It is not reset to the
 target because its difference measures numerical donor conservation. Finally,
 `initial_deposited_adm_mass` is independently reconstructed from the EF
 markers on $`\widehat v=0`$. The exact vacuum extension is anchored to the null-slice
@@ -202,7 +231,7 @@ minimum certificate therefore needs two resolutions and two realizations.
 Its saved cadence must satisfy
 $`\frac{\max(\mathtt{saved\_time\_gap})}{\min(\mathtt{radial\_spacing})}\le0.75`$ in both coordinates. For
 the documented $`R_{\mathrm E}=24`$, $`N_r=2048`$, `dt_max=0.004` grid this permits
-`output_steps <= 2`; strict parity saves every step. The threshold scout's
+`output_steps <= 2`. Strict parity saves every step. The threshold scout's
 `output_steps=50` is a science cadence and cannot issue a new coordinate
 certificate.
 
@@ -210,7 +239,7 @@ The same normalized Schwarzschild $`\tau=0`$ family also defines
 `fixed_family_rest_weight` $`=M_0`$ and the coordinate-independent global binding
 diagnostic `fixed_family_binding_fraction` $`=(M_0-M_{\mathrm{ADM}})/M_0`$. SC and mapped EF
 summaries, including resumed runs, report the identical family value from an
-immutable diagnostic sidecar; it is never recomputed from the later null
+immutable diagnostic sidecar. It is never recomputed from the later null
 slice. A halo label requires a present, internally consistent positive binding
 fraction. This is necessary global binding evidence, not proof of equilibrium.
 The separately reported marker statistic
@@ -233,21 +262,21 @@ moments are pulled back only where $`a=1-2m/r>0`$, so this diagnostic is used fo
 halo evidence only on the regular pre-horizon domain. The conservative
 threshold classifier requires sustained late-time Jeans balance together with
 stationary `r50`, `r90`, and maximum compactness, small escape, positive global
-binding energy, and no horizon. Missing balance data fail closed; an outlying
+binding energy, and no horizon. Missing balance data fail closed. An outlying
 Newtonian $`2K/|W|`$ does not veto a relativistic halo. SC and EF call one
 shared time-series classifier, record its complete thresholds/statistics and
 `failed_checks` list under `high_compactness.halo_classifier`, and require the
 maximum saved compactness to remain below $`0.99`$. Thus a Schwarzschild run
-that only stalls near $`2m/r=1`$ is `undetermined`, never a halo; its fate must
+that only stalls near $`2m/r=1`$ is `undetermined`, never a halo. Its fate must
 be resolved by the mapped EF evolution.
 The quantities `r50` and `r90` are the radii enclosing 50 and 90 percent of
 the currently active invariant rest weight. “Fails closed” means that a
-missing or failed check produces `undetermined` or stops the calculation; it
+missing or failed check produces `undetermined` or stops the calculation. It
 never counts as halo evidence. The manual states the exact late-time window,
 percentile, fitted-slope, escape, compression, compactness, and Jeans-residual
 inequalities used by this classifier.
 
-A raw EF apparent horizon is likewise not a final black-hole label. It becomes
+A raw EF apparent horizon is likewise not a final black hole label. It becomes
 `black_hole_candidate` only if the run reports a consistent outer $`a=0`$
 crossing, reaches saved compactness at least $`0.99`$, continues for
 $`\frac{v_{\mathrm{final}}-v_{\mathrm{AH}}}{M_{\mathrm{family}}}\ge5`$, and has at least three saved rows strictly
@@ -255,14 +284,14 @@ after $`v_{\mathrm{AH}}`$. The driver audits the initial state and every accepte
 not just saved output: every marker must keep $`P>0`$, every center/face must keep
 $`b>0`$, all marker/field/source arrays must stay finite, and the EF constraint
 must retain its fixed null-slice ADM anchor to roundoff. The extrema and flags
-are checkpointed in `ef_post_horizon_audit.state`; a missing or stale sidecar
+are checkpointed in `ef_post_horizon_audit.state`. A missing or stale sidecar
 on resume disables promotion rather than forgetting pre-resume failures.
 
 The candidate gate also requires positive and consistent target, fixed-family,
-null-slice, and deposited ADM masses; saved ADM and rest-weight accounting;
-explicit negative-$`a`$ excision and a positive integer buffer; an excision
+null-slice, and deposited ADM masses. Saved ADM and rest-weight accounting.
+Explicit negative-$`a`$ excision and a positive integer buffer. An excision
 row lying strictly after $`v_{\mathrm{AH}}`$ and satisfying $`0<r_{\mathrm{exc}}<r_{\mathrm{AH}}`$ whenever
-excision is active; and actual positive rest weight excised
+excision is active. Actual positive rest weight excised
 inside a trapped region. A candidate becomes `black_hole_certified` only when
 a separate SHA-256-authenticated sensitivity manifest supplies at least one
 intrinsic-candidate repeat with a different excision threshold at fixed buffer
@@ -273,10 +302,10 @@ executable and exact source manifest for the primary and every repeat. Across
 the primary and repeats,
 $`\frac{\max(v_{\mathrm{AH}})-\min(v_{\mathrm{AH}})}{M_{\mathrm{family}}}\le1`$ and
 $`\frac{\max(r_{\mathrm{AH}})-\min(r_{\mathrm{AH}})}{\mathrm{median}(r_{\mathrm{AH}})}\le0.05`$, using each run's first trapped
-time and its positive summary apparent-horizon radius; users may tighten but
+time and its positive summary apparent-horizon radius. Users may tighten but
 not loosen these limits. Missing sensitivity evidence leaves a candidate
 uncertified, and an uncertified candidate can never close the final
-angular-momentum bracket. This excision certificate is separate from the
+angular momentum bracket. This excision certificate is separate from the
 SC--EF parity certificate: both are required for a final threshold
 claim.
 
@@ -310,13 +339,13 @@ $`w\longmapsto w-\frac{\kappa r^2}{r^2+r_c^2}`$ (or the untapered $`w\longmapsto
 $`r_c=0`$) is then fixed for the entire scan. Only
 $`\eta\longmapsto s_L^2\eta`$ varies, followed by one common positive rest-weight factor
 that restores the chosen initial ADM mass. Positive realized binding is
-checked at every point. A sufficiently high-angular-momentum member of a
-genuinely bound family is expected to settle into a halo; an escaping endpoint
+checked at every point. A sufficiently high-angular momentum member of a
+genuinely bound family is expected to settle into a halo. An escaping endpoint
 is classified as dispersal, not as the requested halo side of a threshold.
 For an EF threshold point, the physical SC donor evolves forward with the
-incoming data; a separate momentum-reversed scratch copy supplies only the
+incoming data. A separate momentum-reversed scratch copy supplies only the
 negative-SC-time part needed by the null extractor. The outcome classifier
-uses the EF scan output. A coarse angular-momentum scout searches for a
+uses the EF scan output. A coarse angular momentum scout searches for a
 bracket but is not a coordinate-equivalence certificate and is not a final
 threshold without an authenticated excision-sensitivity certificate,
 refinement, and a second sampling realization.
@@ -332,8 +361,7 @@ submitted.
 The manual gives the full Einstein tensor, Vlasov characteristics, source
 normalization, radial constraints, discretization, Schwarzschild-to-EF and
 EF-to-Schwarzschild transformations, dynamical eikonal equation, horizon and
-excision rules, validation hierarchy, and angular-momentum threshold protocol.
-
+excision rules, validation hierarchy, and angular momentum threshold protocol.
 
 ## Relativistic coordinate comparison
 
@@ -341,7 +369,7 @@ To compare the same high-compactness system in both coordinates, first
 construct its particles on a spacelike slice. The null extractor follows
 their worldlines to one ingoing null slice and writes the particles and
 metric there. The EF run starts from that saved null slice. The upper-case shell variables below are symbolic
-placeholders fixed by successful local preflight; they are not shipped
+placeholders fixed by successful local preflight. They are not shipped
 production defaults:
 
 ```bash
@@ -396,7 +424,7 @@ mass. Its analyzer separates an intrinsic `black_hole_candidate`, an
 excision-sensitivity `black_hole_certified` endpoint, a time-resolved
 virialized halo, dispersal, and an undetermined outcome. Only a converged
 low-$`L`$ `black_hole_certified`/high-$`L`$ halo bracket is called the requested
-threshold; a candidate plus a halo is explicitly inconclusive.
+threshold. A candidate plus a halo is explicitly inconclusive.
 
 The map worldtube, evolution boundary, donor duration, marker count, and grid
 spacing set the domain and resolution of this characteristic extraction.

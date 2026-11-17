@@ -1,19 +1,37 @@
-# GPU WPIC collision modules
+# GPU weighted particle-in-cell (WPIC) collision modules
 
-Weighted particle-in-cell (WPIC) uses numerical particles carrying mass
-weights. Self-interacting dark matter (SIDM) adds encounters between material
-particles. A subhalo is a bound clump inside a larger halo; its encounter law
-describes whole clumps. A cross section is an effective interaction area.
-A Plummer model describes a clump with a smooth central density. A closure
-supplies an assumed relation for unresolved internal quantities. This page
-gives the equations behind the [GPU guide’s](../README.md) collision examples.
+## Notation
 
-Additional terms are defined in the [plain-language glossary](../../docs/TERMS.md).
+| Symbols | Convention in this guide |
+|---|---|
+| $`f,t,H,C[f],\{f,H\}`$ | Distribution, physical time, single-particle Hamiltonian, collision operator and Hamiltonian Poisson bracket. Here $`H`$ is a Hamiltonian; expansion rates are written explicitly in the transport guide. |
+| $`r,w,L,\eta,v_t`$ | Radius, radial velocity, specific angular momentum, $`\eta=L^2/2`$, and tangential speed. |
+| $`\mathbf v_i,\mathbf u,u,\mathbf V,\mathbf u',\hat{\mathbf n}`$ | Incoming velocity of marker $`i`$, relative velocity, its magnitude, pair center-of-mass velocity, outgoing relative velocity and its sampled unit direction. A prime labels an outgoing quantity. |
+| $`v_x,v_y,v_z`$ | Local Cartesian velocity components with the $`x`$ axis chosen radial. |
+| $`m_i,m_j,M_i,M_j,M`$ | Represented object masses; capital $`M`$ denotes the merged total in the capture section. Lower-case $`m`$ in $`\sigma/m`$ is the material mass defining area per mass. |
+| $`\sigma(u),s(u),\Sigma_{ij},S,\sigma_0`$ | Material cross section, area per material mass, effective numerical pair area, dimensionless strength and law normalization. |
+| $`u_*,u_0,n`$ | Regularized relative speed, low-speed softening scale and power-law exponent. The normalization $`\sigma_0`$ has the units required by that exponent. |
+| $`\alpha,m_\chi,m_\phi,\theta,\mu,y,z,\Omega`$ | Yukawa coupling, dark matter and mediator mass parameters, scattering angle, $`\mu=\cos\theta`$, $`y=(m_\chi u/m_\phi)^2`$, uniform angular draw and scattering solid angle. The normalization follows the configured code-unit law. |
+| $`s,N_s,V_s,m_s,B_s,\nu_s`$ | Shell index, population, volume, matching-round count, upper bound on $`u\Sigma_{ij}`$ and resulting proposal frequency. Matching count $`m_s`$ is distinct from marker mass. |
+| $`P_{ij},\delta t_s,t_s,\Delta t_c,\Delta t_{\rm batch},C_{\rm coll}`$ | Assigned-pair acceptance probability, local shell step, elapsed shell time, common collision substep, outer batch duration and collision safety factor. |
+| $`A,a,q,x,\sigma_i,\sigma_{ij}`$ | Plummer area per mass, Plummer scale radius, pair mass ratio, relative speed divided by pair internal dispersion, individual and pair internal velocity dispersion. Here $`\sigma_i`$ is a speed; $`\sigma(u)`$ above is an area. |
+| $`A_{ij},F_{\rm scatt},F_{\rm cap},\Sigma_{\rm scatt},\Sigma_{\rm cap}`$ | Pair geometric area, dimensionless tabulated scattering/capture functions and physical channel areas. |
+| $`B_{ij},C`$ | Subhalo upper bound on $`u\Sigma_{ij}`$ and its coefficient, which contains strength, area normalization and the tabulated bound. |
+| $`\tau_{\rm coll},t_{\rm coll},t'`$ | Integrated collision age, selected physical collision timescale and time integration variable. |
+| $`N,N_{\rm trial},z_{\rm round},p_{ij}`$ | Cell population, integer proposal count, uniform rounding draw on $`[0,1)`$ and subhalo acceptance probability. |
+| $`c,t_c,\nu_{B,c},\delta t_c,\delta t_{\rm fixed}`$ | Collision-cell index, elapsed cell time, proposal frequency bound, adaptive cell step and common fixed step. In fixed-batch formulas, $`t`$ is elapsed batch time. |
+| $`\mu_r,E_{{\rm int},i},E_{{\rm int},\rm rem},r_{\rm rem},\sigma_{\rm rem}`$ | Reduced pair mass, individual and remnant internal energies, remnant radius and remnant internal velocity dispersion. Subscript $`\rm rem`$ denotes the merged object. |
+| $`n_{\rm partner},\lambda_{\rm mfp},\Delta r,\langle\cdot\rangle`$ | Partner number density, mean free path, collision-cell width and the pair average used for the locality estimate. |
+
+Cell and marker indices are local to the formula in which they appear. The
+subscripts `const`, `pow` and `Y` select the constant, power-law and Yukawa
+material laws. The rate and angular normalizations below specify the physical
+meaning of the configured cross section.
 
 This chapter documents two physically distinct operators:
 
-1. material SIDM scattering with constant, softened power-law, or
-   Yukawa–Born cross sections;
+1. material self-interacting dark matter (SIDM) scattering with constant, softened power-law, or
+   Yukawa–Born cross sections.
 2. calibrated subhalo Plummer scattering and capture with unequal
    masses and evolving internal dispersions.
 
@@ -39,7 +57,7 @@ closure as the VENUS CPU module is
 
 It is symmetric and recovers the configured equal-mass collision frequency.
 The strength S multiplies the collision law. The constant normalization is
-sigma0; the softened power law additionally uses speed u0 and exponent n.
+sigma0. The softened power law additionally uses speed u0 and exponent n.
 The Yukawa parameters alpha, m_chi and m_phi set its amplitude and velocity
 dependence. The three enabled laws are
 
@@ -89,7 +107,7 @@ for a cosine above the selected value,
 As $`y\to0`$, this gives the uniform cosine $`\mu=1-2z`$. For
 $`y>1`$, the implementation divides numerator and denominator by $`y`$
 to keep the evaluation bounded. CPU and GPU evaluators use these same constant, power-law,
-Yukawa-total, angular, and pair-area formulas; only their surrounding data
+Yukawa-total, angular, and pair-area formulas. Only their surrounding data
 layout and execution schedule differ.
 
 ### Material GPU proposal
@@ -189,8 +207,8 @@ $`|\mathbf u'|=u`$,
 
 Projection back is $`w'=v_x'`$ and
 $`\eta'=r^2(v_y'^2+v_z'^2)/2`$. By construction this center-of-mass map
-conserves pair momentum and kinetic energy, including for unequal masses;
-floating-point implementations retain those identities to roundoff.
+conserves pair momentum and kinetic energy, including for unequal masses.
+Floating-point implementations retain those identities to roundoff.
 
 ## 3. Subhalo cross sections
 
@@ -265,7 +283,7 @@ with ten times the strength therefore obtains the same nominal collision age
 in one tenth the physical time. For an evolving nonlinear halo the preferred
 quantity is the integral, because density, velocity dispersion, marker masses,
 and velocity-dependent cross sections all change with time. The production
-history's `collision_time` is the minimum sampled cell value; any
+history's `collision_time` is the minimum sampled cell value. Any
 `t/collision_time` derived from it must be identified as a minimum-cell
 diagnostic. The halo-wide cumulative collision age requires a specified
 population average and its integral through the evolving state.
@@ -337,8 +355,8 @@ cell $c$ instead advances with
 
 One CUDA thread owns one cell and executes at most
 `--subhalo-adaptive-batch-substeps` local steps per launch. Elastic events
-reuse the exact mass/dispersion proposal. Capture ends that cell's loop;
-host orchestration compacts the remnant population, rebuilds proposals, and
+reuse the exact mass/dispersion proposal. Capture ends that cell's loop.
+Host orchestration compacts the remnant population, rebuilds proposals, and
 resumes unfinished cells from saved clocks and local substep indices. The
 cell kernels pack 256 cells per block while preserving serial operation order
 inside each cell.
@@ -354,7 +372,7 @@ All random values use the CPU tuple
 (seed, epoch, global collision cell, substep, trial, dimension)
 ```
 
-through the same counter mixer. CUDA block order and MPI rank count therefore
+through the same counter mixer. CUDA block order and Message Passing Interface (MPI) rank count therefore
 do not redefine a trial's random variates. Reproducibility then depends on
 preserving the same global cell numbering, epoch, substep, trial index, and
 capture-rebuild sequence.

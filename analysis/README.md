@@ -1,17 +1,12 @@
 # VENUS example figures
 
-Analysis turns saved simulation output into quantities and figures that help
-interpret the calculation. Reduced data retain the quantities needed for
-these figures. A PDF stores scalable graphics; a PNG stores an image as
-pixels. Reproduction means generating the figures again from the supplied
-data and scripts.
-
-Additional terms are defined in the [plain-language glossary](../docs/TERMS.md).
-
 The twelve example figure pairs are in [../plots](../plots/README.md). This
 directory contains the analysis scripts and reduced simulation output used
-to generate them. The PDF files provide vector graphics; the PNG files
+to generate them. The PDF files provide vector graphics. The PNG files
 provide previews.
+
+The mathematical profiles below use physical radius $`r`$ in the stated
+code units. Their numerical constants specify the supplied Gaussian shell.
 
 ## Reproduce the figures
 
@@ -41,8 +36,8 @@ python scripts/verify_reproduction.py --figure 3 6 7 \
 
 All paths can be absolute or relative to the current directory. The default
 paths are resolved relative to the script, so the scripts also work when
-called from another directory. Each renderer is a separate function;
-importing the module makes these functions available for further analysis.
+called from another directory. Each renderer is a separate function.
+Importing the module makes these functions available for further analysis.
 
 The pinned versions in `requirements.txt` reproduce all twelve reference PNGs
 pixel for pixel in the recorded Python 3.12.14 environment. Regenerated PDFs
@@ -54,7 +49,7 @@ compares every PNG channel and compares PDF bytes after removing that timestamp.
 | Figure | File stem | Physical calculation and retained data |
 | --- | --- | --- |
 | 1 | `sorting_algorithms` | Insertion sort and stable radix sort on four fixed-ID records, with a decimal digit example. |
-| 2 | `halo_virialization_summary` | Physical-Q curves for expanding BP indices 0.3, 0.5, 0.8, expanding VP index 0.5 and both Gaussian VP cases through time 10000. The purple curve gives five converged static index0.5 self-bound selections. An open square gives the single negative-energy static Gaussian selection using its own gravity. |
+| 2 | `halo_virialization_summary` | Physical-Q curves for expanding Boltzmann--Poisson (BP) indices 0.3, 0.5, 0.8, expanding Vlasov--Poisson (VP) index 0.5 and both Gaussian VP cases through time 10000. The purple curve gives five converged static index0.5 self-bound selections. An open square gives the single negative-energy static Gaussian selection using its own gravity. |
 | 3 | `halo_multigamma_density_slopes_shallow` | BP profiles for initial indices 0.3, 0.5, and 0.8, at four saved times per case; all three rows use CUDA. |
 | 4 | `halo_multigamma_density_slopes_steep` | CUDA BP profiles for initial indices 1.2, 1.5, and 2, all through time10000. |
 | 5 | `halo_g05_bp_vp_density_slopes` | Index-0.5 CUDA BP and VP calculations with common initial orbital coordinates and saved times through 10000. |
@@ -62,7 +57,7 @@ compares every PNG channel and compares PDF bytes after removing that timestamp.
 | 7 | `g05_bp_energy_distribution` | Phase-volume mean distribution and its logarithmic energy derivative for the same six times. |
 | 8 | `cold_vp_static_expanding_virial` | Cold VP collapse in static and expanding backgrounds through time 3000: physical virial ratio, inertia, and static energy selections. |
 | 9 | `gaussian_vp_full_radius_density_slopes` | Gaussian VP and BP shell evolution in static and expanding backgrounds, with density and logarithmic slopes through collapse and rebound. |
-| 10 | `sidm_collapse_and_outer_dispersion` | Self-interacting dark matter (SIDM): a lowered NFW halo with weighted particle in cell (WPIC) and a nearly cored halo with spherical direct simulation Monte Carlo (SphDSMC). |
+| 10 | `sidm_collapse_and_outer_dispersion` | Self-interacting dark matter (SIDM): a lowered NFW halo with weighted particle in cell (weighted particle-in-cell (WPIC)) and a nearly cored halo with spherical direct simulation Monte Carlo (SphDSMC). |
 | 11 | `bh_coordinates` | Einstein–Vlasov collapse in Schwarzschild and ingoing Eddington–Finkelstein (EF) coordinates: compactness, lapse, horizon radius, and retained rest mass. |
 | 12 | `bh_interior` | Ten EF density and compactness profiles through apparent-horizon formation, with horizon radii at the corresponding saved times. |
 
@@ -102,18 +97,18 @@ gravitational constant `G=1`. The expanding calculations use physical radius,
 peculiar velocities, expansion exponent `alpha=2/3`, and time offset `t0=12`.
 Their initial resolved mass is 0.8. The initial density is a regularized,
 tapered power law with central scale 0.01, taper radius 9, and taper width 1.
-The BP encounter strength is 0.1; the VP calculation has zero encounter
+The BP encounter strength is 0.1. The VP calculation has zero encounter
 strength. The 256-cell logarithmic field mesh spans radii 0.1 to 1000.
 
 The logarithmic slope is the derivative of a quadratic fit to
 `log10(density)` against `log10(radius)` over 21 adjacent native cells.
 Thin curves retain positive native densities and finite derivatives.
 Thick sections require effective marker population `neff >= 32` at their
-centers; the entire derivative window requires positive density.
+centers. The entire derivative window requires positive density.
 The effective population is the squared sum of deposited marker masses
 divided by the sum of their squared deposited contributions. The outer ten
 bins at either end have no centered derivative. Conventional power-law
-guides use finite radial intervals and free density fits; the guide selection
+guides use finite radial intervals and free density fits. The guide selection
 and tolerances appear in `matching_regimes()`.
 
 **Phase and energy distributions.** Figures 6 and 7 use the CUDA BP
@@ -121,9 +116,9 @@ calculation with initial density index 0.5 and the halo units above.
 Each marker carries the mass of a represented subhalo and follows its
 center of mass. The physical radial velocity is `u=w+H*r`, with `w` the
 peculiar radial velocity and `H` the prescribed expansion rate. Specific
-angular momentum `L` is stored through `eta=L^2/2`. The phase-space mass
+angular momentum `L` is stored through `eta=L^2/2`. The phase space mass
 measure is `dM=8*pi^2*f*dr*du*deta`. Thus the Figure 6 color is the base-10
-logarithm of the finite-bin angular-momentum projection
+logarithm of the finite-bin angular momentum projection
 `sum(m_p)/(8*pi^2*Delta_r*Delta_u)`. The radius axis is logarithmic and the
 normalization uses the physical radial width. All six panels share a
 velocity window containing every marker and a common plasma color scale.
@@ -137,12 +132,12 @@ orbital energy varies with time. The central potential uses the saved
 uniform central continuation, and the physical reflecting wall is at
 radius 1000.
 
-The mean phase-space distribution is `M_bin/Delta_Omega`, where
+The mean phase space distribution is `M_bin/Delta_Omega`, where
 `Omega(E)=(16*pi^2/3)*integral_0^1000 r^2*[2*(E-Phi)]_+^(3/2)*dr`,
 `[x]_+=max(x,0)`, and `Delta_Omega` is the difference at the two energy
 edges. Its logarithmic derivative uses a quadratic fit in nine adjacent
 log-energy bins, spanning 0.20846 dex. Every bin in a derivative window
-has positive distribution and effective population at least 8; thick
+has positive distribution and effective population at least 8. Thick
 segments require at least 32 throughout. Dashed segments touch an energy
 bin whose phase-volume turning radius at its lower energy edge is below
 the first field face or whose
@@ -187,12 +182,12 @@ Both curves reach time 3000. The static blue endpoint uses negative
 instantaneous orbital energy in the complete potential, normalized to
 zero at infinity, and its virial ratio recomputes the selected population's
 own force. The static red endpoint gives the positive-energy inertia,
-including inward wall-reflected matter. A gray curve uses a larger wall;
-vertical guides identify the start of the first-impact bracket at time
+including inward wall-reflected matter. A gray curve uses a larger wall.
+Vertical guides identify the start of the first-impact bracket at time
 2590–2595. The expanding curve has zero wall impacts through time 3000.
 Its global inertia continues growing while its physical virial ratio
 approaches unity. The two initial distributions share the density and
-physical velocity factor 0.25; their background-dependent tangential
+physical velocity factor 0.25. Their background-dependent tangential
 velocity scales give distinct initial physical kinetic energies.
 
 **Gaussian profiles.** Figure 9 compares Vlasov–Poisson and Boltzmann–Poisson evolution of the same Gaussian shell in static and expanding backgrounds. Each row follows eight physical times through collapse, rebound and the subsequent spreading of outer matter. The BP sequences end at their latest displayed profiles, while VP reaches 10000. Colors identify time. Thick portions have `neff >= 32`, and thin curves and points show the remaining positive-density samples. Signed slopes use a quadratic fit over 21 positive native cells. Dashed references mark slopes -3, -1.5 and -1.
@@ -206,7 +201,7 @@ Figure 2 uses eleven actual full-particle moment samples, separately identified 
 `t_s=r_s/v_s`. Thus the renderer multiplies the saved density by `4 pi` for
 the plotted density ratio. The `variance` column is the centered radial
 velocity variance in units of `v_s^2`. For WPIC it is the native
-`radial_variance`; for SphDSMC it is the native centered pressure divided by
+`radial_variance`. For SphDSMC it is the native centered pressure divided by
 density. `population` is the native WPIC effective population or the exact
 SphDSMC bin count recovered from cumulative-mass increments. Thin curves
 require population at least 8, and thick curves require at least 32. The dot
@@ -246,7 +241,7 @@ contain all 4096 native cell centers.
 The two native-analysis commands read the complete snapshot groups written
 by the GPU particle runners. Each group contains `particles.bin`,
 `field.json`, and `manifest.json`. Its version-6 native file stores every
-marker and its accepted time; the field file stores the actual radial
+marker and its accepted time. The field file stores the actual radial
 source, potential, and background at that time. The reader verifies file
 hashes, payload size, time and marker count, active positive masses, source
 mass accounting, and the potential reconstructed from that source.
@@ -272,7 +267,7 @@ python analysis/scripts/shifted_energy_snapshot_analysis.py \
 Each analyzer also accepts one or several individual snapshot directories.
 `--maximum-requested-time` selects their time range. The phase analyzer
 uses 360 logarithmic radial bins, 240 physical radial-velocity bins, and
-1024 linear orbital-energy bins by default; `--radial-bins`,
+1024 linear orbital-energy bins by default. `--radial-bins`,
 `--velocity-bins`, and `--energy-bins` set these counts. The shifted-energy
 analyzer uses 192 logarithmic energy bins by default, set with `--bins`.
 Both commands accept `--edges-from previous_snapshot.npz` to reuse exact
@@ -312,7 +307,7 @@ plt.savefig("analysis/my_halo_energy/mean_distribution.png", dpi=200)
 The snapshot manifests retain their input, executable, and run-metadata
 identities. Optional `--expected-input-sha256`,
 `--expected-binary-sha256`, and `--expected-metadata-sha256` require supplied
-identities; `--run-metadata path/to/metadata.json` also verifies that file's
+identities. `--run-metadata path/to/metadata.json` Also verifies that file's
 bytes. Complete snapshot files are authenticated again after reduction.
 Run either command with `--self-check-only --output-directory analysis/check`
 to evaluate its analytic normalization and Jacobian checks separately.

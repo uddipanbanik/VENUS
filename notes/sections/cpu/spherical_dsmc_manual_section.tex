@@ -38,7 +38,7 @@ cross sections require their own finite-time and long-time comparisons.
 
 SphDSMC solves the static Boltzmann--Poisson equations (PIC0b)--(PIC0c), with
 \(H=0\), the full halo density as the Poisson source, and elastic binary
-scattering in \(C[f]\).  It uses the same spherical phase-space measure
+scattering in \(C[f]\).  It uses the same spherical phase space measure
 (PIC0a).  The marker ordering supplies the enclosed mass directly, so the
 force calculation implements the spherical Poisson equation without a
 separate gravity mesh.  The orbital update and local collision sampling then
@@ -137,7 +137,7 @@ struct SphericalDSMCParticle {
 };
 \end{lstlisting}
 \code{SphericalDSMCParticle} is the C++ data record for one persistent
-marker: it holds the marker's current phase-space coordinates, immutable
+marker: it holds the marker's current phase space coordinates, immutable
 integer identifier, and represented mass.  Here \(v_r\equiv w\), and
 \[
  L=r v_t,\qquad v_t^2=v_\theta^2+v_\phi^2.
@@ -150,7 +150,7 @@ Normally \(M_{\rm represented}\) is the integral of the carrier grid.  If the
 source particle model supplies an independently known total mass,
 \code{bp_dsmc_total_mass} sets that mass explicitly.  It changes only \(m_p\):
 the normalized cumulative mass distribution, and therefore the sampled
-phase-space shape, stays fixed.
+phase space shape, stays fixed.
 
 For a spherical distribution \(f(r,v_r,L)\), integration over position and
 velocity angles gives
@@ -164,12 +164,12 @@ Consequently, the piecewise-constant mass represented by one input cell is
    \Delta r_i\,\Delta v_{r,j}\,\Delta L_k.                 \tag{S1}
 \]
 In equation (S1), \(i\), \(j\), and \(k\) index the radial,
-radial-velocity, and angular-momentum cells, respectively.  Elsewhere \(p\)
+radial-velocity, and angular momentum cells, respectively.  Elsewhere \(p\)
 denotes an arbitrary marker, \(q=0,\ldots,N_p-1\) denotes its position in the
 stratified initial sample, \(i\) denotes zero-based radial rank after sorting,
 and \(s\) denotes a collision shell; each local use is stated explicitly.
 The radial control-volume array has its innermost face at exactly \(r=0\).
-The velocity and angular-momentum widths are the same trapezoidal
+The velocity and angular momentum widths are the same trapezoidal
 control-volume widths used by the grid solver.
 
 The code forms a cumulative table of the positive cell masses in (S1).
@@ -189,7 +189,7 @@ Within the selected cell, \(r\) and \(v_r\) are uniform.  Since the measure in
 \codesource{SphDSMC grid-to-marker sampler}
 {\path{cpu/include/ev/spherical_dsmc_solver.hpp}}
 {Samples continuous spherical phase coordinates from a selected positive-mass
- carrier cell, including the correct angular-momentum measure}
+ carrier cell, including the correct angular momentum measure}
 \begin{lstlisting}[language=C++]
 particle.r = r0 + (r1 - r0) * rng.uniform_open();
 particle.vr = w0 + (w1 - w0) * rng.uniform_open();

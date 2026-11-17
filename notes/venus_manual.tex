@@ -98,25 +98,22 @@ The code was developed with assistance from the AI models GPT-Sol and Astra.
 \end{center}
 
 \begin{abstract}
-VENUS follows the distribution of matter over position and velocity as it
-moves under its own gravity. This manual explains the physical equations,
-how they are represented by numerical particles or grid cells, and how to
-build, run and analyze a calculation. Newtonian methods describe weak
- gravitational fields and speeds small compared with the speed of light.
-Relativistic methods couple matter to the geometry of spacetime and allow
-black hole formation to be studied. Encounter models add the redistribution
-of matter through scattering or capture.
+VENUS simulates kinetic relaxation and gravitational collapse with
+Vlasov--Poisson, Boltzmann--Poisson and Einstein--Vlasov equations. This
+manual derives the governing transport, gravity and collision equations,
+then connects their continuum measures to the grid, weighted-particle and
+spherical direct simulation Monte Carlo representations. Newtonian chapters
+cover static and prescribed expanding backgrounds, material self-interacting
+dark matter (SIDM), and subhalo scattering and capture. Relativistic chapters
+develop Schwarzschild and ingoing Eddington--Finkelstein coordinates,
+self-consistent matter sources, horizon crossing and local elastic collisions.
 
-The particle methods begin with weighted particle-in-cell (WPIC), in which
-numerical particles carry mass weights and supply gravity on a radial grid,
-and spherical direct simulation Monte Carlo (SphDSMC), which follows
-persistent particles and samples local encounters. The grid chapters store
-the distribution in position and velocity cells. Each method introduces its
-assumptions, equations, numerical steps, inputs, saved results and accuracy
-checks. Later chapters explain CPU and NVIDIA GPU builds, parallel computing,
-restarts, plotting and movies. Begin with the short examples in the repository
-README and CPU or GPU guide, then use the relevant method chapter to prepare
-a scientific calculation.
+Each method states its assumptions, source normalization, discrete updates,
+boundary conditions, conservation budgets and validation scope. The operating
+chapters provide CPU and NVIDIA GPU builds, parallel decompositions, initial
+data, restarts and analysis. The repository README presents the principal
+equations together with concrete build, run and analysis examples; this
+manual develops the mathematical and numerical details for scientific use.
 \end{abstract}
 
 \tableofcontents
@@ -161,7 +158,7 @@ same spacetime event before comparing fields or markers.
 
 This section follows the production marker chapters with grid-based reference,
 verification, and orbit-based methods.  Each module begins with the physical
-problem and the meaning of its phase-space variables.  It then gives the
+problem and the meaning of its phase space variables.  It then gives the
 continuum equations, the numerical representation, and the update in source-
 code order.  Only after those ideas are established does a shortened code
 excerpt connect the algorithm to its implementation owner.  A shaded
@@ -180,7 +177,7 @@ checks described in each chapter.
 \ifvenusfullcpu
 The algorithms appear in the following order:
 \begin{enumerate}
-\item common phase-space grids and numerical integration rules;
+\item common phase space grids and numerical integration rules;
 \item the nodal grid Einstein--Vlasov reference evolution;
 \item collisionless Vlasov--Poisson evolution, including the nodal and
       explicit finite-volume reference updates;
@@ -323,7 +320,7 @@ storage offset of \(f_{ijk}\) in the flattened array.
 The indexing function is in \path{cpu/include/ev/grids.hpp}:
 \codesource{All CPU grid EV, VP, and BP task executables}
   {\path{cpu/include/ev/grids.hpp}}
-  {Row-major phase-space indexing used by the shared solver kernels}
+  {Row-major phase space indexing used by the shared solver kernels}
 \begin{lstlisting}[language=C++]
 inline std::size_t idx(int i, int j, int k,
                        const Params& p) {
@@ -446,7 +443,7 @@ remain identical between runs.
 \textbf{Physics flow: grid-based Einstein--Vlasov semi-Lagrangian module}
 \par\smallskip
 \begin{tikzpicture}[node distance=0.22cm]
-\node[physicsflow] (ev1) {Read or construct the spherical particle distribution on the phase-space grid};
+\node[physicsflow] (ev1) {Read or construct the spherical particle distribution on the phase space grid};
 \node[physicsflow,below=of ev1] (ev2) {Integrate the distribution to obtain matter density, radial pressure, tangential pressure, and radial current};
 \node[physicsflow,below=of ev2] (ev3) {Solve the spherical Einstein constraints to reconstruct the spacetime metric};
 \node[physicsflow,below=of ev3] (ev4) {Choose a timestep from the fastest occupied particle trajectories and the stopping conditions};
@@ -1023,10 +1020,10 @@ path for high-accuracy tests; use AB for smooth-field timing measurements.
 \textbf{Physics flow: nodal Vlasov--Poisson semi-Lagrangian module}
 \par\smallskip
 \begin{tikzpicture}[node distance=0.22cm]
-\node[physicsflow] (vp1) {Read or construct the collisionless particle distribution on the spherical phase-space grid};
+\node[physicsflow] (vp1) {Read or construct the collisionless particle distribution on the spherical phase space grid};
 \node[physicsflow,below=of vp1] (vp2) {Integrate over particle velocities to obtain the radial mass density};
 \node[physicsflow,below=of vp2] (vp3) {Accumulate enclosed mass and solve the spherical Poisson equation for gravity};
-\node[physicsflow,below=of vp3] (vp4) {Choose a timestep from the fastest occupied radial and velocity-space motion};
+\node[physicsflow,below=of vp3] (vp4) {Choose a timestep from the fastest occupied radial and velocity space motion};
 \node[physicsflow,below=of vp4] (vp5) {Trace every arrival point backward through gravity and, when requested, cosmological expansion};
 \node[physicsflow,below=of vp5] (vp6) {Interpolate the old distribution at each departure point and apply reflection, inflow, or outflow};
 \node[physicsflow,below=of vp6] (vp7) {Recompute density and gravity, measure mass and escape, then write output or a restart and continue};
@@ -1184,7 +1181,7 @@ uses \(H\) as the local velocity coordinate.  The calculation is:
 \end{enumerate}
 
 The positive and negative \(w\) branches are kept separate because particles
-moving inward and outward can have different phase-space populations.
+moving inward and outward can have different phase space populations.
 Every value in this procedure comes from the instantaneous distribution.
 Perturbations and other nonequilibrium structure therefore remain part of the
 interpolated state.  The energy coordinate reduces drift for a smooth static
@@ -1278,9 +1275,9 @@ make cpu-task-solvers
 \textbf{Physics flow: finite-volume Vlasov--Poisson module}
 \par\smallskip
 \begin{tikzpicture}[node distance=0.22cm]
-\node[physicsflow] (fv1) {Interpret every phase-space value as matter stored in a finite control volume};
+\node[physicsflow] (fv1) {Interpret every phase space value as matter stored in a finite control volume};
 \node[physicsflow,below=of fv1] (fv2) {Integrate the cell matter to obtain radial density and solve spherical gravity};
-\node[physicsflow,below=of fv2] (fv3) {Compute how quickly particles cross every radial and velocity-space cell face};
+\node[physicsflow,below=of fv2] (fv3) {Compute how quickly particles cross every radial and velocity space cell face};
 \node[physicsflow,below=of fv3] (fv4) {Choose a timestep short enough that the face-crossing update remains stable};
 \node[physicsflow,below=of fv4] (fv5) {Use the upstream side of each face to calculate the outgoing and incoming matter fluxes};
 \node[physicsflow,below=of fv5] (fv6) {Update each cell by subtracting outward flux and adding inward flux};
@@ -1424,7 +1421,7 @@ declared background subtraction determines the Poisson source mass, which
 can differ from the represented matter mass.  Escape diagnostics estimate
 phase density crossing the radial boundary with outward speed.  The reduction
 kernels for moments, mass, timestep scans, and escape diagnostics are
-flattened across phase-space work items.
+flattened across phase space work items.
 
 The main takeaway for users is:
 \begin{itemize}
@@ -1474,7 +1471,7 @@ parallelization includes:
 \ifvenusfullcpu
 \item EV and VP/BP moment reductions flattened over \((r,w)\) work.
 \item timestep scans, mass scans, escape diagnostics, adaptive-\(w\) support
-scans, phase projections, and operator diagnostics over flattened phase-space
+scans, phase projections, and operator diagnostics over flattened phase space
 work.
 \item VP energy-shell table construction over local \(L\) slabs.
 \item canonical atlas construction and projection with dynamic ownership of
@@ -1893,7 +1890,7 @@ python3 tools/sidm_nfw_eddington.py \
   --r-min 1e-3 --r-max 20 --w-max 3 --L-max 8
 \end{lstlisting}
 The JSON report records mass normalization, represented density error, escape
-speed support, angular-momentum/radial-velocity resolution, negative-value
+speed support, angular momentum/radial-velocity resolution, negative-value
 treatment, and any grid self-consistency iterations. These quantities show
 how accurately the finite grid represents the intended equilibrium. Inspect
 them before evolution, then measure the collisionless drift of that sampled
@@ -2200,8 +2197,8 @@ $PYTHON tools/plot_einstein_vlasov_outputs.py \
   --output-dir plots/ev_high_compactness \
   --make-gifs
 \end{lstlisting}
-This script reads \code{profiles.csv}, \code{history.csv}, and phase-space
-files and writes density, metric, compactness, phase-space, and optional GIF
+This script reads \code{profiles.csv}, \code{history.csv}, and phase space
+files and writes density, metric, compactness, phase space, and optional GIF
 products.
 
 For VP/BP density-slope GIFs:
@@ -2240,7 +2237,7 @@ relaxation;
 \item density-slope figures plot
 \(\mathrm d\log\rho/\mathrm d\log r\) with reference lines at slopes
 \(-1\), \(-3/2\), \(-2\), and \(-3\);
-\item phase-space figures show \(\log_{10} g(r,w)\), where
+\item phase space figures show \(\log_{10} g(r,w)\), where
 \(g=\int Lf\,dL\), and apply a small floor only for visualization;
 \item GIF sidecar files ending in \code{_frame_times.txt} list the physical
 time associated with each frame.
@@ -2313,7 +2310,7 @@ vp_inflow_freefall_mass, vp_inflow_vff_factor
 vp_inflow_coord_speed
 \end{lstlisting}
 These parameters set pulse times, masses, radial/tangential velocity widths,
-angular-momentum centres, and the free-fall velocity normalization described
+angular momentum centres, and the free-fall velocity normalization described
 with the VP inflow equation.
 
 The canonical orbit-phase task uses command-line controls rather than the
@@ -2765,7 +2762,7 @@ discrete operator to its diagnostics, examples, and plots. Check each of
 these representations together so they retain the same physical meaning.  A change to the
 meaning of \(w\) touches characteristic speeds, timestep selection, moment
 integrals, boundary diagnostics, IC generators, and plot labels.  A change to
-the meaning of \(L\) touches the phase-space measure, MPI slabs, BP
+the meaning of \(L\) touches the phase space measure, MPI slabs, BP
 \(\eta\)-fluxes, finite-angle remapping, and phase projections.
 
 The verification sequence is:
@@ -2783,7 +2780,7 @@ parameter or algorithm changes.
 
 The collision modules documented in this volume currently use one process
 with OpenMP.  A future distributed implementation requires shell-local
-collision ownership and explicit inter-rank particle or phase-space exchange.
+collision ownership and explicit inter-rank particle or phase space exchange.
 
 \input{sections/successful_run_examples}
 

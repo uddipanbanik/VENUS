@@ -1,12 +1,11 @@
 # Halo density and virialization movies
 
-Virialization is the approach toward balance between kinetic motion and
-gravity. A density profile shows mass per volume as a function of radius.
-Code units use the simulation’s chosen mass, length and time scales. A
-subhalo is a bound clump within a larger halo. Rendering creates movie frames
-from the saved simulation output.
-
-Additional terms are defined in the [plain-language glossary](../docs/TERMS.md).
+Use $`r`$ for radius, $`\rho`$ for density and $`\gamma_{\rm i}`$ for the
+initial positive cusp index. The virial diagnostic $`Q`$ uses physical kinetic
+energy $`K_{\rm physical}`$, force virial
+$`W_\Phi=-\int r\Phi_r\,\mathrm dM`$, inertia $`I=\int r^2\,\mathrm dM`$ and
+expansion rate $`H=\dot a/a`$ for scale factor $`a(t)`$. A dot is a physical
+time derivative and $`\Phi_r`$ the radial potential derivative.
 
 These movies follow the Vlasov–Poisson (VP) and Boltzmann–Poisson (BP)
 calculations in the supplied figures. VP evolves collisionless matter. BP includes
@@ -50,11 +49,6 @@ and uses zero expansion with a reflecting outer boundary.
 
 The virialization movie shows the physical ratio
 
-```math
-Q=\frac{2K_{\rm physical}}
- {|W_\Phi+(\dot H+H^2)I|}.
-```
-
 Here $`K_{\rm physical}`$ is kinetic energy in physical velocities,
 $`W_\Phi`$ is the gravitational force moment, and $`I=\int r^2\,\mathrm dM`$.
 The background term is the prescribed cosmological acceleration's force
@@ -67,6 +61,11 @@ curve joins the five iterated self-bound selections of the static γᵢ=0.5
 control. The brown square marks the static Gaussian endpoint selected by
 negative orbital energy in the full potential. These quantities describe
 instantaneous states in finite radial domains.
+
+```math
+Q=\frac{2K_{\rm physical}}
+ {|W_\Phi+(\dot H+H^2)I|}.
+```
 
 ## Reproduce the movies
 
@@ -86,7 +85,7 @@ python movies/scripts/render_virialization_movie.py
 The renderers read the supplied plotting caches. Each displayed time belongs
 to an actual saved state. Frame ledgers retain the complete physical clocks
 and input identities. The Gaussian cache manifest selects inputs from
-`movies/data/gaussian` and `movies/data/completed_vp`; the virial renderer
+`movies/data/gaussian` and `movies/data/completed_vp`. The virial renderer
 reads `analysis/data/virial_summary`. An installed FFmpeg or `imageio-ffmpeg`
 supplies the MP4 encoder. Each renderer accepts `--preview-only` for stills
 and `--output-directory` for another destination.

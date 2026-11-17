@@ -2,7 +2,6 @@
 
 Developed by Uddipan Banik, Frank van den Bosch, and Sachiet Kapur
 
-A CPU (central processing unit) is the computer’s general-purpose processor.
 Build the programs, choose a physical problem and its initial distribution,
 evolve that distribution, then read and plot the saved results. This guide
 follows those steps, beginning with a small isolated Newtonian example.
@@ -18,10 +17,8 @@ Perimeter Symmetry recipes, module choices and portable scheduler settings.
 
 ## 1. Build the solvers
 
-A compiler translates source code into a program; a build runs that process.
-Install a C++17
-compiler and Python 3.8 or newer. The analysis tools use NumPy and SciPy for calculations, Matplotlib for
-plots, and Pillow and ImageIO for images and animations:
+Use a C++17 compiler and Python 3.8 or newer. Install the analysis dependencies
+and build the portable solvers and initial-data tools:
 
 ```bash
 python3 -m venv .venv
@@ -42,52 +39,37 @@ bash scripts/build/tools.sh     # maintained C++ utilities
 make -C cpu check  # finite C++ numerical tests
 ```
 
-OpenMP lets one process use several CPU cores. MPI lets separate processes
-exchange data, including across computers. OpenMP and MPI stand for Open
-Multi-Processing and Message Passing Interface, respectively. Their optional builds need the
-corresponding libraries and compatible compilers. A process is a running copy
-of a program; threads are workers sharing its memory. Slurm is the cluster
-job scheduler used in the examples. A solver is the program that advances the
-physical equations. Weighted particle-in-cell
-(WPIC) runners use `--threads` to select shared-memory workers.
-The [cluster guide](../docs/CLUSTERS.md) gives tested site recipes;
-the [parallel implementation guide](docs/cluster.md) explains the decomposition.
+OpenMP builds parallelize supported loops within one process. Message Passing
+Interface (MPI) builds distribute the collisionless grid tasks between
+processes. Use compatible compiler and runtime libraries. Weighted
+particle-in-cell (WPIC) runners select CPU thread count through `--threads`.
+The [cluster guide](../docs/CLUSTERS.md) gives tested site recipes.
+The [parallel implementation guide](docs/cluster.md) explains the decomposition.
 
 ## 2. Choose the equations, background, and representation
 
-Begin with Newtonian gravity when particle speeds are small compared with
-the speed of light and relativistic effects are weak. Choose relativistic
-evolution to follow strong gravitational fields and black hole formation.
-Within either setting, choose collisionless evolution to study orbits and
-mixing in the collective field. Add a collision model when encounters between
-subhalos, dark matter particles, or stars are part of the physical question.
+Vlasov--Poisson (VP) describes collisionless relaxation under Newtonian
+gravity. Boltzmann--Poisson (BP) includes the selected encounter operator.
+Einstein--Vlasov (EV) couples collisionless transport to a self-consistent
+relativistic metric. Select the equations and encounter law before choosing
+the numerical representation.
 
-VP means Vlasov--Poisson: the distribution evolves under the gravitational
-field that it creates. BP means Boltzmann--Poisson: an encounter term also
-redistributes the matter. EV means Einstein--Vlasov: matter and the spacetime
-metric, the geometry that determines distances and times, evolve together
-under general relativity. **Phase space** means
-position and velocity considered together.
-An Eulerian grid stores the distribution in fixed phase-space cells. WPIC uses
-weighted particles, also called markers: each carries a specified amount of
-mass and moves continuously through the gravitational field. Spherical direct
-simulation Monte Carlo (SphDSMC) follows persistent particles and samples their
-local encounters. SIDM means self-interacting dark matter. CLI means
-command-line input, the options typed after an executable name.
+Eulerian modules store the distribution on a fixed grid. Weighted
+particle-in-cell (WPIC) modules carry represented mass on markers and
+reconstruct gravity on a radial mesh. Spherical direct simulation Monte Carlo
+(SphDSMC) modules follow persistent markers and sample local encounters.
+Material self-interacting dark matter (SIDM) modules describe particle
+scattering. Subhalo modules describe scattering and capture of extended
+clumps. The stellar applications require the appropriate gravitational
+encounter law and application-specific validation.
 
-A subhalo is a gravitationally bound clump inside a larger halo. Its scattering
-and capture model describes encounters between these clumps. Material SIDM
-models instead describe scattering between the constituent dark matter particles.
-Schwarzschild (SC) and ingoing Eddington--Finkelstein (EF) are coordinate choices
-for relativistic evolution; EF remains regular at a black hole horizon.
-Compactness is `2GM/(rc²)`: enclosed mass `M` divided by radius `r`, with
-gravitational constant `G` and speed of light `c` converting it to a
-dimensionless measure of relativistic gravity.
-An INI file is a plain-text list of named settings. API means application
-programming interface: functions called from another program. A backend is
-the numerical implementation selected to perform a calculation.
-See the [plain-language glossary](../docs/TERMS.md) for other specialist terms
-and the [complete run-option reference](../docs/RUN_OPTIONS.md) for option names.
+Relativistic modules use Schwarzschild (SC) or ingoing Eddington--Finkelstein
+(EF) coordinates. EF permits regular horizon crossing. Compactness is
+`2GM/(rc²)`, for enclosed gravitational mass `M` and areal radius `r`, with
+Newton’s constant `G` and speed of light `c`. The [equations and numerical
+updates](../README.md#governing-equations) specify these conventions.
+The [complete option reference](../docs/RUN_OPTIONS.md) lists command-line
+controls. [method terminology](../docs/TERMS.md) is collected separately.
 
 | Physical category | Background | Executable in `cpu/` | Input |
 |---|---|---|---|
@@ -98,7 +80,7 @@ and the [complete run-option reference](../docs/RUN_OPTIONS.md) for option names
 | Non-relativistic collisional, small-angle transport | Static or expanding | `venus_cpu_boltzmann_poisson_fokker_planck`, `venus_cpu_boltzmann_poisson_landau` | INI with the chosen collision law |
 | Non-relativistic collisional, finite-angle grid | Static or expanding as allowed by the task | `venus_cpu_boltzmann_poisson_exact`, `_reversible`, `_reversible_sampled`, `_reversible_streamed` | INI with corresponding operator |
 | Non-relativistic collisional, expanding prompt cusp | Expanding | `venus_cpu_boltzmann_poisson_expanding_prompt_cusp` | INI |
-| Non-relativistic collisional, orbit-phase transport | Declared by task controls | `venus_cpu_boltzmann_poisson_canonical_orbit` | CLI |
+| Non-relativistic collisional, orbit phase transport | Declared by task controls | `venus_cpu_boltzmann_poisson_canonical_orbit` | CLI |
 | Non-relativistic collisional, SIDM WPIC | Static | `venus_cpu_sidm_wpic_constant`, `venus_cpu_sidm_wpic_velocity_dependent` | CLI with material collision controls |
 | Non-relativistic collisional, SIDM SphDSMC | Static | `venus_cpu_sidm_sphdsmc_constant`, `venus_cpu_sidm_sphdsmc_velocity_dependent` | INI |
 | Non-relativistic collisional, star clusters | Chosen physical model | Small-angle/encounter machinery above; stellar encounter law and application validation required | Model-dependent |
@@ -111,10 +93,10 @@ and the [complete run-option reference](../docs/RUN_OPTIONS.md) for option names
 The Fokker--Planck and Landau methods describe the accumulated effect of many
 small deflections. Finite-angle methods retain individual deflection angles.
 “Exact” in a task name identifies direct numerical integration of that collision
-operator; the distribution, domain, and integration still have numerical errors.
+operator. The distribution, domain, and integration still have numerical errors.
 The reversible variants preserve the symmetry between a collision and its
 reverse. Their sampled and streamed forms estimate or process the collision
-integrals in batches. The canonical orbit-phase method represents matter along
+integrals in batches. The canonical orbit phase method represents matter along
 bound gravitational orbits rather than ordinary position/velocity cells.
 
 The [complete catalogue](../notes/SOLVER_MODULES.md) explains each algorithm
@@ -129,10 +111,6 @@ Isolated Einstein--Vlasov WPIC is already supplied by the two compactness
 runners above. Their compactness labels select initial-data families.
 
 ## 3. Supply an INI file and run a grid calculation
-
-A checkpoint saves the simulation state so it can be resumed. A timestep
-is one advance of the equations; an accepted step is one the solver has
-completed successfully.
 
 Start with an isolated shell in Newtonian gravity:
 
@@ -151,8 +129,8 @@ The output is in `output/cpu/first_vp/`.
 An INI is a plain-text parameter file. Open
 `examples/inputs/vp_grid_static.ini` in a text editor. Its section headings
 group the physics, grid, initial distribution, boundaries, time controls and
-output. This example constructs the distribution from an analytic formula;
-it needs no separate data file. Its main initial-data controls are:
+output. This example constructs the distribution from an analytic formula.
+It needs no separate data file. Its main initial-data controls are:
 
 | Parameter | Meaning in this example |
 |---|---|
@@ -165,7 +143,7 @@ it needs no separate data file. Its main initial-data controls are:
 
 Specific angular momentum is angular momentum per unit mass. It distinguishes
 radial from more tangential orbits. Here the radial grid extends from `0.1`
-to `10`; reflecting radial boundaries return matter into the domain when it
+to `10`. Reflecting radial boundaries return matter into the domain when it
 reaches an edge. The outer boundary therefore matters if you extend the run.
 The velocity boundary lets matter leave the represented velocity range.
 Choose the domain and boundaries for the system you intend to simulate.
@@ -182,7 +160,7 @@ cpu/venus_cpu_vlasov_poisson_eulerian \
 You can now edit `output/my_halo/input.ini` for a new run, using a fresh output
 directory each time. Change the physical inputs to pose your problem, then
 increase resolution and reduce the timestep to assess numerical accuracy.
-For a relativistic grid example, use `examples/run/ev_grid.sh`; the script
+For a relativistic grid example, use `examples/run/ev_grid.sh`. The script
 selects Einstein--Vlasov and its corresponding INI. A binary initial-data file,
 when selected instead of the analytic formula, stores the actual distribution.
 
@@ -224,9 +202,8 @@ to generate this file and connect it to `vp_custom_shell.ini`.
 
 WPIC uses hyphenated command-line options. It builds a fresh particle
 population from the chosen sampler or imports a complete compatible native
-state. A CSV (comma-separated values) density profile is a text table containing
-averages of the distribution. The native binary file stores the particle
-state in a program-defined byte format and retains the details needed to resume.
+state. CSV profiles contain moments of the distribution. The native binary state
+retains the particle population and collision clocks needed for continuation.
 
 Start a small, isolated Vlasov--Poisson cusp calculation:
 
@@ -289,9 +266,8 @@ below follows collapse in Schwarzschild or horizon-penetrating EF coordinates.
 
 ## 5. Find, read, and analyze the output
 
-Metadata describes the calculation; JSON stores named settings and records
-as text. Each command above names its destination explicitly. Grid output uses
-`metadata.json`, `history.csv`, `profiles.csv`, optional phase-space files,
+Each command above names its destination explicitly. Grid output uses
+`metadata.json`, `history.csv`, `profiles.csv`, optional phase space files,
 and complete restart files. `profiles.csv` groups radial rows by `time`.
 Newtonian WPIC writes `profile_*.csv`, `history.csv`, `virial_budget.csv`,
 `metadata.json`, `radial_mesh_contract.txt`, and `restart_state.bin`. Material SIDM WPIC
@@ -305,7 +281,7 @@ CSV files have named columns and can be read with NumPy, pandas, or a
 spreadsheet. Consult the header for the actual column definitions. Radius, density,
 mean velocities and velocity dispersions, enclosed mass, and time use the
 run's documented code units, the mass, length, and time scales chosen for
-the equations. The gravitational coupling is set by the input; relativistic runs use
+the equations. The gravitational coupling is set by the input. Relativistic runs use
 `G=c=1`. Keep the initial data, input controls, metadata, companion files, and source
 revision with every calculation.
 
@@ -320,7 +296,7 @@ python3 cpu/tools/render_weighted_pic_subhalo_strength_scan_gif.py \
 ```
 
 The grid plotter shows density, metric/compactness, mass histories, and saved
-phase-space projections. The spherical renderer shows density and logarithmic
+phase space projections. The spherical renderer shows density and logarithmic
 slope across saved times. Use the WPIC analysis and relativistic rendering
 tools listed in the [script reference](../notes/SCRIPT_REFERENCE.md) for
 particle-specific diagnostics. Compare the complete source and boundary
@@ -331,24 +307,24 @@ Resume Newtonian WPIC with `--restart RUN/restart_state.bin`, the same mesh
 and background controls, and a later `--end-time`. Use a fresh output directory
 for a separate branch. Grid evolution uses `--restart-from` with its native
 restart. Relativistic WPIC uses `--resume` with its original run controls.
-Binary restarts contain the full state; profiles supply analysis moments.
+Binary restarts contain the full state. Profiles supply analysis moments.
 
 ## 6. Choose MPI or shared-memory parallelism
 
 | Calculation | Parallel work | Work shared by the calculation |
 |---|---|---|
-| Eulerian collisionless EV/VP with `_mpi` | MPI partitions the angular-momentum axis; OpenMP advances rank-local phase-space cells | Radial moments are globally reduced; each rank reconstructs the radial field; root coordinates shared output |
+| Eulerian collisionless EV/VP with `_mpi` | MPI partitions the angular momentum axis; OpenMP advances rank-local phase space cells | Radial moments are globally reduced; each rank reconstructs the radial field; root coordinates shared output |
 | Portable grid | Supported loops use C++ standard-library threads, selected by `--threads` | One process owns the distribution and outputs |
-| `_openmp` grid | Supported radial/phase-space loops use CPU threads | One process owns the distribution and outputs |
+| `_openmp` grid | Supported radial/phase space loops use CPU threads | One process owns the distribution and outputs |
 | Grid BP and SphDSMC | Supported loops use shared-memory threads | One process owns encounter state and random sequence |
 | CPU WPIC | Supported deposit/orbit/collision loops use `--threads` | One process owns particles, clocks, metric/field and restart |
 
 For an MPI grid run, build `make cpu-mpi`, choose the `_mpi` executable, and
 launch through the site scheduler with more than one rank only for
-collisionless Eulerian EV/VP. Use at most the number of angular-momentum
+collisionless Eulerian EV/VP. Use at most the number of angular momentum
 cells. Set `OMP_NUM_THREADS` to the allocated CPUs per rank. Radial grids
 remain replicated across MPI ranks, so this decomposition scales with the
-angular-momentum resolution. CPU WPIC, SphDSMC and collisional BP use one MPI
+angular momentum resolution. CPU WPIC, SphDSMC and collisional BP use one MPI
 rank with the allocated shared-memory threads.
 
 ## 7. Relativistic collapse and coordinate comparisons
@@ -389,20 +365,20 @@ slice. The script writes that donor under `output/tutorial_collapse/ef_donor/`,
 saves its physical initial distribution as `ef_common.phys`, constructs the
 coordinate map in `ef_common.nullmap`, then evolves the imported EF state.
 The two companion files sit beside the run directories. Keep them with the
-results. These short examples demonstrate the input and coordinate interfaces;
-black hole formation or a relaxed halo is a physical outcome to assess from
+results. These short examples demonstrate the input and coordinate interfaces.
+Black hole formation or a relaxed halo is a physical outcome to assess from
 the chosen family and its resolved evolution.
 
 The map is needed because equal values of the two coordinate times describe
-different sets of physical events. A Schwarzschild time slice is spacelike;
-an ingoing EF slice follows incoming light and is called null. The extractor
+different sets of physical events. A Schwarzschild time slice is spacelike.
+An ingoing EF slice follows incoming light and is called null. The extractor
 finds each particle's intersection with that null slice and transforms its
 momentum there. The importer checks the saved file identities and physical
 parameters before continuing. Compare the distributions at the same physical
 events through this map.
 
 For a scientific collapse study, select an initial family, total mass,
-radial-velocity distribution and angular-momentum distribution, then vary the
+radial-velocity distribution and angular momentum distribution, then vary the
 parameter whose threshold you want to investigate. Use the high-compactness
 runner's `--help` and the [module catalogue](../notes/SOLVER_MODULES.md) to
 find those controls. Choose the donor duration, outer vacuum region and map
@@ -411,7 +387,7 @@ Assess the map and evolution under radial, particle-count and timestep
 refinement before interpreting a coordinate comparison.
 
 The outputs distinguish total rest mass, total gravitational mass measured
-from the distant exterior (ADM mass), binding energy, density, velocity
+from the distant exterior (Arnowitt--Deser--Misner (ADM) mass), binding energy, density, velocity
 moments and maximum compactness. A bound distribution can continue to
 oscillate, collapse, or partly escape. The halo classifier therefore combines
 binding with sustained stationarity and a relativistic force-balance check.

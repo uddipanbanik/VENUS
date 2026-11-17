@@ -1,13 +1,4 @@
-# SIDM core collapse and cold collisionless collapse
-
-SIDM means self-interacting dark matter. A cold distribution starts with
-small random velocity dispersion. Core collapse is continued contraction
-of the central region; collisionless evolution omits explicit encounters.
-NFW means Navarro--Frenk--White, a commonly used cusped halo density profile.
-Velocity variance measures the squared spread about the mean velocity.
-A particle moment is a sum or integral of a quantity over the distribution.
-
-Additional terms are defined in the [plain-language glossary](../docs/TERMS.md).
+# self-interacting dark matter (SIDM) core collapse and cold collisionless collapse
 
 These four movies follow the SIDM calculations in Figure 10 and the cold
 collisionless calculations in Figure 8. Native density profiles, centered
@@ -24,7 +15,7 @@ quantities.
 ## Reproduce the movies
 
 Run these commands from the repository root. Python needs NumPy, Matplotlib
-and Pillow. FFmpeg provides H.264 encoding; select it through `--ffmpeg`,
+and Pillow. FFmpeg provides H.264 encoding. Select it through `--ffmpeg`,
 `VENUS_FFMPEG`, the executable search path or the optional `imageio_ffmpeg`
 package.
 
@@ -75,14 +66,14 @@ NFW and nearly cored cases, respectively.
 
 Density is shown on the left. The right panel shows the centered radial
 variance, `sigma_r^2=<v_r^2>-<v_r>^2`, which separates random radial motion
-from bulk radial flow. The WPIC input supplies `radial_variance` directly.
+from bulk radial flow. The weighted particle-in-cell (WPIC) input supplies `radial_variance` directly.
 For the nearly cored case, the saved `p` column equals `rho*sigma_r^2`, so
 the variance is `p/rho`. Its particle count per bin follows from successive
 cumulative-mass increments divided by particle mass.
 
 Heavy curves contain at least 32 effective markers for WPIC or particles
-per bin for the nearly cored case. Thin curves contain eight through 31;
-smaller populations are omitted. Black dashed curves show the initial
+per bin for the nearly cored case. Thin curves contain eight through 31.
+Smaller populations are omitted. Black dashed curves show the initial
 state. Colors identify successive states, and the final nearly cored frame
 marks the outer variance peak. The movies show core collapse and
 heating together with the outward-moving outer peak.
@@ -100,15 +91,15 @@ Both halos start with density index 0.5 and physical velocities reduced by
 a factor of 0.25. Their velocity distributions are initialized separately
 for their respective backgrounds. The logarithmic field grid has 256 cells,
 first positive face 0.02 and an outer reflecting wall at radius 1000. Origin
-parity allows central passage. The static background has `H=0`; the
+parity allows central passage. The static background has `H=0`. The
 expanding background has `H=2/[3*(t+12)]`, where `H` is the Hubble rate.
 Both movies show all 601 native profiles from time 0 to 3000 in steps of 5.
 At 24 frames per second, the delivered movies last about 27 seconds,
 including a two-second final hold.
 
 The upper panels show density and its signed logarithmic derivative. A
-quadratic fit to log density over 21 native cells gives the derivative;
-its centered stencil omits the first and last ten centers. Thin curves
+quadratic fit to log density over 21 native cells gives the derivative.
+Its centered stencil omits the first and last ten centers. Thin curves
 retain positive native densities and finite derivative estimates. Thick
 sections require at least 32 effective markers at the displayed center.
 Gray levels mark slopes −1, −1.5 and −3.
@@ -120,7 +111,7 @@ force moment is `W_physical=W_Phi+(H_dot+H^2)*I`, with
 `r_p` are marker mass and radius, `Phi` is the halo potential, `I` is the
 moment of inertia, and `H_dot` is the time derivative of `H`. The ratio is
 `2*K_physical/|W_physical|`. The native particle histories provide these
-moments; true initial-particle measurements supply their time-zero values.
+moments. True initial-particle measurements supply their time-zero values.
 The blue vertical line marks the current profile time.
 
 At time 3000 the static full-population ratio is 1.14989. The bound subset
@@ -128,7 +119,7 @@ has negative orbital specific energy in the full potential, with zero at
 infinity. Its blue virial point uses the selected population's own
 gravity and gives 0.99672. The blue inertia point uses the same selection,
 including its weakly bound outer particles. The red open point contains
-all positive-energy particles, in both radial directions; they carry
+all positive-energy particles, in both radial directions. They carry
 99.57% of the full population's inertia. The first wall impact lies in
 `2590<t<=2595`, and 1896 impacts are recorded by time 3000. The gray vertical
 guide marks the lower edge of that observed interval. These wall effects

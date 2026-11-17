@@ -6,7 +6,7 @@
 \textbf{Physics flow: cell-integrated conservative semi-Lagrangian module}
 \par\smallskip
 \begin{tikzpicture}[node distance=0.22cm]
-\node[physicsflow] (sl1) {Start from the matter stored in every spherical phase-space cell};
+\node[physicsflow] (sl1) {Start from the matter stored in every spherical phase space cell};
 \node[physicsflow,below=of sl1] (sl2) {Reconstruct a smooth nonnegative distribution inside each occupied source cell};
 \node[physicsflow,below=of sl2] (sl3) {Compute the current spherical gravitational field and the corresponding particle trajectories};
 \node[physicsflow,below=of sl3] (sl4) {Move the source-cell boundary points forward to determine where that cell's matter arrives};
@@ -29,9 +29,9 @@
 The cell-integrated semi-Lagrangian discontinuous-Galerkin module is the
 conservative spherical Vlasov--Poisson transport path.  In this manual,
 \emph{semi-Lagrangian} means that the numerical
-method follows phase-space characteristics over a finite time interval.
+method follows phase space characteristics over a finite time interval.
 \emph{Discontinuous Galerkin} means that the distribution is represented by a
-separate polynomial inside every phase-space cell; the polynomial is allowed
+separate polynomial inside every phase space cell; the polynomial is allowed
 to jump across cell faces.  The abbreviation SLDG will be used for this
 cell-integrated semi-Lagrangian discontinuous-Galerkin method.
 
@@ -45,9 +45,9 @@ The implemented state is a cell average
 \]
 Here \(I_i=[r_{i-1/2},r_{i+1/2}]\), \(J_j=[w_{j-1/2},w_{j+1/2}]\),
 and \(K_k=[\eta_{k-1/2},\eta_{k+1/2}]\) are one radial, radial-velocity,
-and angular-momentum cell.  The symbols
+and angular momentum cell.  The symbols
 \(\Delta r_i\), \(\Delta w_j\), and \(\Delta\eta_k\) denote their widths.
-Since \(L\,\dd L=\dd\eta\), the physical phase-space measure is
+Since \(L\,\dd L=\dd\eta\), the physical phase space measure is
 \[
  \dd\Gamma=8\pi^2\,\dd r\,\dd w\,\dd\eta,
  \qquad
@@ -114,7 +114,7 @@ equations are
  \dot\eta=0,
 \]
 where \(\Phi_r=\partial\Phi/\partial r\).  Hamiltonian flow preserves
-phase-space area:
+phase space area:
 \[
  \det\!\left(\frac{\partial(r',w')}{\partial(r,w)}\right)=1,
  \qquad
@@ -220,7 +220,7 @@ average, so changing these entries preserves the stored mass.
 
 \subsubsection{Positivity limiter}
 
-A phase-space density must satisfy \(f\ge0\).  Let
+A phase space density must satisfy \(f\ge0\).  Let
 \[
  f_h=\bar f+\delta f,
 \qquad \langle\delta f\rangle_{\rm cell}=0,

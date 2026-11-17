@@ -8,9 +8,9 @@ Vlasov--Poisson equation.  Here \(t\) is time, \(r\) is areal radius,
 \(H(t)\) is the prescribed expansion rate, \(\Phi(t,r)\) is the Newtonian
 gravitational potential, and a dot denotes differentiation along a particle
 trajectory.  The symbol \(C[f]\) denotes the collision-induced rate of change
-of the distribution \(f(t,r,w,L)\).  Its phase-space variables are the
+of the distribution \(f(t,r,w,L)\).  Its phase space variables are the
 peculiar radial velocity \(w\), meaning radial velocity after subtracting
-the expansion speed \(Hr\), and the specific angular-momentum magnitude
+the expansion speed \(Hr\), and the specific angular momentum magnitude
 \(L=rv_t\), where \(v_t\) is tangential-speed magnitude.  Cell-integrated
 grids use the equivalent angular coordinate \(\eta=L^2/2\).  With these
 definitions, the transport equation is
@@ -392,7 +392,7 @@ proposal toward high-energy cells.  Each \(\lambda_*\) below is a
 nonnegative mixture fraction for the named proposal component; all six
 fractions, including the derived \(\lambda_{\rm bulk}\), sum to one.
 The stratified component groups cells by energy rank, sign of \(w\), and
-angular-momentum bin.  Stratum pairs and incoming azimuths are further binned
+angular momentum bin.  Stratum pairs and incoming azimuths are further binned
 by representative relative speed and weighted by an activity proxy.
 
 The exact current mixture is
@@ -684,8 +684,8 @@ The labels \code{fokker_planck} and \code{landau_fp} advance
                   (D_{ij}f).                             \tag{EGC8}
 \]
 Cartesian velocity components are indexed by \(i,j\in\{1,2,3\}\), with
-repeated indices summed.  The vector \(D_i\) is the velocity-space drift and
-the symmetric tensor \(D_{ij}\) is the velocity-space diffusion.
+repeated indices summed.  The vector \(D_i\) is the velocity space drift and
+the symmetric tensor \(D_{ij}\) is the velocity space diffusion.
 For relative velocity
 \(\boldsymbol u=\boldsymbol v-\boldsymbol v_\star\), the implemented
 small-angle coefficients are
@@ -778,7 +778,7 @@ The \(D_{aa}\) term is the It\^o/geometrical contribution from rotations out
 of the selected tangential plane: the index \(a\) denotes the unresolved
 tangential-azimuth direction orthogonal to the stored radial--\(L\) plane,
 not a grid-cell label.  The source implementation is:
-\codesource{Fokker--Planck coefficient map to \(w,\eta\)}{\path{cpu/include/ev/boltzmann_poisson.hpp}}{Transforms radial and tangential drift--diffusion coefficients into the solver's radial-velocity and squared-angular-momentum variables}
+\codesource{Fokker--Planck coefficient map to \(w,\eta\)}{\path{cpu/include/ev/boltzmann_poisson.hpp}}{Transforms radial and tangential drift--diffusion coefficients into the solver's radial-velocity and squared-angular momentum variables}
 \begin{lstlisting}[language=C++]
 out.D_w      = c.D_r;
 out.D_eta    = L * c.D_L + 0.5 * (c.D_LL + c.D_aa);
@@ -891,7 +891,7 @@ yj[s] = mu * ym1[s] + nu * ym2[s]
     + mu_tilde * dt * rhsm1[s]
     + gamma_tilde * dt * rhs0[s];
 \end{lstlisting}
-The C++ index \code{s} in this excerpt is a flattened phase-space array
+The C++ index \code{s} in this excerpt is a flattened phase space array
 offset; the enclosing loop variable \code{j} selects the stage.
 A finite decay-mode validation evolves an exact decay
 mode of the same discrete flux and checks temporal consistency and
@@ -965,7 +965,7 @@ venus_cpu_boltzmann_poisson_expanding_prompt_cusp
 \end{lstlisting}
 These backends use one Message Passing Interface (MPI) rank and parallelize
 within it with OpenMP or the standard-thread fallback; collision fluxes and
-reaction data are not exchanged between MPI angular-momentum slabs.  The FP
+reaction data are not exchanged between MPI angular momentum slabs.  The FP
 branch can advance the passive tracer defined above, whereas all four
 finite-angle branches reject a nonempty tracer.  The implementations live in
 \path{cpu/include/ev/boltzmann_poisson.hpp},

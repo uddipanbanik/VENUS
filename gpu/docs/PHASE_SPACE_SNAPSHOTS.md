@@ -1,17 +1,8 @@
-# Particle and gravitational-field snapshots
-
-A snapshot saves the state at a selected time. Phase space combines position
-and velocity; a weighted particle carries a specified amount of mass. A
-restart is a saved state that can also continue a run. A callback is the
-function invoked when the solver reaches an output time. A radial moment is
-an integral over particle velocities, such as density or mean velocity.
-Begin with the [GPU guide](../README.md) for the usual profile outputs.
-
-Additional terms are defined in the [plain-language glossary](../../docs/TERMS.md).
+# Particle and gravitational field snapshots
 
 The production driver can save all weighted particles and the gravitational
 field evaluated from them at selected profile times. These files retain the
-velocity distribution needed for phase-space and orbital-energy analysis.
+velocity distribution needed for phase space and orbital-energy analysis.
 Enable the schedule with
 
 ```sh
@@ -50,18 +41,26 @@ directory, then installs their complete group with one rename. This keeps the
 particle state and the field used to interpret it together. A continuation preserves existing snapshots whose particle and
 field checksums agree with the repeated endpoint. Existing snapshots later
 than the supplied restart cause the same chronology rejection used for radial
-profiles. A continuation in a fresh directory starts from its supplied time;
-selected times preceding that state remain absent. Future entries in the
+profiles. A continuation in a fresh directory starts from its supplied time.
+Selected times preceding that state remain absent. Future entries in the
 schedule remain available for subsequent continuations.
+
+## Notation
+
+The snapshot time is $`t`$, radius $`r`$, physical radial velocity $`u`$,
+peculiar radial velocity $`w=u-Hr`$, expansion rate $`H(t)`$, and specific
+angular momentum $`L`$, stored as $`\eta=L^2/2`$. Tangential speed is $`v_t`$.
+The physical phase volume is $`\mathrm d\Gamma`$ and $`f`$ is mass per phase
+volume. Marker $`p`$ has represented mass $`m_p`$. The widths
+$`\Delta r,\Delta u,\Delta\eta`$ are the actual bin widths, and $`M`$ is
+represented mass. The saved potential is $`\Phi(r,t)`$. $`\epsilon`$ Denotes
+instantaneous specific orbital energy in this guide, rather than the local
+relativistic energy used by Einstein--Vlasov modules. The expansion
+acceleration `a_ddot_over_a` is $`\ddot a/a`$ for scale factor $`a(t)`$.
 
 ## Reconstructing the distribution function
 
 For a spherical system the physical phase volume is
-
-```math
-  d\Gamma = 8\pi^2\,dr\,du\,d\eta,
-  \qquad \eta=L^2/2,\qquad u=w+H(t)r .
-```
 
 Here `u` is physical radial velocity and `H` is the expansion rate saved with
 the field. The two angular integrations give `4 pi` for position and `2 pi`
@@ -71,6 +70,11 @@ The transformation from `w` to `u` has unit Jacobian at fixed radius and time.
 Consequently the mass distribution function in a bin is
 
 ```math
+  d\Gamma = 8\pi^2\,dr\,du\,d\eta,
+  \qquad \eta=L^2/2,\qquad u=w+H(t)r .
+```
+
+```math
   f = \frac{\sum_p m_p}
   {8\pi^2\,\Delta r\,\Delta u\,\Delta\eta},
 ```
@@ -78,7 +82,7 @@ Consequently the mass distribution function in a bin is
 where `m_p` is the weight of particle `p` in that bin. In the expanding
 density-contrast calculations this reconstructs the represented excess
 distribution. The prescribed homogeneous background is a separate component.
-A projection over `eta` gives mass per `dr du`; name that marginal quantity on
+A projection over `eta` gives mass per `dr du`. Name that marginal quantity on
 the colorbar. With a `log10 r` axis, retain the actual `Delta r` normalization,
 or explicitly plot mass per `d log10 r du`. Save bin edges, represented mass
 and effective particle counts with each analysis product.
@@ -94,7 +98,7 @@ For each particle calculate the instantaneous specific orbital energy
 where `Phi` is the saved total potential in a static run and the saved peculiar
 potential in an expanding run. The `L=0` centrifugal term has its regular zero
 limit at the origin. Use the solver's constant-line-mass reconstruction between
-mesh faces; this reconstructs the same potential as the force gather. The
+mesh faces. This reconstructs the same potential as the force gather. The
 saved inner mass and outer finite-source continuation specify the potential
 outside the resolved cell centers. Keep the expansion acceleration
 `a_ddot_over_a` separate from the halo potential.
@@ -106,7 +110,7 @@ the energy time dependent, so escape also requires the subsequent particle
 motion and boundary budget. Retain both signs and the full represented mass.
 
 The energy histogram measures mass in each energy interval. To obtain the
-phase-space density averaged over that interval, integrate `8 pi^2 dr du d eta` over each energy bin and divide the bin mass by
-that phase volume. State the radial and angular-momentum bounds of this
+phase space density averaged over that interval, integrate `8 pi^2 dr du d eta` over each energy bin and divide the bin mass by
+that phase volume. State the radial and angular momentum bounds of this
 quadrature. The full saved `r,w,eta` distribution retains the velocity
 anisotropy needed to interpret this energy average.

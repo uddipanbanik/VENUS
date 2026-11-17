@@ -30,8 +30,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 67692,
-      "sha256": "ef48dd607a5a581f2bb7810569366482110187244a0424ac5ddd96dfd0741189"
+      "bytes": 102445,
+      "sha256": "253ee18bc57bd6dbdba2d5f8448e1f04a5b0491776e1fbfd14d3d327fb969f66"
     },
     {
       "path": "VERSION",
@@ -40,8 +40,8 @@
     },
     {
       "path": "analysis/README.md",
-      "bytes": 21179,
-      "sha256": "cf9fe2ec219fd99ff66a9de08037f282c5d4597d9d9e1d23df964940929e6d43"
+      "bytes": 20997,
+      "sha256": "6c6a6dd47fa57e5ee04dbd82661309957657b5577a100d93a9b520a2e012949a"
     },
     {
       "path": "analysis/data/catalog.json",
@@ -805,28 +805,28 @@
     },
     {
       "path": "cpu/README.md",
-      "bytes": 25080,
-      "sha256": "59b6e352b954a50d8bea86fe10ea175db17d5175bdb7326df7542195a431187f"
+      "bytes": 23442,
+      "sha256": "df8d8d70b3707a361e8a69d083949ea0ae89bdebfd1d03d31a77d6b23ad50a1b"
     },
     {
       "path": "cpu/docs/cluster.md",
-      "bytes": 14120,
-      "sha256": "edad239bc3d48704aae0d2be0abd5d216212c4389a9fadb06a34bc0272626c4e"
+      "bytes": 13781,
+      "sha256": "dfc71563841da43196f115149f1169d0cfe5bdb19eef6e8bd87b53e886990a2b"
     },
     {
       "path": "cpu/docs/ef_interior_evolution.md",
-      "bytes": 6692,
-      "sha256": "e1c6cffce8d58210cd0a81bff96d3891f8f5f4ab3284f6ed8ac4d2bff119f46b"
+      "bytes": 7125,
+      "sha256": "c20dd8ecd7ddbd7a5580ae2f0fc4c38f3c11f488a63f76a3bee95edeedab865e"
     },
     {
       "path": "cpu/docs/examples.md",
-      "bytes": 5902,
-      "sha256": "540ea5e472209e8ad55d3413e8f020dade1fe73933a4ab8fe1df96ea8e269d8c"
+      "bytes": 5479,
+      "sha256": "54d3eba3095723739c9a8f93ffe0ee3613000753195a33ebe82b45517454a190"
     },
     {
       "path": "cpu/docs/sc_ef_long_pair_gif.md",
-      "bytes": 4524,
-      "sha256": "e4191fbe2a2b7239c2bb8ce9df664d914a50bcfef8088b673d8fc68bd0248744"
+      "bytes": 4825,
+      "sha256": "fe2687ec402cc62032f365b9a33db41949a6b5de301273195084bebcd5daff8c"
     },
     {
       "path": "cpu/examples/einstein_vlasov_high_compactness_horizon_formation.ini",
@@ -840,8 +840,8 @@
     },
     {
       "path": "cpu/examples/initial_data/README.md",
-      "bytes": 1586,
-      "sha256": "26d314c1f8f414d226f62d0e303f57048a632de5def064c45344926a63c8972c"
+      "bytes": 1244,
+      "sha256": "14852d8786af90657e2ce478e5fbe9362da9b3386b31f8446e8bccbe8895ffe0"
     },
     {
       "path": "cpu/examples/initial_data/bp_zero_flux_b1_gamma2_eds_R20_rmin0p1_W3_L8_Nr128_Nw160_NL72_quadL_discrete.bin",
@@ -905,8 +905,8 @@
     },
     {
       "path": "cpu/examples/modular/vp_bound_gaussian_shell_gpu.md",
-      "bytes": 4540,
-      "sha256": "e915bf99c72656ac3e8fbea2b132e657e5ebff8d054f3eb735296f1d42b934ef"
+      "bytes": 4053,
+      "sha256": "0e9ca56af3cb6e6caaf935eb8661068a544037606b1c1980d06e609d5f1e245c"
     },
     {
       "path": "cpu/examples/modular/vp_bound_infalling_gaussian_shell_train.ini",
@@ -1090,8 +1090,8 @@
     },
     {
       "path": "cpu/include/ev/relativistic_boltzmann/README.md",
-      "bytes": 4025,
-      "sha256": "696d11c35116b7cf36e178724c79a72121e784fbf9d7c638fa7842faa2298e14"
+      "bytes": 3380,
+      "sha256": "1e77cadc6890fe43b27cd68f29a4b98bbe09c10a4a42a2c86051797c0aacca21"
     },
     {
       "path": "cpu/include/ev/relativistic_boltzmann/coordinate_geometry.hpp",
@@ -1395,8 +1395,8 @@
     },
     {
       "path": "cpu/scripts/slurm/README.md",
-      "bytes": 29344,
-      "sha256": "94b2e3ae90623ea32c6ef9ef7d36d11248119cba7e8e47d494aafc0642e89075"
+      "bytes": 29605,
+      "sha256": "0e8494b81738b617ed4ee8535c9b2b102a44d895cd5d90e49c3b57a08ddad563"
     },
     {
       "path": "cpu/scripts/slurm/ias_einstein_vlasov_wpic.sbatch",
@@ -2220,43 +2220,43 @@
     },
     {
       "path": "docs/CLUSTERS.md",
-      "bytes": 12444,
-      "sha256": "9d0f5521871d5a646b82d05de34fbbd049843e69749daa685989a3e2235e3d58"
+      "bytes": 11913,
+      "sha256": "789686c6a73da84a1d05a50cb75169eb00047fde4c6c5ec3420bfa157b63dccb"
     },
     {
       "path": "docs/README.md",
-      "bytes": 2196,
-      "sha256": "b51924b78e599f8d3687d73efebeaaa84f400171edc8eff1a1d98944d6d8002d"
+      "bytes": 2194,
+      "sha256": "ac1178383034fcb00960814a98d7b9471af31ce1ac7acb7e479e9225bdebd482"
     },
     {
       "path": "docs/RELATIVISTIC_COORDINATES.md",
-      "bytes": 23625,
-      "sha256": "7ec78a3e063e420c6e7399e3fc9fc0674eef317093afa4b2be302df397c76c56"
+      "bytes": 25688,
+      "sha256": "ff9ac2a50d22f36b80b5821440c541ef36c2d71241ae5fdeed6dba1fe805311d"
     },
     {
       "path": "docs/RUN_OPTIONS.md",
-      "bytes": 80824,
-      "sha256": "1134099f7cd9f832da7c01a2981599aa477e3c8572ca99f7c6e04232651a5041"
+      "bytes": 80395,
+      "sha256": "716344014e8e935c26478be96789ea9c93b38a3731b7c796e91a37610e544fbd"
     },
     {
       "path": "docs/TERMS.md",
-      "bytes": 14758,
-      "sha256": "dcead342ff0cf51b990f05b0c803725de3b4b467fe1830ed21f778d0dd9dcb6f"
+      "bytes": 3690,
+      "sha256": "3a5eff1abc182373690a2b41374972116f4c8016fdbaf4207c539b7a7120801f"
     },
     {
       "path": "docs/relativistic_boltzmann.md",
-      "bytes": 11645,
-      "sha256": "342dfb372f16906fd966f33789473c719a95bcf3e746c362a1ccf487a1ff3f37"
+      "bytes": 12439,
+      "sha256": "6a13bb2d209139f3c9eda37e3a0ce38ec3eabd589183d99a0d18d6d0e11ef68e"
     },
     {
       "path": "docs/venus_manual.pdf",
-      "bytes": 1457589,
-      "sha256": "5910df9295ca8fb5fca2e02285c5b94e0165e073c63621e59468ed01f45c550f"
+      "bytes": 1456177,
+      "sha256": "615adf646815a1843f1f2bc7686af3474346e4bceab2db0c711a99a5b617061b"
     },
     {
       "path": "examples/README.md",
-      "bytes": 18489,
-      "sha256": "be55c0692fb439b3b6060a23e71f50ef71009203f2d2dfc38f0dfb6a427c81d1"
+      "bytes": 18206,
+      "sha256": "86ca64681ec11160c484e0542f02c6fc628f96f72fa497008844909109c1bc1d"
     },
     {
       "path": "examples/catalogue.json",
@@ -2690,8 +2690,8 @@
     },
     {
       "path": "gpu/README.md",
-      "bytes": 18292,
-      "sha256": "aaa1c4ea89db6f58ba3acef07c1013b6269b3ce2f6f5b186f2b8452b21be0f14"
+      "bytes": 16970,
+      "sha256": "5c7b3ef9a7f9bb2a857042246312e7a0cf93c8c250cd3d574491d8dd7aa9cef0"
     },
     {
       "path": "gpu/benchmarks/benchmark_material_sidm_gpu.cu",
@@ -2720,33 +2720,33 @@
     },
     {
       "path": "gpu/docs/COUPLED_RECEIVER_CLOCKS.md",
-      "bytes": 6618,
-      "sha256": "e48a630b8d85636a849f5cc9fcf1fef4074e67ee2490c28902302a7f096b199a"
+      "bytes": 6972,
+      "sha256": "b0eaead8e0367c42ec76fdb66a95b193a42b7488cff3d630478a55f1f618c8b5"
     },
     {
       "path": "gpu/docs/CPU_VS_GPU.md",
-      "bytes": 6902,
-      "sha256": "30a77d47190dce34ff4989826c4340e89d25b9abee28975a3b11ec15d7808012"
+      "bytes": 6641,
+      "sha256": "85bbfe3975385077599dd3dfb6f5dbef595827cd3172fa3f5dc17f4d0ff4edcb"
     },
     {
       "path": "gpu/docs/MULTI_GPU.md",
-      "bytes": 5344,
-      "sha256": "94f695bd02408f9ee785847ebcbbced5df99a30c657d9816eb5878ee451223c9"
+      "bytes": 5629,
+      "sha256": "5ea8d6f02a423c5c176483ac9d32bd3ddac0d7f798d380baba9f4ad7b5a2f590"
     },
     {
       "path": "gpu/docs/PHASE_SPACE_SNAPSHOTS.md",
-      "bytes": 5880,
-      "sha256": "5a89e78ae4a7fb3397331216f168a686874479f81bf2d0e5b2a775f62fe2dd65"
+      "bytes": 6099,
+      "sha256": "b7488e48160c246aea547486d41e1aaca9f1d42d46bf5b29d5c46c5cf451357a"
     },
     {
       "path": "gpu/docs/WPIC_COLLISIONS.md",
-      "bytes": 14429,
-      "sha256": "243d6562db026536772bdc2d2181bcc7af09418bfbf9f2037677b62ae8d029f4"
+      "bytes": 17743,
+      "sha256": "68c6a537d0ddcc5074acd95e7047e86bae452120d57171405cb2146787fc0d78"
     },
     {
       "path": "gpu/docs/WPIC_VLASOV_POISSON.md",
-      "bytes": 12421,
-      "sha256": "be9e609a0f62a0f99e31694616fe6e6753aeb07d71b18946115ae8491ba99240"
+      "bytes": 14087,
+      "sha256": "59a15ec1942509fb529acface2049097f0f2da48b2e125a830416751b883d3f7"
     },
     {
       "path": "gpu/include/venus_gpu/collision_common.hpp",
@@ -3011,17 +3011,17 @@
     {
       "path": "movies/HALOS.md",
       "bytes": 5415,
-      "sha256": "b682196b918371467337bf77996d8e53ea9f20b4b70ca6a22de4c5a16c164134"
+      "sha256": "8a3829226f1a9b403218c9afa781087218c7655b25629eac780502630e845f91"
     },
     {
       "path": "movies/README.md",
-      "bytes": 6184,
-      "sha256": "b02176587b230e406dba66bacd26f389f831ba10530b6ca96cabe77f42425186"
+      "bytes": 5831,
+      "sha256": "9bc17236f1555b6fef52bbb91fd99cd9a7c92dff3b8beb2db5a70e85ea19119a"
     },
     {
       "path": "movies/SIDM_COLD.md",
-      "bytes": 8081,
-      "sha256": "7777dc1f26ece129ab075fd313d1e329b0b21f554ce9ac7d96cdca39193c0ac5"
+      "bytes": 7612,
+      "sha256": "2d422427f0c4605145d65056d8ca7df25beba181c8477b2bc82d1ac8ced98d26"
     },
     {
       "path": "movies/black_hole_ef.mp4",
@@ -11955,8 +11955,8 @@
     },
     {
       "path": "notes/EF_INTERIOR_EVOLUTION.md",
-      "bytes": 5341,
-      "sha256": "8f13d1e86fc894bacf0b47743837b10a37c3ffb5d646ff9d9bcf3ec9b28a87ef"
+      "bytes": 5410,
+      "sha256": "ad72325f9b37ed6c480464231387e6caf6f6fdf1104d626054e9c7bd24c69608"
     },
     {
       "path": "notes/Makefile",
@@ -11965,43 +11965,43 @@
     },
     {
       "path": "notes/README.md",
-      "bytes": 3273,
-      "sha256": "ec3146f02f2460cf73a7c02bce851f9945867720fe8b0e9d780ce1ea3772d4a7"
+      "bytes": 2746,
+      "sha256": "4b4646c6f1f4663ba460f6af894df29c63a9d909de5a0f26502c64d0fb577d3b"
     },
     {
       "path": "notes/SCRIPT_REFERENCE.md",
-      "bytes": 29234,
-      "sha256": "0ef87d122426a0a820be47fc7186aacc2021fd72f1904435f638a577b9da8df1"
+      "bytes": 29079,
+      "sha256": "0d5a352b978a3b6029880376857ec02b506ff3fd6e488d604d78df490fd1131c"
     },
     {
       "path": "notes/SOLVER_MODULES.md",
-      "bytes": 62315,
-      "sha256": "473a890ee051b1455e7c5d09ffdf72d351fb9559f323a61c7af109c91e89b273"
+      "bytes": 61814,
+      "sha256": "4691bf63fdeecd62947b73935b625eacc9f69e9b9afe843c1e86d8df80cd7c50"
     },
     {
       "path": "notes/sections/cpu/cpu_grid_solver_reference.tex",
       "bytes": 5980,
-      "sha256": "12ac98b09acca53f490922170183173009b319e16def22cbb4d66b02f34a5e0a"
+      "sha256": "1b9094f52d9af251177bc386ab160cc4e4c4e9a3afc7780e2d1bbce9df041496"
     },
     {
       "path": "notes/sections/cpu/eulerian_grid_collision_backends.tex",
       "bytes": 51083,
-      "sha256": "f62f989be73af3837331dea365e0be6b71551c5edd2d118bd993384a32189f32"
+      "sha256": "7e32bb81f6a569f8c0e2f4fd50e097b4301f0fee8cdc47c7555c0bea6f83fa16"
     },
     {
       "path": "notes/sections/cpu/fully_kinetic_boltzmann_manual_section.tex",
       "bytes": 28202,
-      "sha256": "1a1d756c9c00498f7b61a6891fadc9771fbae7357603f0e7c367effc071ba74d"
+      "sha256": "0c7bd6aee7364fabc143f281c75681c49e9f605890d36a02eb0a4a277aedbf4f"
     },
     {
       "path": "notes/sections/cpu/grid_equation_guide.tex",
       "bytes": 4705,
-      "sha256": "486279652d95349482816d8d328208c649a105e8f7a0df5eb10711cee6d70ebd"
+      "sha256": "a6aa1990fbe1bb4c64b3d12e3a1b22a08e40296a019fc9a96e02777186953b52"
     },
     {
       "path": "notes/sections/cpu/ingoing_eddington_finkelstein_wpic_manual_section.tex",
       "bytes": 168845,
-      "sha256": "14fd94cf4536df0c9204ecadc120b5ea0c04b5264b8c7cdb70c2bbdc0d78dbcc"
+      "sha256": "3ecf75b2d1ba65927cc70d75e7c012a26a38a50b3ded1eddb5a2ada47a630bb3"
     },
     {
       "path": "notes/sections/cpu/relativistic_boltzmann_manual_section.tex",
@@ -12011,37 +12011,37 @@
     {
       "path": "notes/sections/cpu/semi_lagrangian_manual_section.tex",
       "bytes": 29922,
-      "sha256": "1d36f3730313b2c47819ffa428a795d5f8564a1ef22769474735577014336438"
+      "sha256": "f34365567c9c4fcf9c206ff340b48a02efe76f4b0ea931fb38c6901d7cf268ad"
     },
     {
       "path": "notes/sections/cpu/software_orientation.tex",
       "bytes": 19378,
-      "sha256": "e7c2fb6ff055ab3a0bae65f2d1c8fb2d27f192885285ef29aac0aea6b0d8c68e"
+      "sha256": "0ed970f35d8c6af4e2f15591caf8783542d1889d64b52dbe0cec97bcebe3c35c"
     },
     {
       "path": "notes/sections/cpu/spherical_dsmc_manual_section.tex",
       "bytes": 64707,
-      "sha256": "6daf3c1c46ec522f7a05fd9fe335e2481b3e40773a8983148776167360e389de"
+      "sha256": "71da8493d3392f9850d3b2abb95c2c1f724b51c713c3ec46fba29e1a885f1772"
     },
     {
       "path": "notes/sections/cpu/weighted_einstein_vlasov_pic_manual_section.tex",
       "bytes": 35512,
-      "sha256": "efa5142688ae836b7c3796945917864798456667a310e764e16bb5583a634f1e"
+      "sha256": "46858981fb546434a153bc14a8a9d347bdd1749ed1b065061ff3535a411a2d9b"
     },
     {
       "path": "notes/sections/cpu/weighted_vlasov_pic_manual_section.tex",
-      "bytes": 135636,
-      "sha256": "4ccf3c72000fd5a8b8d8b5fc22a153d4ec150c7786205d3e60b7b983a8680ac8"
+      "bytes": 135882,
+      "sha256": "fa041c80ce9b99e60f06cff6eb7c80fbea5274898b3b6765c78f99617e6aab16"
     },
     {
       "path": "notes/sections/exact_collision_foundations.tex",
       "bytes": 3862,
-      "sha256": "bbfc073393bc8f459e35dc010f075b275ce68d1febe0fcfc62e480c53ae68a37"
+      "sha256": "dae1e87196d9eeea02aa76fdb4191b4081a1915fe7c6b13a26436fdab5d95338"
     },
     {
       "path": "notes/sections/foundations_and_notation.tex",
-      "bytes": 20662,
-      "sha256": "b1cd7163feb812504cf8fbcf4ae12a152a6f7933f9dc1d169cbb5e2b9bc83c99"
+      "bytes": 19664,
+      "sha256": "b0b20f75eba2a31efdfb7bd8a5540ec0b897de181ec8973a455653478a3b0abf"
     },
     {
       "path": "notes/sections/gpu/gpu_architecture.tex",
@@ -12051,32 +12051,32 @@
     {
       "path": "notes/sections/module_initial_conditions.tex",
       "bytes": 16658,
-      "sha256": "f0dd15f67750245087e5de8c28f44f2491f529a2240444fedc8d0bc6edcfbff5"
+      "sha256": "89c69ed1f496057e62e1a35d2f142115260bf33dce932a685f6ca0af73575d4c"
     },
     {
       "path": "notes/sections/module_visualization_guide.tex",
       "bytes": 8500,
-      "sha256": "1f98529b6717ad524d2ecb24e5fee7c65a3acd0671c8500bda3d2e63e1381389"
+      "sha256": "fb505980a92236552ab2fd7258d98bc0d7c4616979719a8e982568bf74607ef7"
     },
     {
       "path": "notes/sections/parallel_computing_foundations.tex",
       "bytes": 5659,
-      "sha256": "0b9cc97dc0c5c6f804198b2412b13b23f2d467b90f9b76261bf94822cf413f09"
+      "sha256": "cf4aca975d2a41b0640f088c93b630d29623065809fb7b30e0a105bcc7aaf8c3"
     },
     {
       "path": "notes/sections/phase_space_analysis.tex",
       "bytes": 11484,
-      "sha256": "8ae09d5827166a6700974bb58c42d28b6c82514ed5b79bb68ffce7885494020c"
+      "sha256": "bb0b9832765d9ed6af3ab7679162237f5caa64aad092efda6c79dd1ddb345441"
     },
     {
       "path": "notes/sections/shared_release_operations.tex",
-      "bytes": 17468,
-      "sha256": "c8f8ed55dcdb636903eb9c2f54b5d5cfc72b8da789778056ba1ef5e22ea99d3e"
+      "bytes": 17469,
+      "sha256": "d4f700aa1062076920c11104309b6ba3d6c3c81b6f78fd8069cb411aa3b0d9b0"
     },
     {
       "path": "notes/sections/solver_module_catalog.tex",
       "bytes": 44033,
-      "sha256": "a4ba3ab15a231b8ba17c406340350369fd9731a4721bf4c20777449ca04ce84b"
+      "sha256": "15a2c24099c5fe999707576839fc0bd3ee3d3fe47dd125465145218ea57fada1"
     },
     {
       "path": "notes/sections/successful_run_examples.tex",
@@ -12086,12 +12086,12 @@
     {
       "path": "notes/sections/wpic_diagnostics.tex",
       "bytes": 25472,
-      "sha256": "5ae345910d5f522d130cd557b9d9e27153f0239f64216110965eb49a242e0191"
+      "sha256": "94dd4f113d1ccbfb799ca58b6967af2c5097287224d8b2cab4a244ac725f3132"
     },
     {
       "path": "notes/venus_manual.tex",
-      "bytes": 120334,
-      "sha256": "369f4d4e4ccf339a7a11c1da2e47807232d844f51958309d68e892f5d5454562"
+      "bytes": 120190,
+      "sha256": "4933f7aec46a45d9d6f2f3871e336fe66950643bd530a8097446da00e2278d4f"
     },
     {
       "path": "output/cpu/.gitkeep",
@@ -12105,8 +12105,8 @@
     },
     {
       "path": "plots/README.md",
-      "bytes": 693,
-      "sha256": "c45c614faafbfccd8dbf9fff9728fa58d6b3bba53adbe909a93948b7b437faf5"
+      "bytes": 354,
+      "sha256": "a6e6452326f2747018de75dd2eb5e8dcc4298c58b832a92be6d13a68cd5a89fe"
     },
     {
       "path": "plots/bh_coordinates.pdf",
@@ -12230,8 +12230,8 @@
     },
     {
       "path": "release/VALIDATION.md",
-      "bytes": 5799,
-      "sha256": "f15a758a59a47e4496e558af7c4cd05c6c6d9d3d881f87709b687717a675d760"
+      "bytes": 6563,
+      "sha256": "8ddd5e6c546e0d5769708d30c67f28e959a2beed461f0d302036272d58bc0fc9"
     },
     {
       "path": "release/numerical_sources.json",

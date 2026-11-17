@@ -1,19 +1,9 @@
 # Examples and initial conditions
 
-An initial condition describes the matter at the start of a calculation.
-An INI file is a plain-text list of settings. An Eulerian method stores matter
-in fixed position-and-velocity cells. WPIC (weighted particle-in-cell) uses
-particles carrying mass weights. SphDSMC (spherical direct simulation Monte
-Carlo) follows persistent particles and randomly samples local encounters.
-VP, BP and EV mean Vlasov--Poisson, Boltzmann--Poisson and Einstein--Vlasov,
-respectively. The [CPU guide](../README.md) introduces these equations.
-
-Additional terms are defined in the [plain-language glossary](../../docs/TERMS.md).
-
 Developed by Uddipan Banik and Frank van den Bosch
 
-All paths are relative to `VENUS/cpu`. Eulerian and SphDSMC tasks read an
-INI file. Dedicated WPIC tasks read the options in a `run.args` file; pass
+All paths are relative to `VENUS/cpu`. Eulerian and spherical direct simulation Monte Carlo (SphDSMC) tasks read an
+INI file. Dedicated weighted particle-in-cell (WPIC) tasks read the options in a `run.args` file. Pass
 them to the named executable exactly as documented by `--help`.
 
 ## Introductory INI examples
@@ -22,12 +12,12 @@ them to the named executable exactly as documented by `--help`.
 |---|---|---|
 | `examples/einstein_vlasov_low_compactness_virialized_halo.ini` | `venus_cpu_einstein_vlasov_eulerian` | weakly relativistic halo and metric/virial diagnostics |
 | `examples/einstein_vlasov_high_compactness_horizon_formation.ini` | `venus_cpu_einstein_vlasov_eulerian` | compact shell and compactness-gap stopping condition |
-| `examples/modular/vp_expanding_nfw_gamma2_collisionless.ini` | `venus_cpu_vlasov_poisson_eulerian` | collisionless expanding EdS control |
+| `examples/modular/vp_expanding_nfw_gamma2_collisionless.ini` | `venus_cpu_vlasov_poisson_eulerian` | collisionless expanding Einstein--de Sitter (EdS) control |
 | `examples/modular/vp_bound_infalling_gaussian_shell_train.ini` | `venus_cpu_vlasov_poisson_eulerian` | bound infalling shell train in a static background |
 | `examples/modular/vp_delayed_inner_carrier.ini` | `venus_cpu_vlasov_poisson_eulerian` | delayed-inner-carrier boundary example |
-| `examples/modular/bp_expanding_nfw_gamma1p5_weak_collision.ini` | `venus_cpu_boltzmann_poisson_fokker_planck` | expanding weak-collision BP with softened-gravity coefficients |
+| `examples/modular/bp_expanding_nfw_gamma1p5_weak_collision.ini` | `venus_cpu_boltzmann_poisson_fokker_planck` | expanding weak-collision Boltzmann--Poisson (BP) with softened-gravity coefficients |
 | `examples/modular/bp_sidm_corecollapse_yukawa.ini` | `venus_cpu_boltzmann_poisson_fokker_planck` | static Yukawa--Born transport-coefficient core evolution |
-| `examples/modular/spherical_dsmc_frank_equilibrium.ini` | `venus_cpu_sidm_sphdsmc_constant` | compact constant-cross-section persistent-marker SIDM example |
+| `examples/modular/spherical_dsmc_frank_equilibrium.ini` | `venus_cpu_sidm_sphdsmc_constant` | compact constant-cross-section persistent-marker self-interacting dark matter (SIDM) example |
 
 Build and launch, for example:
 
@@ -41,7 +31,7 @@ make organized-solvers
 
 Each task executable selects one system of equations and one collision operator. An INI that requests
 `boltzmann_exact`, for example, belongs to
-`venus_cpu_boltzmann_poisson_exact`; it is rejected by the Fokker--Planck
+`venus_cpu_boltzmann_poisson_exact`. It is rejected by the Fokker--Planck
 front. The broad `venus_cpu_boltzmann_poisson_finite_angle` and
 `venus_modular_solver*` dispatchers are compatibility interfaces, not the
 default for a new calculation.
@@ -63,10 +53,10 @@ Scheduler resource and checkpoint patterns are documented under `scripts/slurm/`
 `examples/initial_data/` contains binary grid distributions used by the INI
 examples, including:
 
-- weakly relativistic and compact EV shell data;
-- expanding zero-flux power-law/halo seeds;
-- the bound infalling shell train;
-- a static Yukawa--Born SIDM distribution; and
+- weakly relativistic and compact Einstein--Vlasov (EV) shell data.
+- expanding zero-flux power-law/halo seeds.
+- the bound infalling shell train.
+- a static Yukawa--Born SIDM distribution. And
 - a sampled Frank equilibrium used to construct the SphDSMC population.
 
 Grid files use the versioned `EVICRWL1` binary format documented in the manual.
@@ -77,7 +67,7 @@ substituted for one another. A GPU run starts from a compatible WPIC restart.
 ## Outputs
 
 Eulerian tasks normally write `metadata.json`, `history.csv`,
-`profiles.csv`, optional phase-space snapshots, and a serial restart or MPI
+`profiles.csv`, optional phase space snapshots, and a serial restart or Message Passing Interface (MPI)
 manifest plus rank payloads. SphDSMC adds operator mass budgets and persistent
 marker state. WPIC writes `radial_mesh_contract.txt`, time-indexed
 `profile_*.csv`, histories, the applicable collision ledger, metadata, and

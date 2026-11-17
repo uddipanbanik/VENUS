@@ -1,15 +1,6 @@
 # Schwarzschild–Eddington–Finkelstein long-run animation
 
-Schwarzschild (SC) and ingoing Eddington--Finkelstein (EF) are two
-coordinate descriptions of relativistic gravity. EF remains regular at a
-black hole horizon. A coordinate map identifies the same physical events
-in both descriptions. A parity certificate records their agreement tests;
-a gate checks those tests before submitting a dependent job. Slurm is the
-cluster job scheduler, and a dependency delays one job until another succeeds.
-
-Additional terms are defined in the [plain-language glossary](../../docs/TERMS.md).
-
-The animation compares a Schwarzschild run with its corresponding EF run.
+The animation compares a Schwarzschild run with its corresponding ingoing Eddington--Finkelstein (EF) run.
 It uses their saved profiles and the solved coordinate map to evaluate both
 solutions at the same physical events.
 
@@ -20,7 +11,7 @@ The paired-long gate then starts exactly two evolutions from the same certified
 fine-resolution initial state:
 
 - Schwarzschild (SC) coordinates, with no required final outcome because this
-  chart may stop as a horizon is approached; and
+  chart may stop as a horizon is approached. And
 - ingoing Eddington–Finkelstein (EF) coordinates, which must report a black
   hole for this campaign.
 
@@ -43,6 +34,21 @@ paired campaign receipt. It does not accept alternate SC, EF, map, or output
 paths. The map manifest authenticates every map artifact by content hash, and
 the job also requires those artifacts to remain in the manifest's original
 directory.
+
+## Notation
+
+The coordinate map uses SC time $`\tau`$, advanced EF time $`v`$ and areal
+radius $`r`$. The metric is
+$`\mathrm ds^2=-e^{2\mu}\mathrm d\tau^2+e^{2\lambda}\mathrm dr^2+r^2\mathrm d\Omega^2`$
+on SC and
+$`\mathrm ds^2=-ab^2\mathrm dv^2+2b\mathrm dv\mathrm dr+r^2\mathrm d\Omega^2`$
+on EF, where $`\mathrm d\Omega^2`$ is the unit-sphere line element.
+Enclosed gravitational mass is $`m(r)`$ and $`a=1-2m/r`$, in units $`G=c=1`$.
+Density $`\rho`$ is measured by the static observer in the exterior.
+$`T_{vv}`$ Is the covariant advanced-time stress component and
+$`\rho_{\mathrm{EF}}`$ its corresponding EF density. The integer $`n`$ is
+the number of integration substeps. Logarithmic plot axes use the stated
+simulation units. Density slope means $`\mathrm d\ln\rho/\mathrm d\ln r`$.
 
 ## What is compared
 
@@ -96,13 +102,13 @@ the whole directory with one rename to
 
 The published directory contains:
 
-- `sc_ef_black_hole_profiles.gif`;
-- initial, middle, and final PNG previews;
+- `sc_ef_black_hole_profiles.gif`.
+- initial, middle, and final PNG previews.
 - `sc_ef_black_hole_profiles_frames.csv`, which records the SC and mapped EF
-  clocks for each frame;
+  clocks for each frame.
 - `sc_ef_black_hole_profiles_provenance.json`, which records definitions,
-  paths, hashes, and map errors;
-- `artifacts.sha256`; and
+  paths, hashes, and map errors.
+- `artifacts.sha256`. And
 - `render_manifest.tsv` with its SHA-256 sidecar.
 
 If either long job fails, Slurm never starts the plotting job. If any path,

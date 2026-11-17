@@ -3,7 +3,7 @@
 VENUS is one release with two implementation trees:
 \path{VENUS/cpu} and \path{VENUS/gpu}.  ``CPU'' below means the broad
 reference implementation, including serial, \code{std::thread}, OpenMP, and
-the supported MPI phase-space decomposition.  ``GPU'' means the CUDA/MPI WPIC
+the supported MPI phase space decomposition.  ``GPU'' means the CUDA/MPI WPIC
 implementation.  The GPU tree accelerates the weighted particle--mesh family, including its
 material and subhalo collision paths. Grid Einstein--Vlasov, grid
 semi-Lagrangian Vlasov--Poisson, canonical-orbit Boltzmann--Poisson, and
@@ -126,7 +126,7 @@ VENUS evolves a spherically symmetric distribution function
   f=f(t,r,w,L),
 \]
 where \(r\) is radius, \(w\) is the radial momentum or peculiar radial velocity
-depending on the model, and \(L=|\bm r\times\bm v|\) is angular-momentum
+depending on the model, and \(L=|\bm r\times\bm v|\) is angular momentum
 magnitude.
 \ifvenusfullcpu
 The CPU tree provides task-specific C++ front ends:
@@ -286,7 +286,7 @@ Run the supplied examples with:
 
 The solver prints the resolved model and parallel layout at startup.  For
 example,
-\codesource{Resolved solver-layout startup banner}{\path{cpu/include/ev/solver.hpp}}{Reports the selected physics model, parallel backend, threads per rank, MPI size, and global angular-momentum grid size after setup}
+\codesource{Resolved solver-layout startup banner}{\path{cpu/include/ev/solver.hpp}}{Reports the selected physics model, parallel backend, threads per rank, MPI size, and global angular momentum grid size after setup}
 \begin{lstlisting}
 Solver model=vlasov_poisson parallel backend=openmp threads_per_rank=8 mpi_size=4 global_NL=72
 \end{lstlisting}

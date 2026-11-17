@@ -1,4 +1,4 @@
-\subsection{Complete particle snapshots: phase-space and energy distributions}
+\subsection{Complete particle snapshots: phase space and energy distributions}
 \label{sec:complete-particle-analysis}
 
 The GPU particle runners can save the complete marker population together
@@ -6,7 +6,7 @@ with the gravitational field at selected times. Each marker then has an orbital 
 same time, so the complete mass-weighted orbital distribution can be measured.
 
 Use \code{analysis/scripts/phase_space_snapshot_analysis.py} to calculate the
-phase-space distributions.
+phase space distributions.
 
 Use \code{analysis/scripts/shifted_energy_snapshot_analysis.py} to calculate the
 energy distributions. Both tools run on a CPU and require NumPy.
@@ -80,7 +80,7 @@ For a subhalo marker, $E$ describes its center-of-mass motion; the
 subhalo's stored internal energy remains a separate quantity.
 
 Counting marker mass in energy bins gives a mass spectrum. To infer a mean
-phase-space density, divide that mass by the phase volume available within
+phase space density, divide that mass by the phase volume available within
 each energy bin. Let $\Phi_{\rm c}=\Phi(0,t)$, and let $R_{\rm wall}$ be the outer saved
 field face. The spherical phase volume below energy $E$ is
 \begin{equation}
@@ -88,7 +88,7 @@ field face. The spherical phase volume below energy $E$ is
  \int_0^{R_{\rm wall}}r^2[2(E-\Phi(r,t))]_+^{3/2}\,\mathrm dr,}
  \label{eq:df-analysis-phase-volume}
 \end{equation}
-where $[x]_+=\max(x,0)$. This follows by integrating the velocity-space
+where $[x]_+=\max(x,0)$. This follows by integrating the velocity space
 sphere allowed at each physical radius. For energy bin $k$, with edges
 $E_k,E_{k+1}$ and marker mass $M_k$, the discrete quantities are
 \begin{equation}
@@ -120,7 +120,7 @@ Here $r_s'(z)=\mathrm dr_s/\mathrm dz$. In the first excerpt,
 \code{z} and \code{weights} are Gauss--Legendre nodes and weights on
 $[0,1]$, \code{value} is $E-\Phi_{\rm c}$, and
 \code{self.offset(r)} is $\Phi(r)-\Phi_{\rm c}$.
-\codesource{Finite spherical phase volume}{\path{analysis/scripts/shifted_energy_snapshot_analysis.py}, \code{PhaseVolume.integrate}, lines 74--86}{Integrate the allowed velocity-space sphere over saved radial segments}
+\codesource{Finite spherical phase volume}{\path{analysis/scripts/shifted_energy_snapshot_analysis.py}, \code{PhaseVolume.integrate}, lines 74--86}{Integrate the allowed velocity space sphere over saved radial segments}
 \begin{lstlisting}[language=Python]
             r = a + (b - a) * z
             jac = np.broadcast_to(b - a, r.shape).copy()
@@ -177,7 +177,7 @@ To generate complete snapshots, add
 initial state at $t=0$ and profile spacing 10. Each requested time must be
 a profile time. The selected groups are written below the run's
 \code{phase_space/} directory. From the repository root, run
-\codesource{Complete-snapshot reduction commands}{\path{analysis/scripts/phase_space_snapshot_analysis.py} and \path{analysis/scripts/shifted_energy_snapshot_analysis.py}, \code{main}}{Read authenticated GPU snapshot groups and write complete phase-space and energy reductions}
+\codesource{Complete-snapshot reduction commands}{\path{analysis/scripts/phase_space_snapshot_analysis.py} and \path{analysis/scripts/shifted_energy_snapshot_analysis.py}, \code{main}}{Read authenticated GPU snapshot groups and write complete phase space and energy reductions}
 \begin{lstlisting}[language=bash]
 python analysis/scripts/phase_space_snapshot_analysis.py \
   --snapshots output/my_halo/phase_space \
@@ -186,7 +186,7 @@ python analysis/scripts/shifted_energy_snapshot_analysis.py \
   --snapshots output/my_halo/phase_space \
   --output-directory analysis/my_halo_energy
 \end{lstlisting}
-The first command writes phase-space and linear-energy histograms. The
+The first command writes phase space and linear-energy histograms. The
 second writes logarithmic shifted-energy bins and their phase-volume
 means. Both write one NPZ file per snapshot, an analysis manifest, and
 analytic-check results. The default phase mesh has 360 radial bins and

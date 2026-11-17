@@ -1,13 +1,13 @@
-# EF evolution with interior particles retained
+# ingoing Eddington--Finkelstein (EF) evolution with interior particles retained
 
-EF means ingoing Eddington--Finkelstein, a coordinate system that remains
-regular at a black hole horizon. An apparent horizon marks zero outward
-expansion of outgoing light on a chosen slice. A trapped region has both
-future radial light families converging. Excision removes a central numerical
-region behind a causally checked boundary. The metric describes spacetime
-geometry; its constraints are equations that geometry and matter must satisfy.
-
-Additional terms are defined in the [plain-language glossary](../docs/TERMS.md).
+Use areal radius $`r`$, enclosed gravitational mass $`m`$ and advanced time
+$`v`$, in $`G=c=1`$ units. The ingoing Eddington--Finkelstein (EF) metric is
+$`\mathrm ds^2=-ab^2\mathrm dv^2+2b\mathrm dv\mathrm dr+r^2\mathrm d\Omega^2`$,
+with $`a=1-2m/r`$, $`b>0`$ and the unit-sphere line element
+$`\mathrm d\Omega^2`$. The specific canonical radial momentum is $`P=p_r>0`$,
+and $`\eta=L^2/2`$ for specific angular momentum $`L`$. The excision-cap
+fraction is $`F`$. Outer radius $`r_{\max}`$ carries the conserved
+Arnowitt--Deser--Misner (ADM) mass $`M_{\mathrm{ADM}}`$.
 
 The ingoing Eddington–Finkelstein driver accepts `--ef-evolve-interior` to
 evolve all particles inside an apparent horizon. Apply this option to the EF
@@ -57,7 +57,7 @@ values of the mass `m`, product `m*b` and metric coefficient `b`. An empty centr
 `m(0)=0`. Radial and timestep comparisons establish the accuracy of a growing
 numerical residual there. Write the total gravitating mass as `M_ADM`,
 the Arnowitt–Deser–Misner mass. An absolute residual `|m(0)|/M_ADM >= 1` records
-`spatial_resolution_lost`; smaller residuals retain `requires_convergence`.
+`spatial_resolution_lost`. Smaller residuals retain `requires_convergence`.
 The saved peak width and radius, measured in cell units, show how many cells
 resolve the collapsing core.
 

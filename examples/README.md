@@ -1,16 +1,10 @@
 # Build, run, and analyze an example
 
-A solver advances the physical equations. WPIC (weighted particle-in-cell)
-uses particles carrying mass weights. Compactness measures relativistic
-gravity through `2GM/(rc²)` for mass `M` inside radius `r`, with gravitational
-constant `G` and speed of light `c`. Slurm is the cluster job scheduler.
-See the [plain-language glossary](../docs/TERMS.md) for other terms.
-
 These examples introduce the interface in short, reproducible steps. Most run
 for a small physical time so that you can check your installation quickly.
 The low-compactness relativistic example follows the halo for long enough to
 check its stated outcome. The expanding exact grid example checks initial-data
-setup at zero time; expanding WPIC examples demonstrate actual evolution.
+setup at zero time. Expanding weighted particle-in-cell (WPIC) examples demonstrate actual evolution.
 Resolution and duration for a scientific result belong to that physical problem.
 
 Run the commands from the repository root, the folder containing the main
@@ -74,10 +68,10 @@ SDK. Explicit `CXX`, `SDKROOT`, and `BASE_CXXFLAGS` choices take precedence.
 | `scripts/build/tools.sh` | C++ input generators and diagnostic utilities |
 
 For CUDA, set `GPU_ARCH` to the GPU compute capability, NVIDIA’s device-version number, such as `80` for A100
-or `90` for H200. Use the site's compatible compiler, CUDA, and MPI modules. On IAS,
+or `90` for H200. Use the site's compatible compiler, CUDA, and Message Passing Interface (MPI) modules. On IAS,
 `source scripts/build/ias_environment.sh` selects the supplied compiler setup
 and preserves the site MPI paths while adding your Python installation.
-MPI is a library that lets separate processes exchange data; GPU MPI uses one
+MPI is a library that lets separate processes exchange data. GPU MPI uses one
 process per GPU. The [CPU](../cpu/README.md) and [GPU](../gpu/README.md) guides
 explain which work is divided between processes and which work is shared.
 
@@ -101,12 +95,12 @@ python3 scripts/analyze/run.py output/my_first_halo --plot --r-max 10
 ```
 
 This analysis writes a table summary and density/slope movie under
-`output/my_first_halo/analysis/`. Density describes where mass lies; the
+`output/my_first_halo/analysis/`. Density describes where mass lies. The
 logarithmic slope describes how quickly it changes with radius. The histories
 record how integrated physical quantities change with time. A successful
 example prints `Saved run:` and the output path after checking that the saved
 history reaches the requested endpoint. The short example shows how to use
-the interface; the duration is chosen for installation checks.
+the interface. The duration is chosen for installation checks.
 
 Use `--dry-run` to print a command before executing it, and `--end-time T` to
 choose a physical endpoint. Pick a fresh output directory for a fresh run.
@@ -156,7 +150,7 @@ methods use a single process and its allocated threads.
 | `subhalo_expanding` | [run](run/subhalo_expanding.sh) | [Slurm](slurm/subhalo_expanding.sbatch) | [parameters](catalogue.json) |
 | `gpu_subhalo_expanding` | [run](run/gpu_subhalo_expanding.sh) | [Slurm](slurm/gpu_subhalo_expanding.sbatch); [MPI](slurm/gpu_subhalo_expanding_mpi.sbatch) | [parameters](catalogue.json) |
 
-### Non-relativistic collisional / SIDM / static
+### Non-relativistic collisional / self-interacting dark matter (SIDM) / static
 
 | Example | Run script | Slurm script | Input |
 |---|---|---|---|
@@ -199,15 +193,15 @@ methods use a single process and its allocated threads.
 
 The encounter-operator examples introduce numerical collision methods. A star-cluster
 application supplies its stellar encounter law and validates the chosen approximation.
-Relativistic elastic material scattering is supplied as a component-tested C++ library;
-its dedicated production examples will accompany the application runners.
+Relativistic elastic material scattering is supplied as a component-tested C++ library.
+Its dedicated production examples will accompany the application runners.
 
 ## 4. Submit a cluster job
 
 Slurm is a scheduler: it reserves the requested processors or GPUs, then
 executes your script. First load the site's compiler/CUDA/MPI environment
 and build the version you intend to use. Set the cluster's partition, account,
-and QOS using its published instructions. A partition selects a group of nodes;
+and QOS using its published instructions. A partition selects a group of nodes.
 QOS selects the site's scheduling limits.
 
 ```bash
@@ -223,7 +217,7 @@ bash scripts/slurm/submit.sh gpu_sidm_power_law_mpi \
   --partition YOUR_GPU_PARTITION -- --output output/my_cluster_run
 ```
 
-The options before `--` go to Slurm; the options after it go to the example.
+The options before `--` go to Slurm. The options after it go to the example.
 For an MPI build used for a single-GPU run, add
 `--gpu-build build/gpu-mpi` after `--` as well.
 The helper supplies `VENUS_ROOT` and submits the corresponding file from
@@ -272,7 +266,7 @@ bash scripts/check/gpu.sh build/gpu
 python3 scripts/check/examples.py gpu --output output/check_all_gpu_examples
 ```
 
-CPU checks run as one process; request one Slurm task with the desired CPU cores.
+CPU checks run as one process. Request one Slurm task with the desired CPU cores.
 Use a separate MPI example launch to exercise multiple processes.
 GPU checks and examples run inside a GPU allocation. Choose a fresh destination
 for the all-example checks. Each example gets a log, and `results.json` records

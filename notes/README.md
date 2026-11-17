@@ -1,14 +1,5 @@
 # VENUS documentation
 
-For a first calculation, start with the [CPU guide](../cpu/README.md) or
-[GPU guide](../gpu/README.md). The full manual develops the equations and
-numerical methods in detail. Discretization means replacing continuous
-quantities by values on cells or particles. A constraint is an equation the
-computed gravitational field and matter must satisfy. A characteristic is
-a particle trajectory; a diagnostic is a quantity used to inspect a result.
-
-Additional terms are defined in the [plain-language glossary](../docs/TERMS.md).
-
 Developed by Uddipan Banik, Frank van den Bosch, and Sachiet Kapur.
 
 The reference is [`../docs/venus_manual.pdf`](../docs/venus_manual.pdf), generated from
@@ -28,9 +19,9 @@ eikonal equation with its stated branch and outer normalization.
 The initial-condition chapter derives the static energy-cutoff shell,
 its source integrals, radial equations, vacuum
 boundaries, lapse normalization and particle sampling. It then describes the
-inward perturbation, angular-momentum rescaling and ADM-mass normalization.
+inward perturbation, angular momentum rescaling and ADM-mass normalization.
 The EF chapter explains both interior evolution and the causally checked
-excision mode; [EF interior evolution](EF_INTERIOR_EVOLUTION.md) gives a concise
+excision mode. [EF interior evolution](EF_INTERIOR_EVOLUTION.md) gives a concise
 operating guide and the associated resolution diagnostics.
 
 Use these references for specific tasks:

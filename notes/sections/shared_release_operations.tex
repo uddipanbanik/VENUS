@@ -98,9 +98,9 @@ implementation subtrees under \path{build/} and \path{output/}.
 Choose the physical equation first and the representation second:
 \begin{enumerate}
 \item Use grid Einstein--Vlasov when the relativistic metric and a resolved
- phase-space distribution are essential.  Use the EV WPIC path only for its
+ phase space distribution are essential.  Use the EV WPIC path only for its
 stated low- or high-compactness task; it has no collision operator.
-\item Use grid VP when a deterministic distribution, explicit phase-space
+\item Use grid VP when a deterministic distribution, explicit phase space
 flux, Hamiltonian interpolation, or conservative SLDG/canonical analysis is
 required.
 \item Use CPU WPIC when long characteristic orbits, adaptive field/collision
@@ -166,7 +166,7 @@ Grid EV/VP/BP runs accept analytic distributions or the documented
 \code{EVICRWL1} binary format.  Specialized Python generators construct
 Eddington-inverted halo equilibria, infalling shells, Frank cell-average
 states, and persistent SphDSMC marker populations.  Each generator states its
-mass normalization and radial/velocity/angular-momentum convention; a binary
+mass normalization and radial/velocity/angular momentum convention; a binary
 reader must verify dimensions, monotonic grids, finiteness, and exact payload
 length before allocating the evolution state.
 
@@ -182,7 +182,7 @@ from different Monte Carlo populations.
 For any sampled IC, archive the seed, marker count, sampling proposal, weight
 rule, rejected-sample count, normalization correction, and binned residual
 against the target density/velocity moments.  Successful generation establishes a readable sampled state. Equilibrium
-requires a collisionless evolution check of density, velocity moments, and
+requires a collisionless relaxation check of density, velocity moments, and
 conserved quantities.
 
 \subsection{Output and Restart Contract}
@@ -261,7 +261,7 @@ physical-time selection, not from lexicographic filename spacing.
 OpenMP and MPI change ownership of work, not the continuum equation.  The CPU
 thread wrapper assigns independent output cells or shells to workers and uses
 thread-local reductions.  Supported grid EV/VP MPI builds decompose the
-angular-momentum axis into contiguous slabs and perform the global moment
+angular momentum axis into contiguous slabs and perform the global moment
 reductions required by the metric/Poisson solve.  Collision paths that lack
 distributed ownership reject a multi-rank launch before evolution; silently
 running an independent collision system on every rank is forbidden.
@@ -319,6 +319,6 @@ compile the production solvers and analysis tools.
 
 A scientific calculation also requires the problem-specific convergence
 programme described in Section~\ref{sec:failure-modes-shared}. Report the
-spatial, velocity, angular-momentum, marker-number, timestep, collision-shell,
+spatial, velocity, angular momentum, marker-number, timestep, collision-shell,
 box-size and seed comparisons that determine the accuracy of its physical
 observables.

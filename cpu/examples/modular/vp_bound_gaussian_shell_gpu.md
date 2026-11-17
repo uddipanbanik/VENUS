@@ -1,13 +1,4 @@
-# Bound Gaussian shell for single-GPU VP and BP
-
-VP means Vlasov--Poisson: collisionless evolution in collective Newtonian
-gravity. BP means Boltzmann--Poisson and also includes encounters. A marker
-is a numerical particle carrying mass. A Gaussian shell has a bell-shaped
-density profile in radius. A sidecar is a companion file recording the grid
-and background conventions. Commands below start at the repository root.
-For a short installation example, begin with the [GPU guide](../../../gpu/README.md).
-
-Additional terms are defined in the [plain-language glossary](../../../docs/TERMS.md).
+# Bound Gaussian shell for single-GPU Vlasov--Poisson (VP) and Boltzmann--Poisson (BP)
 
 Generate the two background representations of one physical marker realization:
 
@@ -36,7 +27,7 @@ build/gpu/venus_gpu_vlasov_poisson \
   --phase-space-snapshot-times 0,10,20,30,50,100,300,800,2000,5000,10000
 ```
 
-Use the expanding representation for EdS evolution:
+Use the expanding representation for Einstein--de Sitter (EdS) evolution:
 
 ```bash
 build/gpu/venus_gpu_vlasov_poisson \

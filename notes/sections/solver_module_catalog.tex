@@ -283,7 +283,7 @@ same weighted realization; it is not the Eulerian solver.
 Invariant marker weights supply the relativistic matter moments. Each step
 uses these moments to solve the constraints and advance the EV markers,
 alongside Newtonian VP markers with the same sampled positions and momenta.
-Each module assigns the weights appropriate to its phase-space measure.
+Each module assigns the weights appropriate to its phase space measure.
 Paired diagnostics and rotating restarts preserve the comparison.
 \paragraph{Source/entry/lock.}
 Use \code{venus_cpu_einstein_vlasov_wpic_low_compactness}.  Its task main is
@@ -305,7 +305,7 @@ density comparison requires marker/radial/time refinement.
 This neutral spherical task follows a Plummer sphere or infalling shell in
 either a Schwarzschild chart or an ingoing
 Eddington--Finkelstein/advanced-null chart.  Particle angular momentum is an
-isotropic magnitude, not net spacetime spin; the neutral black-hole exterior
+isotropic magnitude, not net spacetime spin; the neutral black hole exterior
 is Schwarzschild, not Kerr.  Charge and Maxwell fields are absent.
 \paragraph{Equations/algorithm.}
 The Schwarzschild kernel stores orthonormal \(w\), solves its original radial
@@ -339,7 +339,7 @@ execution and coordinate-specific histories/profiles/restarts are supported.
 Use the high renderer and the Einstein--Vlasov analyzer.  Quantitative claims require
 marker/radial/timestep/domain/excision convergence, constraint residuals, a
 static transformed-solution test, pre-horizon cross-coordinate checks, and a
-resolution-repeated angular-momentum bracket.
+resolution-repeated angular momentum bracket.
 Section~\ref{sec:ingoing-eddington-finkelstein-wpic} gives every field,
 source, characteristic, coordinate map, discretization, and failure condition.
 
@@ -347,7 +347,7 @@ source, characteristic, coordinate map, discretization, and failure condition.
 \paragraph{Physics scope and exclusions.}
 This grid task evolves a resolved spherical
 \((r,w,L)\) distribution and metric.  It is neither the weighted-marker
-low/high task nor a black-hole finder.
+low/high task nor a black hole finder.
 \paragraph{Equations and algorithm.}
 For \(\dd s^2=-e^{2\mu}\dd\tau^2+e^{2\lambda}\dd r^2+r^2\dd\Omega^2\), \(f\) is constant
 on relativistic characteristics and its density, current, and pressures source

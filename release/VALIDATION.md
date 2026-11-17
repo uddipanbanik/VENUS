@@ -7,16 +7,16 @@ tests, and the supplied driver, restart, coordinate and scheduler-workflow
 checks. All 23 CPU examples reach their stated endpoints on macOS and IAS
 Linux. Of these, 22 perform finite evolution and the expanding exact-grid
 example checks initial-data setup at zero time. The three collisionless grid
-examples pass with two MPI processes; all 13 grid examples pass with two
+examples pass with two Message Passing Interface (MPI) processes. All 13 grid examples pass with two
 OpenMP threads. All CPU production targets and 15 C++ utilities compile.
 
 The static Vlasov--Poisson entry point is checked against the shared static
 driver, including conservation, binary continuation and rejection of
 incompatible expansion or encounter parameters. Driver checks cover the
-WPIC backgrounds, collision-clock cadence, stale-output rejection, material
-SIDM continuation, relativistic coordinate mapping and halo classification.
+weighted particle-in-cell (WPIC) backgrounds, collision-clock cadence, stale-output rejection, material
+self-interacting dark matter (SIDM) continuation, relativistic coordinate mapping and halo classification.
 Focused address/undefined-behavior sanitizer checks and complete-snapshot
-analysis checks cover the particle/field input contracts and the phase-space
+analysis checks cover the particle/field input contracts and the phase space
 and energy measures.
 
 ## GPU checks
@@ -50,7 +50,7 @@ single-GPU examples for collisionless gravity, subhalo encounters and material
 SIDM. The reversible Boltzmann--Poisson script and its analysis also pass.
 All documented analysis commands for these runs complete. The GPU
 commands include building each named target on an RTX 2080 Ti. The updated
-manual has resolved references and visually checked opening pages; Markdown
+manual has resolved references and visually checked opening pages. Markdown
 links, section links and the main guide tables are checked.
 
 The plotting smoke test starts all 49 command-line plotting/analysis tools
@@ -62,14 +62,14 @@ exercise imports, command interfaces and small rendering operations.
 All 109 shell and Slurm scripts pass syntax checks. The shipped JavaScript
 utility passes its syntax check with IAS Node 24.13.0. The cluster guide
 states the compiler, MPI, CUDA and resource choices for IAS Typhon/Apollo
-and Perimeter Symmetry. MPI templates use the site's selected launcher;
+and Perimeter Symmetry. MPI templates use the site's selected launcher.
 CPU threads, MPI processes and GPU resources follow the module's supported
 parallel decomposition. Real Slurm submissions verify the Typhon CPU/WPIC
 and collisionless CPU MPI site recipes, Symmetry CPU grid and CPU MPI recipes,
 and Symmetry single-GPU, material GPU MPI and binary continuation recipes.
 The Apollo single-GPU site recipe reaches its requested endpoint on the
-allocated A100 hardware. The H200 resource recipe is supplied for that device;
-on-device release checks use the GPU hardware identified above.
+allocated A100 hardware. The H200 resource recipe is supplied for that device.
+On-device release checks use the GPU hardware identified above.
 
 ## Relativistic collision and collapse scope
 
@@ -87,6 +87,18 @@ requires finer radial resolution. The Schwarzschild example reaches
 coordinate time 160 with the characteristic and metric checks described in
 the manual. The figure and movie catalogs state each calculation's inputs,
 physical time range, sampling and resolved domain.
+
+## Mathematical documentation
+
+The README displays the governing equations together with the numerical
+source integration, particle assignment, transport, orbit and collision
+updates. The documentation states distribution normalizations, source-density
+conventions, coordinate variables, marker weights and conserved quantities.
+The 94 displayed equation blocks across the mathematical Markdown guides
+pass a LaTeX syntax check. The manual has resolved references and reviewed
+opening and notation pages. Local file and section links and Markdown tables
+pass their checks. Documentation revisions preserve the validated solver
+source identity and executable example commands.
 
 ## File identity and scientific accuracy
 
