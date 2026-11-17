@@ -1,12 +1,12 @@
 {
   "version": "1.0.0",
   "date": "2026-11-16",
-  "scope": "Distributed sources, documentation, initial-condition interfaces, twelve example figure pairs, nineteen simulation movies, and reproducible analysis/rendering inputs. The manifest and checksum are excluded to avoid self-reference.",
+  "scope": "Distributed sources, numerical tests, documentation, build/run/analysis/cluster scripts, initial-condition interfaces, twelve example figure pairs, nineteen simulation movies, and reproducible analysis/rendering inputs. The manifest and checksum are excluded to avoid self-reference.",
   "numerical_file_count": 153,
   "numerical_manifest_identity_sha256": "8afac7fa03fb4d200eb6aac2779bdecaed780f468ebadbe5b3a48d418cf69f04",
   "movie_count": 19,
   "figure_pairs": 12,
-  "file_count": 2463,
+  "file_count": 2467,
   "files": [
     {
       "path": ".gitignore",
@@ -25,13 +25,13 @@
     },
     {
       "path": "Makefile",
-      "bytes": 3465,
-      "sha256": "7b88ca1a5f65ab37b5eadbc5b263a626dc176730fe3bbcb96c4c89e8dc35813e"
+      "bytes": 3481,
+      "sha256": "6aa8085132731b6114da62946c1a4d4b8301666779730a375aeff8b97a73e03f"
     },
     {
       "path": "README.md",
-      "bytes": 63696,
-      "sha256": "78c873421f583361c0275a8b4ad661480781b5ec399ca37123b4f2a4d90f614f"
+      "bytes": 64401,
+      "sha256": "5c1e4f86d8e6b4574c54bc1637ccd444b5f72f101a2ac94f0220d69d9d9df900"
     },
     {
       "path": "VERSION",
@@ -805,13 +805,13 @@
     },
     {
       "path": "cpu/README.md",
-      "bytes": 22380,
-      "sha256": "9d2bab0994a42fdb866a14de8d393da916dda6380a881d7c9a9b3fb485e09863"
+      "bytes": 23561,
+      "sha256": "37215d7d736cc7828658c99dbbec844bc0053d4de2cb1b64c1457369c2c172b8"
     },
     {
       "path": "cpu/docs/cluster.md",
-      "bytes": 13493,
-      "sha256": "02bd387e26be0ae0bc7d7d9a1e7cf615d87ad3d29342d76b8f26b404751d70da"
+      "bytes": 13624,
+      "sha256": "edeee613938085342fa4f3fab8a7990dc4b9328c607c10bf72cfa1d82cd9e36f"
     },
     {
       "path": "cpu/docs/ef_interior_evolution.md",
@@ -1684,6 +1684,11 @@
       "sha256": "e1867844f99991d9f953f7ea37062691aa69674f41e7abe10890781709d4d228"
     },
     {
+      "path": "cpu/tests/test_example_submission.py",
+      "bytes": 1762,
+      "sha256": "a2089b5f85b7ae23217e666e662f727facd68ff1ee99ce8783fedf8119337bda"
+    },
+    {
       "path": "cpu/tests/test_expanding_wpic_cadence_integration.sh",
       "bytes": 7199,
       "sha256": "bc77a147efa2cb8e4ff42e49a2cca3ab1e470bacbfe5645157ee002309b7a579"
@@ -2209,9 +2214,14 @@
       "sha256": "8707b4a1d067f1b5215cb6927a3bfa0cf1c74f1d5ecea1a49c5d930bc786cef1"
     },
     {
+      "path": "docs/CLUSTERS.md",
+      "bytes": 11934,
+      "sha256": "9bb5c16b0bb1efb100128e6e6f6aaea720fec814e3c170922013cff09127b1af"
+    },
+    {
       "path": "docs/README.md",
-      "bytes": 1775,
-      "sha256": "928086b63ba326581e00bf9e9d9021b6930068be6cad8455a0260253e15d4e08"
+      "bytes": 1866,
+      "sha256": "54f31095db9e13c77725bede68223b1b3df1e05e22b86c659c667bbac9bbc0b5"
     },
     {
       "path": "docs/relativistic_boltzmann.md",
@@ -2225,8 +2235,8 @@
     },
     {
       "path": "examples/README.md",
-      "bytes": 16814,
-      "sha256": "de38fc90a59349cc81ff0f1710de18be4cf4d2b09d93aceaa988f6c80ac847c0"
+      "bytes": 18010,
+      "sha256": "697a11f757404a67594837b4aed80d2f50c42aace9bfef090841d0a57b259a59"
     },
     {
       "path": "examples/catalogue.json",
@@ -2505,8 +2515,8 @@
     },
     {
       "path": "examples/slurm/ev_grid_mpi.sbatch",
-      "bytes": 473,
-      "sha256": "ba8f8fb716a6a5eaf6e5af00d70885a0ee7831906646ccff85ea8b4a0554629f"
+      "bytes": 501,
+      "sha256": "72c871387038fcd172ed10f474210c975522c3048543c10d2f45d135e57af16e"
     },
     {
       "path": "examples/slurm/ev_wpic_eddington_finkelstein.sbatch",
@@ -2530,8 +2540,8 @@
     },
     {
       "path": "examples/slurm/gpu_sidm_constant_mpi.sbatch",
-      "bytes": 519,
-      "sha256": "9abb2d60f2bc6d4a92eed42ae0414be121f0b4d148944a367efb8f04529cb59e"
+      "bytes": 547,
+      "sha256": "13b46e8ad1c61300e02cafc3770950fe90fbc4211df5758034df63f0a5d671fd"
     },
     {
       "path": "examples/slurm/gpu_sidm_explicit_law.sbatch",
@@ -2540,8 +2550,8 @@
     },
     {
       "path": "examples/slurm/gpu_sidm_explicit_law_mpi.sbatch",
-      "bytes": 527,
-      "sha256": "7b603243b65b9209daea3456236eb5d45eb196e4a88923d1819c88de8635761e"
+      "bytes": 555,
+      "sha256": "4ea21deaee96a3dd611042b7abba6fe0ce7af922b2ca2e05485344652c2839f8"
     },
     {
       "path": "examples/slurm/gpu_sidm_power_law.sbatch",
@@ -2550,8 +2560,8 @@
     },
     {
       "path": "examples/slurm/gpu_sidm_power_law_mpi.sbatch",
-      "bytes": 521,
-      "sha256": "1bf1d47e4fbe82dbddf0e3f41a11b1da59cf2cf81881732026a95a112eb43c9e"
+      "bytes": 549,
+      "sha256": "474677a0c7dbb4edf15aef2531af916aaff2ae6bd931e92e33ddee2b2ab974ce"
     },
     {
       "path": "examples/slurm/gpu_sidm_yukawa_born.sbatch",
@@ -2560,8 +2570,8 @@
     },
     {
       "path": "examples/slurm/gpu_sidm_yukawa_born_mpi.sbatch",
-      "bytes": 525,
-      "sha256": "f629e1a8de2e1c7c13d76b72363b088fa8d475f926930b957b7de3cf3affce58"
+      "bytes": 553,
+      "sha256": "d534e58bd7440da17bb24f8c07b05b3c17c6a0f08279d3b8e128708692763bae"
     },
     {
       "path": "examples/slurm/gpu_subhalo_expanding.sbatch",
@@ -2570,8 +2580,8 @@
     },
     {
       "path": "examples/slurm/gpu_subhalo_expanding_mpi.sbatch",
-      "bytes": 527,
-      "sha256": "2bf0ed298facd9e778672d66117414ea90daa970130b72253ef3b0b9d59ad146"
+      "bytes": 555,
+      "sha256": "3123f54157dbf295750fce354466c55498e4566c1ddb9c70e88596cd359ba8ae"
     },
     {
       "path": "examples/slurm/gpu_subhalo_static.sbatch",
@@ -2585,8 +2595,8 @@
     },
     {
       "path": "examples/slurm/gpu_vp_expanding_mpi.sbatch",
-      "bytes": 517,
-      "sha256": "ccbbf103c7f4c4383a5c45fbe0f722b40381a1c938d8b47f3448ed9a3d0488f6"
+      "bytes": 545,
+      "sha256": "be2a2c54facfaa8695144a68aaebd21cf5033cfe2d3871681d3219933239bf08"
     },
     {
       "path": "examples/slurm/gpu_vp_static.sbatch",
@@ -2630,8 +2640,8 @@
     },
     {
       "path": "examples/slurm/vp_grid_expanding_mpi.sbatch",
-      "bytes": 493,
-      "sha256": "aa8651a7f886ca8066730e0d95c2226190ce84d974246888aad7a6519a2ceb22"
+      "bytes": 521,
+      "sha256": "f5a7b6424e3d336b94e5f4779a6fe0ac0ee6b416878f9cbffec3cdf764effa49"
     },
     {
       "path": "examples/slurm/vp_grid_static.sbatch",
@@ -2640,8 +2650,8 @@
     },
     {
       "path": "examples/slurm/vp_grid_static_mpi.sbatch",
-      "bytes": 487,
-      "sha256": "f12391fa47bc339e2c58907d759107aba6535e46ae998b3c64aa977239a80774"
+      "bytes": 515,
+      "sha256": "bd252bc4e69b7618e7ee8be78da8685d5e4431b0c1d611258b8f66b41b354ffe"
     },
     {
       "path": "examples/slurm/vp_wpic_expanding.sbatch",
@@ -2660,8 +2670,8 @@
     },
     {
       "path": "gpu/README.md",
-      "bytes": 15003,
-      "sha256": "ffecc83f93ed150a17746497e65fbb5ab421e201897d3da3186eecf4fa0b8825"
+      "bytes": 16329,
+      "sha256": "9f842b44fa0b485113bf2cc9168a654876122bd544a009d94ebeb5bced3d14f4"
     },
     {
       "path": "gpu/benchmarks/benchmark_material_sidm_gpu.cu",
@@ -11940,8 +11950,8 @@
     },
     {
       "path": "notes/SCRIPT_REFERENCE.md",
-      "bytes": 28558,
-      "sha256": "19c148dde0f15b3c5be2b9c5c66e7fb7469fc8fed6b2ddeebac2024de8aac48c"
+      "bytes": 28844,
+      "sha256": "601a85db1d6e00a61a01aaf207ffd15e90a71d5b852abf4c78c46c6a345ece17"
     },
     {
       "path": "notes/SOLVER_MODULES.md",
@@ -12200,8 +12210,8 @@
     },
     {
       "path": "release/VALIDATION.md",
-      "bytes": 4145,
-      "sha256": "f89ff313063f79c4c057e77a381574231a6cd5ce72f6d27e90307034eba0f378"
+      "bytes": 4842,
+      "sha256": "95fec737222a4ca9b00ad3579f4b275595120e9c15a0924cd755b6a447ba2af4"
     },
     {
       "path": "release/numerical_sources.json",
@@ -12220,8 +12230,8 @@
     },
     {
       "path": "scripts/build/build.sh",
-      "bytes": 767,
-      "sha256": "328f122ff149af92f599c19d48208dab6feda2c9379802e44052ff79049df84b"
+      "bytes": 1150,
+      "sha256": "cdda1885211d98ac045f51ac2b5fd7e134d01c920004d11a453c434efc372113"
     },
     {
       "path": "scripts/build/cpu.sh",
@@ -12250,13 +12260,18 @@
     },
     {
       "path": "scripts/build/ias_environment.sh",
-      "bytes": 864,
-      "sha256": "83fd5e590e00f86a0e7f7ee27904acbc436d0b45c6ae82a3181373428d0280b7"
+      "bytes": 1270,
+      "sha256": "c07cefb8932d6c9aa363ad0ce2efb7998cee418d9de5bf682be0069bd4bc1c85"
     },
     {
       "path": "scripts/build/macos_toolchain.sh",
       "bytes": 1357,
       "sha256": "fc187e5d15f5fb9f96d9cf40bc01dc6a43000ffcee27fdcd1fb175a0afa7e10c"
+    },
+    {
+      "path": "scripts/build/symmetry_environment.sh",
+      "bytes": 1257,
+      "sha256": "4e77976d15801bc08ebd4448287dac110447014de6c89e362ed9a3c191898247"
     },
     {
       "path": "scripts/build/tools.sh",
@@ -12319,9 +12334,14 @@
       "sha256": "ffc92fc558ae1b8f68487b5ccbb592cb54fc78292f69bdf2be6b5fc56f8b1bdb"
     },
     {
+      "path": "scripts/slurm/sites/submit.sh",
+      "bytes": 1365,
+      "sha256": "bb41c79138696b138818e014a6f680b106bf3562ac9b37bde95b1542963ed058"
+    },
+    {
       "path": "scripts/slurm/submit.sh",
-      "bytes": 533,
-      "sha256": "e586ec956d9d18a83eb371e76ccfe0cb045ded9ba2f7259d9cdc9a6c4cc3a220"
+      "bytes": 972,
+      "sha256": "dcf00112588d2a1cd4e71d021a5c18e5961456a0aed305dc22cbfa720a7a48f1"
     }
   ]
 }

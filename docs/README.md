@@ -33,3 +33,5 @@ make -C notes manual
 This publishes `docs/venus_manual.pdf`. To render its pages for visual
 inspection, use `make -C notes render`; the page images are written under
 `notes/tmp/pdfs/`.
+
+For complete cluster recipes and site modules, see [Run VENUS on a cluster](CLUSTERS.md).

@@ -375,3 +375,8 @@ The complete run, reduction and plotting commands are in
 [the analysis guide](../analysis/README.md). The manual subsection
 “Complete particle snapshots: phase-space and energy distributions” derives
 the measures and shows the corresponding numerical operations.
+
+The site environment helpers are `scripts/build/ias_environment.sh` and
+`scripts/build/symmetry_environment.sh`. The site submission helper is
+`scripts/slurm/sites/submit.sh`; [the cluster guide](../docs/CLUSTERS.md)
+explains its IAS Typhon, IAS Apollo and Perimeter Symmetry choices.

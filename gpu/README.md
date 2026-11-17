@@ -16,6 +16,9 @@ For a first run, the [examples index](../examples/README.md) links every
 build script, input, local run script, and Slurm launcher. It also explains
 restarts, analysis, and the technical terms used below.
 
+The [cluster guide](../docs/CLUSTERS.md) supplies IAS Typhon, IAS Apollo and
+Perimeter Symmetry recipes, module choices and portable scheduler settings.
+
 ## 1. Build for your GPU
 
 Install CMake 3.18 or newer, CUDA, a compatible C++17 host compiler, and
@@ -56,7 +59,10 @@ A subhalo is a bound clump inside a larger halo. The subhalo operator models
 encounters between clumps. Material SIDM instead models scattering between
 the dark matter particles. A constant cross section gives a speed-independent
 interaction area. The power-law and Yukawa--Born models specify how that area
-and the scattering angles depend on relative speed.
+and the scattering angles depend on relative speed. Newtonian gravity here
+applies when velocities and gravitational fields are in the non-relativistic
+regime. Begin with collisionless evolution to check the initial state, then
+add the interaction law appropriate to your question.
 
 | Physical category | Background | Executable in `build/gpu/` | MPI support |
 |---|---|---|---|
@@ -158,6 +164,19 @@ law. Replace the executable in the static example by
 For a velocity-dependent law select `venus_gpu_sidm_power_law` or
 `venus_gpu_sidm_yukawa_born` and supply that law's parameters, listed by
 `--help` and derived in [the collision guide](docs/WPIC_COLLISIONS.md).
+The power-law model requires a positive softening speed
+`--sidm-sigma-u0` as well as its normalization `--sidm-sigma0` and exponent
+`--sidm-sigma-power`. The softening speed sets the scale below which the
+cross section remains finite. The supplied example makes all three explicit:
+
+```bash
+bash examples/run/gpu_sidm_power_law.sh --output output/gpu/first_power_law
+```
+
+Its parameter list is in [`examples/catalogue.json`](../examples/catalogue.json).
+Use `--dry-run` with an example script to see the complete command. These
+short examples use small collision strengths to check the interfaces; choose
+the physical cross section and duration for your application.
 
 Each task enforces its own encounter family. Material scattering conserves
 pair momentum and kinetic energy; subhalo capture transfers orbital energy
@@ -203,9 +222,13 @@ particle population, clocks and random state required for continuation.
 
 ```bash
 make gpu-mpi GPU_ARCH=80 BUILD_JOBS=8
-srun --ntasks=2 --gpus-per-task=1 \
-  build/gpu-mpi/venus_gpu_vlasov_poisson_mpi --help
+mpiexec -n 2 build/gpu-mpi/venus_gpu_vlasov_poisson_mpi --help
 ```
+
+Run this command within an allocation containing two GPUs. The MPI library
+must support your site's scheduler. The example Slurm templates default to
+`mpiexec`; set `VENUS_MPI_LAUNCHER=srun` only for a compatible direct Slurm
+configuration. On Symmetry the tested HPC-X installation uses `mpiexec`.
 
 Use the supported MPI task from the table and the complete input/mesh controls
 from your single-GPU calculation. MPI VP/subhalo currently use EdS; MPI

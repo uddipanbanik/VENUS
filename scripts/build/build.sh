@@ -10,6 +10,14 @@ case "$mode" in cpu|cpu-openmp|cpu-mpi|tools)
   venus_select_macos_sdk
   ;;
 esac
+case "$mode" in gpu|gpu-mpi)
+  command -v cmake >/dev/null || { echo 'Load CMake 3.18 or newer before building CUDA targets.' >&2; exit 1; }
+  if ! command -v "${CUDACXX:-nvcc}" >/dev/null; then
+    echo 'CUDA compiler unavailable. Load the site CUDA module and build on a host with its toolkit installed; GPU allocations may provide only the runtime.' >&2
+    exit 1
+  fi
+  ;;
+esac
 case "$mode" in
   cpu) make -j "$jobs" cpu ;;
   cpu-openmp) make -j "$jobs" cpu-openmp ;;

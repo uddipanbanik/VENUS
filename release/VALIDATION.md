@@ -1,72 +1,87 @@
 # VENUS validation
 
-## Guide and module update, 16 November 2026
+## CPU checks
 
-The current CPU candidate passes 29 C++ numerical test executables, 112 Python
+The CPU implementation passes 29 C++ numerical test executables, 117 Python
 tests, and the supplied driver, restart, coordinate and scheduler-workflow
-checks. The complete CPU example catalogue passes on macOS and IAS Linux:
-22 examples evolve to their requested physical endpoint, and the expanding
-exact-grid example checks its initial-data setup at zero time. On IAS, the
-three collisionless grid examples also pass with two MPI processes, and all
-13 grid examples pass with two OpenMP threads.
+checks. All 23 CPU examples reach their stated endpoints on macOS and IAS
+Linux. Of these, 22 perform finite evolution and the expanding exact-grid
+example checks initial-data setup at zero time. The three collisionless grid
+examples pass with two MPI processes; all 13 grid examples pass with two
+OpenMP threads. All CPU production targets and 15 C++ utilities compile.
 
-All CPU production targets and 15 C++ utilities compile. The single-GPU and
-MPI CUDA builds compile on IAS. On Symmetry, the CUDA 12.6/GCC 11.2 build
-passes all ten registered numerical/interface tests, including collisionless
-transport, material and subhalo encounters, CPU comparisons, endpoint moments
-and two-process MPI. The additional host output-replacement check passes.
+The static Vlasov--Poisson entry point is checked against the shared static
+driver, including conservation, binary continuation and rejection of
+incompatible expansion or encounter parameters. Driver checks cover the
+WPIC backgrounds, collision-clock cadence, stale-output rejection, material
+SIDM continuation, relativistic coordinate mapping and halo classification.
+Focused address/undefined-behavior sanitizer checks and complete-snapshot
+analysis checks cover the particle/field input contracts and the phase-space
+and energy measures.
+
+## GPU checks
+
+Single-GPU and MPI CUDA targets compile with the IAS CUDA 12.4/GCC 10 and
+Symmetry CUDA 12.6/GCC 11.2 environments. On two NVIDIA GeForce RTX 2080 Ti
+devices, all ten registered numerical/interface tests pass. These cover
+collisionless transport, material and subhalo encounters, CPU comparisons,
+endpoint moments, binary restart, the command interface and two-process MPI.
+The additional host output-replacement check passes.
+
 All eight GPU examples and all six two-GPU MPI examples reach their requested
-physical endpoints on two NVIDIA GeForce RTX 2080 Ti devices. These include
-the explicit static Vlasov--Poisson entry point, which uses the existing CUDA
-evolution kernel. The power-law example supplies its required positive
-softening speed and exponent explicitly.
+physical endpoints. These include static Vlasov--Poisson, expanding
+Vlasov--Poisson, subhalo scattering/capture and the supported material SIDM
+laws. The A100 validation includes ten on-device tests and two random-number
+probes. The GPU architecture and toolkit used for an application remain part
+of that application's reproducibility record.
 
-The static CPU Vlasov--Poisson entry point is checked against the established
-static driver, including conservation, binary continuation and rejection of
-incompatible expansion or encounter parameters. Example checks verify the
-actual saved endpoint. Restart examples preserve their source checkpoints.
-The analysis wrappers have been exercised on grid, Newtonian particle,
-material SIDM and both relativistic coordinate representations. The generated
-density/slope movie was inspected for legibility and physical labeling.
+## Launch, restart and analysis interfaces
 
-All 107 shell and Slurm scripts pass syntax checks. The local JavaScript
-syntax check requires Node, which is absent from this test environment.
+Example scripts verify the actual saved endpoint. All 20 CPU production
+help interfaces pass. The analysis wrappers read grid, Newtonian particle,
+material SIDM and relativistic output in both supported coordinate systems.
+The Newtonian grid, Schwarzschild and mapped Eddington--Finkelstein tutorial
+runs and their analysis commands pass. Generated density/slope movies are
+checked for legibility and physical labeling.
+
+All 109 shell and Slurm scripts pass syntax checks. The shipped JavaScript
+utility passes its syntax check with IAS Node 24.13.0. The cluster guide
+states the compiler, MPI, CUDA and resource choices for IAS Typhon/Apollo
+and Perimeter Symmetry. MPI templates use the site's selected launcher;
+CPU threads, MPI processes and GPU resources follow the module's supported
+parallel decomposition. Real Slurm submissions verify the Typhon CPU/WPIC
+and collisionless CPU MPI site recipes, Symmetry CPU grid and CPU MPI recipes,
+and Symmetry single-GPU, material GPU MPI and binary continuation recipes.
+The Apollo single-GPU site recipe reaches its requested endpoint on the
+allocated A100 hardware. The H200 resource recipe is supplied for that device;
+on-device release checks use the GPU hardware identified above.
+
+## Relativistic collision and collapse scope
+
+The relativistic elastic-collision library passes coupled Schwarzschild and
+Eddington--Finkelstein component checks. These exercise the null-slice
+collision rate, local four-momentum conservation, persistent cell clocks,
+cell restart, the collisionless limit and reconstruction of outgoing Einstein
+sources. Compact collisional collapse requires equilibrium, locality and
+convergence checks for its chosen initial data.
+
+The two Eddington--Finkelstein example collapse calculations retain all
+65,536 particles. Their fine-grid interior profiles cover the spatially
+resolved interval through advanced time 32.50. Later interior evolution
+requires finer radial resolution. The Schwarzschild example reaches
+coordinate time 160 with the characteristic and metric checks described in
+the manual. The figure and movie catalogs state each calculation's inputs,
+physical time range, sampling and resolved domain.
+
+## File identity and scientific accuracy
+
+`numerical_sources.json` records individual numerical-source checksums.
+`source_manifest.json` identifies the complete distribution, including the
+source, documentation, initial-data interfaces, example figures and movies.
+The distributed-file checker verifies those identities.
 
 These finite checks establish the interfaces and numerical conditions tested.
-Each scientific application requires its own physical model, resolution,
-timestep, boundary and collision-locality studies.
-
-# Earlier VENUS 1.0 validation
-
-The CPU implementation has passed its integrated C++ tests, driver checks,
-111 Python reader tests and focused address/undefined-behavior sanitizer
-checks. Three complete-snapshot analysis tests also check the particle/field
-input contracts and the phase-space and energy measures. The CUDA implementation has passed ten A100 GPU tests and two
-on-device random-number probes. These checks cover the supported numerical
-paths, input/output contracts and conservation diagnostics at their tested
-parameters.
-
-The relativistic elastic-collision library has passed its coupled
-Schwarzschild and Eddington–Finkelstein component tests. These exercise the
-null-slice collision rate, local four-momentum conservation, persistent cell
-clocks, cell restart, the collisionless limit and reconstruction of outgoing
-Einstein sources. Compact collisional collapse requires equilibrium, locality
-and convergence checks for its chosen initial data.
-
-Individual source checksums are in `numerical_sources.json`.
-`source_manifest.json` identifies the complete distribution, including
-source, documentation, example inputs, and the example plots and movies.
-
-The two Eddington–Finkelstein collapse calculations retain all 65,536
-particles. The reported fine-grid interior profiles cover the spatially resolved interval
-through advanced time 32.50. Later interior evolution requires finer radial
-resolution. The Schwarzschild calculation reaches coordinate time 160
-with the characteristic and metric checks described in the manual.
-
-The figures in `plots` and movies in `movies` use the simulations
-identified in their run catalogs. Their physical time ranges, sampling masks
-and numerical scope are stated in the reproduction guides.
-
-For a new scientific application, assess radial and velocity resolution,
-particle count, timestep, collision locality and boundary influence for that
-application. The manual defines the diagnostics used for these assessments.
+For a scientific application, assess radial and velocity resolution, particle
+count, timestep, collision locality and boundary influence for that physical
+problem. The manual defines the corresponding conservation and source-budget
+diagnostics.

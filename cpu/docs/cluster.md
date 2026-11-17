@@ -2,7 +2,8 @@
 
 Developed by Uddipan Banik and Frank van den Bosch
 
-This page maps the VENUS CPU task executables onto OpenMP,
+Start with [Run VENUS on a cluster](../../docs/CLUSTERS.md) for the step-by-step
+IAS Typhon/Apollo and Perimeter Symmetry recipes. This page maps the VENUS CPU task executables onto OpenMP,
 `std::thread`, MPI, and Slurm resources. Physics and parameter definitions
 are in the [unified manual](../../docs/venus_manual.pdf) and
 [module catalogue](../../notes/SOLVER_MODULES.md).

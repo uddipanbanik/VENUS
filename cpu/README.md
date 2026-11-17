@@ -2,14 +2,18 @@
 
 Developed by Uddipan Banik, Frank van den Bosch, and Sachiet Kapur
 
-Start with the physical equations, choose their numerical representation,
-then build, supply initial data, evolve the system, and analyze the saved
-state. This guide follows that sequence. Commands below run from the
+Build the programs, choose a physical problem and its initial distribution,
+evolve that distribution, then read and plot the saved results. This guide
+follows those steps, beginning with a small isolated Newtonian example.
+Commands below run from the
 **repository root**, the directory containing the top-level README.
 
 For a first run, the [examples index](../examples/README.md) links every
 build script, input, local run script, and Slurm launcher. It also explains
 restarts, analysis, and the technical terms used below.
+
+The [cluster guide](../docs/CLUSTERS.md) supplies IAS Typhon, IAS Apollo and
+Perimeter Symmetry recipes, module choices and portable scheduler settings.
 
 ## 1. Build the solvers
 
@@ -40,14 +44,23 @@ OpenMP lets one process use several CPU cores. MPI lets separate processes
 exchange data, including across computers. Their optional builds need the
 corresponding libraries and compatible compilers. Weighted particle-in-cell
 (WPIC) runners use `--threads` to select shared-memory workers.
-The [cluster guide](docs/cluster.md) gives scheduler templates.
+The [cluster guide](../docs/CLUSTERS.md) gives tested site recipes;
+the [parallel implementation guide](docs/cluster.md) explains the decomposition.
 
 ## 2. Choose the equations, background, and representation
 
-VP means Vlasov--Poisson, BP means Boltzmann--Poisson, and EV means
-Einstein--Vlasov. Collisionless evolution transports the distribution in its
-self-consistent gravitational field. Collisional evolution adds the selected
-encounter law. **Phase space** means position and velocity considered together.
+Begin with Newtonian gravity when particle speeds are small compared with
+the speed of light and relativistic effects are weak. Choose relativistic
+evolution to follow strong gravitational fields and black hole formation.
+Within either setting, choose collisionless evolution to study orbits and
+mixing in the collective field. Add a collision model when encounters between
+subhalos, dark matter particles, or stars are part of the physical question.
+
+VP means Vlasov--Poisson: the distribution evolves under the gravitational
+field that it creates. BP means Boltzmann--Poisson: an encounter term also
+redistributes the matter. EV means Einstein--Vlasov: matter and the spacetime
+metric evolve together under general relativity. **Phase space** means
+position and velocity considered together.
 An Eulerian grid stores the distribution in fixed phase-space cells. WPIC uses
 weighted particles, also called markers: each carries a specified amount of
 mass and moves continuously through the gravitational field. Spherical direct
@@ -102,21 +115,57 @@ runners above. Their compactness labels select initial-data families.
 
 ## 3. Supply an INI file and run a grid calculation
 
-Start with the supplied analytic Einstein--Vlasov shell:
+Start with an isolated shell in Newtonian gravity:
 
 ```bash
-cpu/venus_cpu_einstein_vlasov_eulerian \
-  --config examples/inputs/ev_grid.ini \
+cpu/venus_cpu_vlasov_poisson_eulerian \
+  --config examples/inputs/vp_grid_static.ini \
   --t-end 0.002 --dt-max 0.001 \
-  --output-dir output/cpu/first_ev
+  --output-dir output/cpu/first_vp
 ```
 
-This short run demonstrates the interface. An INI is a plain-text parameter
-file: open it in a text editor to read the initial density and velocity
-choices, boundaries, numerical resolution, and output cadence. To make a
-separate Newtonian example, copy `examples/inputs/vp_grid_static.ini`, edit
-its parameters, then pass its filename to `--config`. The input binary, when
-selected, supplies the actual distribution described by that INI.
+This command reads the supplied initial distribution, reconstructs its gravity,
+and advances it to time `0.002` in the run's units. Each step is at most
+`0.001`. The coarse grid and short duration make this an installation example.
+The output is in `output/cpu/first_vp/`.
+
+An INI is a plain-text parameter file. Open
+`examples/inputs/vp_grid_static.ini` in a text editor. Its section headings
+group the physics, grid, initial distribution, boundaries, time controls and
+output. This example constructs the distribution from an analytic formula;
+it needs no separate data file. Its main initial-data controls are:
+
+| Parameter | Meaning in this example |
+|---|---|
+| `R0 = 3`, `dR = 1` | Center and width of the initial Gaussian density shell |
+| `w_in = -0.1` | Center of the radial-velocity distribution; a negative value describes infall |
+| `beta = 2` | Controls the velocity spread in the chosen analytic distribution; increasing it narrows the spread |
+| `amp = 0.0001` | Sets the distribution's normalization and therefore the represented matter density |
+| `Nr = 12`, `Nw = 12`, `NL = 8` | Numbers of grid points in radius, radial velocity and specific angular momentum |
+| `r_min`, `r_max`, `w_max`, `L_max` | Limits of the represented positions and velocities/angular momenta |
+
+Specific angular momentum is angular momentum per unit mass. It distinguishes
+radial from more tangential orbits. Here the radial grid extends from `0.1`
+to `10`; reflecting radial boundaries return matter into the domain when it
+reaches an edge. The outer boundary therefore matters if you extend the run.
+The velocity boundary lets matter leave the represented velocity range.
+Choose the domain and boundaries for the system you intend to simulate.
+
+To keep a separate input and run together:
+
+```bash
+mkdir -p output/my_halo
+cp examples/inputs/vp_grid_static.ini output/my_halo/input.ini
+cpu/venus_cpu_vlasov_poisson_eulerian \
+  --config output/my_halo/input.ini --output-dir output/my_halo/run
+```
+
+You can now edit `output/my_halo/input.ini` for a new run, using a fresh output
+directory each time. Change the physical inputs to pose your problem, then
+increase resolution and reduce the timestep to assess numerical accuracy.
+For a relativistic grid example, use `examples/run/ev_grid.sh`; the script
+selects Einstein--Vlasov and its corresponding INI. A binary initial-data file,
+when selected instead of the analytic formula, stores the actual distribution.
 
 Read the INI before extending it
 to the physical duration and resolution needed for your problem. The INI
@@ -240,8 +289,8 @@ revision with every calculation.
 
 ```bash
 python3 cpu/tools/plot_einstein_vlasov_outputs.py \
-  --input-dir output/cpu/first_ev \
-  --output-dir output/cpu/first_ev/figures --make-gifs
+  --input-dir output/cpu/first_vp \
+  --output-dir output/cpu/first_vp/figures --make-gifs
 python3 cpu/tools/render_weighted_pic_subhalo_strength_scan_gif.py \
   --collisionless output/cpu/first_static_vp --gamma 1.5 \
   --output-directory output/cpu/first_static_vp/figures \
@@ -267,9 +316,10 @@ Binary restarts contain the full state; profiles supply analysis moments.
 | Calculation | Parallel work | Work shared by the calculation |
 |---|---|---|
 | Eulerian collisionless EV/VP with `_mpi` | MPI partitions the angular-momentum axis; OpenMP advances rank-local phase-space cells | Radial moments are globally reduced; each rank reconstructs the radial field; root coordinates shared output |
-| Portable grid or `_openmp` grid | Radial/phase-space loops use threads | One process owns the distribution and outputs |
-| Grid BP and SphDSMC | Supported loops use shared-memory threads | One MPI rank owns encounter state and random sequence |
-| CPU WPIC | Supported deposit/orbit/collision loops use `--threads` | One MPI rank owns particles, clocks, metric/field and restart |
+| Portable grid | Supported loops use C++ standard-library threads, selected by `--threads` | One process owns the distribution and outputs |
+| `_openmp` grid | Supported radial/phase-space loops use CPU threads | One process owns the distribution and outputs |
+| Grid BP and SphDSMC | Supported loops use shared-memory threads | One process owns encounter state and random sequence |
+| CPU WPIC | Supported deposit/orbit/collision loops use `--threads` | One process owns particles, clocks, metric/field and restart |
 
 For an MPI grid run, build `make cpu-mpi`, choose the `_mpi` executable, and
 launch through the site scheduler with more than one rank only for
@@ -281,106 +331,75 @@ rank with the allocated shared-memory threads.
 
 ## 7. Relativistic collapse and coordinate comparisons
 
-The following controls are intended for detailed relativistic studies after a
-first run. Compactness is `2Gm/(rc^2)`, where `m` is enclosed gravitational
-mass, `r` is areal radius, `G` is Newton's constant, and `c` is the speed of light.
-These runs use units with `G=c=1`. The ADM mass is the total gravitational mass
-measured from the isolated system's distant exterior. A spacelike slice is a
-surface of constant simulation time; the ingoing EF calculation instead uses
-an incoming-light, or null, slice. Comparing coordinates requires matching
-physical events on those different surfaces.
+Begin with the low-compactness example in step 4 to see how relativistic
+particle output is organized. **Compactness** measures the strength of the
+gravitational field: `2Gm/(rc^2)`, where `m` is enclosed gravitational mass,
+`r` is areal radius, `G` is Newton's constant and `c` is the speed of light.
+Areal radius means that a sphere has area `4 pi r^2`. The code uses units
+with `G=c=1`.
 
-The high-compactness runner selects one of two independent weighted
-Einstein--Vlasov kernels with `--coordinates`:
+At higher compactness, the choice of time coordinate matters. Schwarzschild
+coordinates describe the exterior of a spherical collapsing system. Their
+time coordinate becomes singular at the black hole horizon. Ingoing
+Eddington--Finkelstein coordinates remain regular there and allow the
+supported evolution to continue across it. These are two descriptions of
+spacetime, each with its own numerical evolution and diagnostic checks.
 
-- `schwarzschild` uses
-  `include/ev/weighted_einstein_vlasov_pic_schwarzschild.hpp` and retains the
-  original polar--areal compactness-gap stop;
-- `eddington_finkelstein` uses
-  `include/ev/weighted_einstein_vlasov_pic_eddington_finkelstein.hpp`, advances
-  `log(p_r)` so the required future-directed branch `p_r > 0` is maintained at
-  every Runge--Kutta stage, solves the advanced-null constraints, detects
-  `a = 0`, and continues with optional trapped-region excision.
-
-Both paths start from the same physical particle realization supplied through
-`--physical-ic`. Schwarzschild data lie on a spacelike slice, while EF data
-lie on an ingoing null slice. The null extractor follows the Schwarzschild
-worldlines to their intersections with that null slice and transforms each
-momentum at its intersection. The comparison tools then evaluate tensors
-and particle distributions at the same physical events. The stored angular
-momentum is each particle's magnitude in spherical symmetry.
-
-High-compactness Einstein--Vlasov coordinate selection is explicit. A minimal
-fresh solved-map sequence is:
+First run a short Schwarzschild example:
 
 ```bash
-./venus_cpu_einstein_vlasov_wpic_black_hole \
-  --scenario high --coordinates schwarzschild --initialize-only \
-  --physical-ic common_ic.bin \
-  --high-r-max 20 --high-radial-cells 2048 \
-  --output-dir output/ic
-
-./venus_cpu_einstein_vlasov_wpic_black_hole \
-  --scenario high --coordinates schwarzschild \
-  --physical-ic common_ic.bin \
-  --export-ef-null-initial-data ef_null.bin \
-  --ef-null-donor-duration 24 \
-  --high-r-max 20 --high-radial-cells 2048 \
-  --high-specific-angular-momentum 1.0 \
-  --high-target-initial-adm-mass 0.58 \
-  --output-dir output/sc --expected-outcome any
-
-./venus_cpu_einstein_vlasov_wpic_black_hole \
-  --scenario high --coordinates eddington_finkelstein \
-  --physical-ic common_ic.bin \
-  --ef-null-initial-data ef_null.bin \
-  --high-r-max 20 --high-radial-cells 2048 \
-  --high-specific-angular-momentum 1.0 \
-  --high-target-initial-adm-mass 0.58 \
-  --high-inner-boundary origin_parity --high-radial-grid linear \
-  --output-dir output/ef --expected-outcome any
+bash examples/run/ev_wpic_schwarzschild.sh --output output/tutorial_collapse/sc
+python3 scripts/analyze/run.py output/tutorial_collapse/sc --plot
 ```
 
-The SC calculation saves its resolved history, the worldline intersections
-and the resulting null slice. The EF importer checks their file identities
-and physical controls before loading that slice. Each mapped summary distinguishes the
-fixed-family Schwarzschild `tau=0` ADM mass, the numerically evolved
-null-slice conserved ADM anchor, and the independently deposited EF initial
-ADM mass. The latter two measure numerical changes during the coordinate extraction
-and EF deposition. Compare them to the common initial target, 0.58 in this
-example, under spatial and temporal refinement.
-The normalized Schwarzschild `tau=0` family additionally records
-`fixed_family_rest_weight = M0`, `fixed_family_binding_energy = M0-M_ADM`,
-and `fixed_family_binding_fraction = (M0-M_ADM)/M0`. These values are shared
-unchanged by the SC and mapped-EF summaries and survive restart through
-`fixed_family_initial_bound_diagnostics.csv`. A halo classification requires
-a positive, internally consistent global binding fraction, but this condition
-is necessary rather than sufficient: a bound family may still breathe,
-partially escape, or remain undetermined. The reported
-`E_proxy=exp(mu)*sqrt(1+w^2+2*eta/r^2)` tail is evaluated only in the frozen
-Schwarzschild `tau=0` metric and is not conserved in a dynamical spacetime; it
-is never used as a hard per-particle halo cut. The `2K/abs(W)` column supplies a Newtonian virial diagnostic. Relativistic
-stationary balance is assessed through the stress equation below.
-The high-history file additionally records the normalized GR anisotropic
-static-balance residual
-`dp_r/dr + (rho+p_r)*mu_r - (p_t,sum-2*p_r)/r`. SC evaluates it directly;
-pre-horizon EF outputs reconstruct the same polar-areal moments wherever
-`a>0`. The threshold analyzer requires sustained small late residuals plus
-stationary `r50`, `r90`, and maximum compactness. A missing residual makes a
-halo label inconclusive, whereas `2K/abs(W)` remains report-only.
-The mapped comparison requires every marker to cross the chosen null slice
-once, an isolated vacuum exterior, and resolved eikonal component errors.
-Choose the radial worldtube and resolution together with the duration of
-the donor calculation. The coordinate-map tools and their controls are
-derived in the manual.
+Then run the supplied example that constructs compatible initial data for
+Eddington--Finkelstein evolution:
 
-The [figure reproduction guide](../analysis/README.md) identifies the example
-calculations and their data. Input-format and custom-distribution examples
-are under `examples/modular` and described in [docs/examples.md](docs/examples.md).
-WPIC uses task-specific command-line options; Eulerian and SphDSMC tasks
-use INI files with command-line overrides. Each executable's `--help`
-interface lists its accepted controls.
+```bash
+bash examples/run/ev_wpic_eddington_finkelstein.sh \
+  --output output/tutorial_collapse/ef
+python3 scripts/analyze/run.py output/tutorial_collapse/ef --plot
+```
 
+The second script first follows a separate Schwarzschild donor calculation.
+A donor supplies the particle trajectories needed to construct the new time
+slice. The script writes that donor under `output/tutorial_collapse/ef_donor/`,
+saves its physical initial distribution as `ef_common.phys`, constructs the
+coordinate map in `ef_common.nullmap`, then evolves the imported EF state.
+The two companion files sit beside the run directories. Keep them with the
+results. These short examples demonstrate the input and coordinate interfaces;
+black hole formation or a relaxed halo is a physical outcome to assess from
+the chosen family and its resolved evolution.
+
+The map is needed because equal values of the two coordinate times describe
+different sets of physical events. A Schwarzschild time slice is spacelike;
+an ingoing EF slice follows incoming light and is called null. The extractor
+finds each particle's intersection with that null slice and transforms its
+momentum there. The importer checks the saved file identities and physical
+parameters before continuing. Compare the distributions at the same physical
+events through this map.
+
+For a scientific collapse study, select an initial family, total mass,
+radial-velocity distribution and angular-momentum distribution, then vary the
+parameter whose threshold you want to investigate. Use the high-compactness
+runner's `--help` and the [module catalogue](../notes/SOLVER_MODULES.md) to
+find those controls. Choose the donor duration, outer vacuum region and map
+radius together so that every required particle reaches the selected slice.
+Assess the map and evolution under radial, particle-count and timestep
+refinement before interpreting a coordinate comparison.
+
+The outputs distinguish total rest mass, total gravitational mass measured
+from the distant exterior (ADM mass), binding energy, density, velocity
+moments and maximum compactness. A bound distribution can continue to
+oscillate, collapse, or partly escape. The halo classifier therefore combines
+binding with sustained stationarity and a relativistic force-balance check.
+A Newtonian virial ratio alone supplies a weak-field diagnostic. The
+[full manual](../docs/venus_manual.pdf) derives the coordinate map, the
+relativistic balance equation, the collapse stops, and the conditions for
+continuing inside a trapped region.
+
+The [figure reproduction guide](../analysis/README.md) identifies the larger
+example calculations, their data and their resolved time ranges.
 
 ## Further references
 

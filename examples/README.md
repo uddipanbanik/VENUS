@@ -29,6 +29,9 @@ collects the saved results of that run.
 | Run numerical tests and all example runs | [`scripts/check/`](../scripts/check/) |
 | Find specialist initial-data and analysis tools | [Script reference](../notes/SCRIPT_REFERENCE.md) |
 
+The [cluster guide](../docs/CLUSTERS.md) supplies IAS Typhon, IAS Apollo and
+Perimeter Symmetry recipes, module choices and portable scheduler settings.
+
 ## 1. Build
 
 Install a C++17 compiler and Python 3.8 or newer, then install the Python
@@ -46,7 +49,8 @@ The `.venv` folder keeps the Python packages together for this project.
 Activate it with `source .venv/bin/activate` in each new Terminal. An existing
 scientific Python environment with the required packages can also be used.
 
-The second build supplies small input generators and diagnostic tools.
+A successful build creates the executables listed below. The second build
+supplies small input generators and diagnostic tools.
 Compiler choices and flags can be passed through `CXX`, `MPICXX`,
 `BASE_CXXFLAGS`, and `OPENMP_FLAGS`. `BUILD_JOBS` sets simultaneous compiler
 processes. On macOS, the build script first checks whether the default compiler links
@@ -92,7 +96,10 @@ python3 scripts/analyze/run.py output/my_first_halo --plot --r-max 10
 This analysis writes a table summary and density/slope movie under
 `output/my_first_halo/analysis/`. Density describes where mass lies; the
 logarithmic slope describes how quickly it changes with radius. The histories
-record how integrated physical quantities change with time.
+record how integrated physical quantities change with time. A successful
+example prints `Saved run:` and the output path after checking that the saved
+history reaches the requested endpoint. The short example shows how to use
+the interface; the duration is chosen for installation checks.
 
 Use `--dry-run` to print a command before executing it, and `--end-time T` to
 choose a physical endpoint. Pick a fresh output directory for a fresh run.
@@ -202,11 +209,25 @@ bash scripts/slurm/submit.sh gpu_vp_static --partition YOUR_GPU_PARTITION
 bash scripts/slurm/submit.sh gpu_vp_expanding_mpi --partition YOUR_GPU_PARTITION
 ```
 
+To choose a fresh run directory, put simulation options after `--`:
+
+```bash
+bash scripts/slurm/submit.sh gpu_sidm_power_law_mpi \
+  --partition YOUR_GPU_PARTITION -- --output output/my_cluster_run
+```
+
+The options before `--` go to Slurm; the options after it go to the example.
+For an MPI build used for a single-GPU run, add
+`--gpu-build build/gpu-mpi` after `--` as well.
 The helper supplies `VENUS_ROOT` and submits the corresponding file from
 `examples/slurm/`. It starts no simulation on the login node. The scheduler's
 log is `slurm-JOBID.out` in the submission directory, and simulation output
-uses the location shown by the run script. MPI launchers use `srun` after
-initial data have been prepared once.
+uses the location shown by the run script. MPI templates first prepare any
+initial data once, then start the MPI
+program through `mpiexec`. The site's MPI installation must support its
+scheduler. Set `VENUS_MPI_LAUNCHER=srun` only when your site supports direct
+Slurm launches with the loaded MPI library. On Symmetry, the tested HPC-X
+installation uses `mpiexec`. A rank means one MPI process.
 
 To build through the scheduler, export `VENUS_ROOT` as the absolute repository
 path and `VENUS_BUILD` as `cpu`, `cpu-openmp`, `cpu-mpi`, `gpu`, or `gpu-mpi`,
@@ -248,7 +269,9 @@ CPU checks run as one process; request one Slurm task with the desired CPU cores
 Use a separate MPI example launch to exercise multiple processes.
 GPU checks and examples run inside a GPU allocation. Choose a fresh destination
 for the all-example checks. Each example gets a log, and `results.json` records
-its process exit status. The CPU checks include conservation laws, equilibria,
+its process exit status: `0` means success. The adjacent command record also
+stores the requested and achieved end times. The CPU checks include
+conservation laws, equilibria,
 coordinate transformations, collision rates, binary continuation, output readers,
 and scheduler-script behavior. They establish the stated finite test conditions.
 A new astrophysical application needs its own resolution and boundary studies.

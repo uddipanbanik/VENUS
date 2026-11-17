@@ -10,4 +10,4 @@ set -euo pipefail
 cd "$VENUS_ROOT"
 export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK:-2}
 export OPENBLAS_NUM_THREADS=1
-exec "${PYTHON:-python3}" scripts/run_example.py gpu_sidm_constant --variant mpi --launcher srun --ranks "${SLURM_NTASKS:-2}" --threads "$OMP_NUM_THREADS" "$@"
+exec "${PYTHON:-python3}" scripts/run_example.py gpu_sidm_constant --variant mpi --launcher "${VENUS_MPI_LAUNCHER:-mpiexec}" --ranks "${SLURM_NTASKS:-2}" --threads "$OMP_NUM_THREADS" "$@"

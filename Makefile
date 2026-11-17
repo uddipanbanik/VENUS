@@ -61,24 +61,24 @@ script-check:
 
 # Pass the GPU architecture and CPU reference headers into an out-of-source Release configuration.
 gpu-configure:
-	cmake -S $(GPU_DIR) -B $(BUILD_DIR)/gpu \
+	cmake -S $(GPU_DIR) -B "$(BUILD_DIR)/gpu" \
 	  -DCMAKE_BUILD_TYPE=Release \
-	  -DCMAKE_CUDA_ARCHITECTURES=$(GPU_ARCH) \
-	  -DVENUS_CPU_REFERENCE_INCLUDE=$(CURDIR)/$(CPU_DIR)/include
+	  -DCMAKE_CUDA_ARCHITECTURES="$(GPU_ARCH)" \
+	  -DVENUS_CPU_REFERENCE_INCLUDE="$(CURDIR)/$(CPU_DIR)/include"
 
 gpu: gpu-configure
-	cmake --build $(BUILD_DIR)/gpu -j $(BUILD_JOBS)
+	cmake --build "$(BUILD_DIR)/gpu" -j $(BUILD_JOBS)
 
 # The distributed build adds one MPI process per GPU while using the same numerical source.
 gpu-mpi-configure:
-	cmake -S $(GPU_DIR) -B $(BUILD_DIR)/gpu-mpi \
+	cmake -S $(GPU_DIR) -B "$(BUILD_DIR)/gpu-mpi" \
 	  -DCMAKE_BUILD_TYPE=Release \
-	  -DCMAKE_CUDA_ARCHITECTURES=$(GPU_ARCH) \
+	  -DCMAKE_CUDA_ARCHITECTURES="$(GPU_ARCH)" \
 	  -DVENUS_GPU_ENABLE_MPI=ON \
-	  -DVENUS_CPU_REFERENCE_INCLUDE=$(CURDIR)/$(CPU_DIR)/include
+	  -DVENUS_CPU_REFERENCE_INCLUDE="$(CURDIR)/$(CPU_DIR)/include"
 
 gpu-mpi: gpu-mpi-configure
-	cmake --build $(BUILD_DIR)/gpu-mpi -j $(BUILD_JOBS)
+	cmake --build "$(BUILD_DIR)/gpu-mpi" -j $(BUILD_JOBS)
 
 # Compile the pedagogical manual with its own reference and build-log checks.
 manual:

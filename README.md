@@ -78,6 +78,20 @@ Slurm launchers, restart instructions, and analysis tools for every supplied
 example. Begin with a short run, inspect its output, then choose the duration
 and resolution needed for your physical question.
 
+### Get the code
+
+In a Terminal, download the repository and enter its top-level directory:
+
+```bash
+git clone https://github.com/uddipanbanik/VENUS.git
+cd VENUS
+```
+
+The commands below begin in this directory. If you already have a checkout,
+enter that checkout instead. Start with the CPU example to learn the input,
+output and analysis steps, then use the module table to choose another
+physical problem.
+
 ### CPU quick start
 
 You need a C++17 compiler and Python 3.8 or newer. Run these commands from the
@@ -141,6 +155,13 @@ static-background state, evolves it, and saves profiles and a complete binary
 restart. The [GPU guide](gpu/README.md) explains the initial-state format,
 collision models, output, and one-process-per-GPU parallelism step by step.
 GPU relativistic evolution is a separate development task.
+
+### Cluster examples
+
+The [cluster guide](docs/CLUSTERS.md) gives complete IAS Typhon CPU,
+IAS Apollo GPU, and Perimeter Symmetry CPU/GPU recipes. It explains the
+module environment, GPU architectures, MPI launchers, scheduler resources,
+outputs, restarts, and adaptation to another HPC system.
 
 ### Inputs and outputs
 
