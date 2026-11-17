@@ -1,4 +1,4 @@
-# VENUS 1.0
+# VENUS 1.0: a kinetic simulation code for self-gravitating systems
 
 [Equations](#governing-equations) · [Numerical implementation](#numerical-implementation-of-the-equations) · [Choose a module](#choose-a-module) · [CPU quick start](#cpu-quick-start) · [GPU quick start](#gpu-quick-start) · [Run other modules](#run-other-modules) · [Code structure](#code-structure-and-dependencies) · [Cluster recipes](docs/CLUSTERS.md) · [Full manual](docs/venus_manual.pdf)
 
@@ -77,7 +77,10 @@ application specifies its interaction law, initial and boundary conditions, and
 resolution studies. Adaptive-grid development will be distributed separately
 when ready.
 
-Co-developers: Uddipan Banik, Frank van den Bosch, and Sachiet Kapur.
+Co-developers: [Uddipan Banik](https://uddipanbanik.pages.dev/), Frank van den Bosch, and Sachiet Kapur.
+
+[VENUS code on GitHub](https://github.com/uddipanbanik/VENUS) ·
+[Archived release on Zenodo](https://doi.org/10.5281/zenodo.24267952)
 VENUS uses the [BSD 3-Clause License](LICENSE). Citation information is in
 [CITATION.cff](CITATION.cff).
 
