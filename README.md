@@ -2,21 +2,61 @@
 
 [Documentation and solver manual](docs/README.md) · [Build and run](#build-run-and-analyze)
 
-VENUS is the Vlasov--Einstein NUmerical Solver. It follows how a spherical
-distribution of matter moves under its own gravity and changes through
-particle encounters. The distribution determines the gravitational field,
-which in turn determines the trajectories. For collisional matter, scattering
-also changes the velocities, and subhalo capture changes the masses and
-internal energies.
+Gravity builds structure across an extraordinary range of scales, from
+globular clusters and galaxies to dark matter halos and black holes. These
+systems begin with different distributions of matter, yet their evolution
+often produces striking regularities. What selects the nearly universal
+density profiles of dark matter halos? How do the mixing of particle orbits,
+gravitational encounters, and dark matter self-interactions redistribute
+energy and angular momentum? When does this relaxation establish a
+long-lived equilibrium, and when does the central matter continue to collapse?
 
-The Newtonian solvers evolve the Vlasov--Poisson or Boltzmann--Poisson
-equations. The relativistic solvers evolve Einstein--Vlasov transport in
-Schwarzschild or ingoing Eddington--Finkelstein coordinates. A local
-relativistic collision library couples elastic scattering to those
-Einstein--Vlasov updates. VENUS represents the distribution either on a
-phase-space grid or by particles with statistical weights. The particle
-methods include weighted particle-in-cell (WPIC) and spherical direct
-simulation Monte Carlo (SphDSMC).
+Continued collapse brings a second fundamental question into view: what is
+the end state of a self-gravitating system? Which initial distributions form
+black holes, and which remain bound or disperse? Near the threshold of black
+hole formation, [type I critical collapse](https://arxiv.org/abs/gr-qc/0210101)
+approaches an intermediate configuration
+with a finite black hole mass scale, while type II critical collapse exhibits
+black hole mass scaling towards zero at threshold. The matter distribution
+and its velocity anisotropy help determine which behavior a family of initial
+conditions can support. Around an existing black hole, the same orbital
+dynamics and encounters determine the formation and survival of dark matter
+spikes, the steep density enhancements that can develop around a central
+black hole. Following the distribution through these processes connects halo
+relaxation to the strong gravitational fields surrounding black holes.
+
+VENUS, the **Vlasov--Einstein NUmerical Solver**, is being developed to address
+these questions with first-principles kinetic simulations of self-gravitating
+matter. Its scientific goals encompass galaxies, cold dark matter and
+self-interacting dark matter halos, globular clusters, nuclear star clusters,
+and relativistic collapse to black holes. Fluid models describe matter through
+averaged quantities such as density, mean velocity, and pressure. A kinetic
+description follows the full distribution of positions and velocities. It
+therefore retains orbital structure, differences between radial and tangential
+velocity dispersions, mixing of particle streams, and departures from a local
+thermal velocity distribution. Going beyond fluid models in this way opens
+a new frontier for understanding how gravitational systems relax, develop central cusps or
+cores, and approach black hole formation.
+
+The present code evolves **spherically symmetric** distributions. Newtonian
+modules solve the Vlasov--Poisson and Boltzmann--Poisson equations in static
+and prescribed expanding backgrounds. Relativistic modules solve the
+Einstein--Vlasov equations in Schwarzschild and ingoing
+Eddington--Finkelstein coordinates, including horizon formation and crossing.
+The distribution sources the gravitational field, and that field determines
+the subsequent trajectories. Collision operators add the corresponding
+transfers of momentum and energy. Phase-space grids and weighted
+particle-in-cell (WPIC) methods provide complementary representations of the
+distribution, with spherical direct simulation Monte Carlo (SphDSMC) for
+material scattering.
+
+The [physics and background selector](notes/SOLVER_MODULES.md#physics-and-background-selector)
+identifies the available solvers and their scope. The stellar-system,
+critical-collapse, and dark matter spike questions above define the research
+program; each quantitative application requires its physical interaction law,
+initial and boundary conditions, and convergence checks. The relativistic
+elastic-scattering component is supplied as a tested library. Adaptive-grid
+development will be released separately when ready.
 
 Co-developers: Uddipan Banik, Frank van den Bosch, and Sachiet Kapur.
 
@@ -32,170 +72,90 @@ executable for each physical problem. Citation metadata are supplied in
 
 ## Build, run, and analyze
 
-The steps below take you from compilation to saved profiles and plots.
-Open a terminal in the directory containing this README, then run the
-commands below from that directory. Choose a fresh output directory for a new calculation.
-The [documentation index](docs/README.md) links the full manual and the
-module, input-format and script references.
+The [examples and script index](examples/README.md) is the starting point for
+a new user. It links the build scripts, initial data, local run scripts,
+Slurm launchers, restart instructions, and analysis tools for every supplied
+example. Begin with a short run, inspect its output, then choose the duration
+and resolution needed for your physical question.
 
 ### CPU quick start
 
-Requirements: a C++17 compiler, Python 3.8 or newer, and (for analysis) NumPy,
-Matplotlib, SciPy, Pillow, and ImageIO. OpenMP and MPI are optional.
+You need a C++17 compiler and Python 3.8 or newer. Run these commands from the
+repository root, the folder containing this README:
 
 ```bash
+python3 -m venv .venv
+source .venv/bin/activate
 python3 -m pip install -r requirements.txt
-make -C cpu organized-solvers  # all portable task-specific CPU front ends
-make cpu-tools           # compile every maintained C++ tool main
-make cpu-check-setup     # zero-time parser/setup examples
+bash scripts/build/cpu.sh
+bash scripts/build/tools.sh
+bash examples/run/vp_wpic_static.sh
+python3 scripts/analyze/run.py output/examples/vp_wpic_static_portable \
+  --plot --r-max 10
 ```
 
-The setup check writes to `output/cpu/setup_serial` and
-`output/cpu/setup_modular` in the release root. Override
-`SETUP_OUTPUT_ROOT` to select another location.
-
-The independent CPU tree builds task-specific front ends over shared kernels.
-For example:
-
-```bash
-cpu/venus_cpu_einstein_vlasov_eulerian \
-  --config cpu/examples/einstein_vlasov_low_compactness_virialized_halo.ini
-cpu/venus_cpu_vlasov_poisson_eulerian \
-  --config cpu/examples/modular/vp_expanding_nfw_gamma2_collisionless.ini
-```
-
-Use `venus_cpu_boltzmann_poisson_fokker_planck`,
-`venus_cpu_boltzmann_poisson_landau`,
-`venus_cpu_boltzmann_poisson_exact`,
-`venus_cpu_boltzmann_poisson_reversible`,
-`venus_cpu_boltzmann_poisson_reversible_sampled`, or
-`venus_cpu_boltzmann_poisson_reversible_streamed` for the corresponding grid
-collision backend. Use `venus_cpu_boltzmann_poisson_canonical_orbit` for
-the orbit-atlas transport/collision solver. The broad `venus_modular_solver*` and
-`venus_cpu_boltzmann_poisson_finite_angle*` names remain compatibility
-dispatchers, not the preferred new-run interface.
-
-From the release root, `make cpu-openmp` builds the OpenMP task fronts, while
-`make cpu-mpi` builds the supported MPI+OpenMP fronts. Build generic
-dispatchers explicitly with `make cpu-compat`. From inside `VENUS/cpu`, use
-`make cpu-task-solvers-openmp` or `make cpu-task-solvers-mpi`.
-Collisional grid Boltzmann--Poisson and SphDSMC jobs are single-MPI-rank
-workloads; use OpenMP threads inside that rank. The manual explains the
-collisionless MPI decomposition and the fail-closed launch checks.
+The build scripts compile the programs. The run script supplies a small
+initial distribution of weighted particles and evolves its self-gravity in an
+isolated Newtonian calculation. A weighted particle represents a specified
+amount of physical mass. The analysis command reads the saved output and
+writes a density/slope movie plus a summary under the run's `analysis/` folder.
+The [CPU guide](cpu/README.md) introduces grid calculations, input parameter
+files, collision models, relativistic evolution, and parallel execution in turn.
 
 ### Choose a module
 
-The CPU build above provides the following entry points. Run each executable
-with `--help` for its controls. The [complete module catalogue](notes/SOLVER_MODULES.md)
-lists every variant and its input, output and analysis tools.
-
-| Calculation | Executable in `cpu/` | Input and run guide |
+| Physical category | Background | Available methods |
 |---|---|---|
-| Einstein–Vlasov on a phase-space grid | `venus_cpu_einstein_vlasov_eulerian` | Supplied `--config` example above |
-| Vlasov–Poisson on a phase-space grid | `venus_cpu_vlasov_poisson_eulerian` | Supplied example above or the user-distribution example below |
-| Boltzmann–Poisson on a phase-space grid | `venus_cpu_boltzmann_poisson_exact`, `venus_cpu_boltzmann_poisson_fokker_planck`, and the variants listed above | INI file selecting that collision operator, documented in the [module catalogue](notes/SOLVER_MODULES.md) |
-| Vlasov–Poisson with weighted particles | `venus_cpu_vlasov_poisson_wpic_expanding` | Analytic initialization or a particle restart, with command-line controls in the [CPU guide](cpu/README.md) |
-| Subhalo scattering and capture | `venus_cpu_subhalo_wpic` | Command-line initial-halo and encounter controls in the [CPU guide](cpu/README.md) |
-| Material SIDM with weighted particles | `venus_cpu_sidm_wpic_constant`, `venus_cpu_sidm_wpic_velocity_dependent` | Command-line equilibrium, cross-section and restart controls in the [module catalogue](notes/SOLVER_MODULES.md) |
-| Spherical DSMC | `venus_cpu_sidm_sphdsmc_constant` | `--config cpu/examples/modular/spherical_dsmc_frank_equilibrium.ini` from the release root |
-| Schwarzschild or EF Einstein–Vlasov with weighted particles | `venus_cpu_einstein_vlasov_wpic_black_hole` | `--coordinates schwarzschild` or `--coordinates eddington_finkelstein`; [initial-data and coordinate guide](#relativistic-coordinate-comparison) |
-| Canonical orbit-phase Boltzmann–Poisson | `venus_cpu_boltzmann_poisson_canonical_orbit` | Equilibrium table and orbit-grid controls described in the [module catalogue](notes/SOLVER_MODULES.md) |
+| Non-relativistic collisionless | Static or prescribed expanding | CPU phase-space grid and weighted particles; GPU weighted particles |
+| Non-relativistic collisional: subhalos | Static or prescribed expanding | CPU grid encounter models and weighted-particle scattering/capture; GPU weighted-particle scattering/capture |
+| Non-relativistic collisional: self-interacting dark matter | Static; selected CPU grid models also support expansion | CPU grid, weighted-particle, and spherical Monte Carlo methods; GPU weighted particles |
+| Non-relativistic collisional: star clusters | Chosen encounter model | CPU small-angle transport machinery; a stellar gravitational-encounter application requires its physical model and validation |
+| Relativistic collisionless | Isolated, evolving spacetime | CPU phase-space grid; weighted particles in Schwarzschild and ingoing Eddington--Finkelstein coordinates |
+| Relativistic collisional: self-interacting dark matter | Isolated | CPU local elastic-scattering library coupled to relativistic evolution, with component-tested scope |
+| Relativistic collisional: subhalos and star clusters | Isolated or expanding | Dedicated relativistic encounter models and application runners are future work |
 
-Relativistic elastic collisions are supplied through the C++ library calls
-`eb::advance_sc` and `eb::advance_ef`. They couple to their corresponding
-Einstein–Vlasov updates. The [relativistic collision guide](docs/relativistic_boltzmann.md)
-describes the state, controls, call sequence and restart ownership.
+A **phase-space grid** stores the matter distribution in cells of position
+and velocity. **Collisionless** evolution follows its collective gravitational
+field. **Collisional** evolution also applies a specified scattering or capture
+law. “Static background” means zero cosmological expansion; gravity still
+evolves with the distribution. The [module catalogue](notes/SOLVER_MODULES.md)
+gives the exact executable, equations, background choices and scope for each
+method. The [examples index](examples/README.md#3-choose-another-physical-problem)
+links the corresponding scripts.
 
 ### GPU quick start
 
-The complete GPU build uses the bundled CPU subhalo calibration table. It
-requires CMake 3.18+, CUDA, Python 3.8 or newer, and a compatible C++17 host compiler.
-The default CUDA architecture is `sm_80` (A100); use `GPU_ARCH=90` for
-H100/H200 systems.
+GPU evolution requires an NVIDIA GPU, CUDA, CMake 3.18 or newer, and a
+compatible C++17 compiler. With the Python environment above, build and run:
 
 ```bash
-make gpu GPU_ARCH=80       # configure and build sm_80
+GPU_ARCH=80 bash scripts/build/gpu.sh
+bash examples/run/gpu_vp_static.sh
+python3 scripts/analyze/run.py output/examples/gpu_vp_static_portable \
+  --plot --r-max 20
 ```
 
-Pass `GPU_ARCH` to the final dependent target, as above.  Calling
-`gpu-configure` with one architecture and then invoking `make gpu` without the
-same override would reconfigure the build with the Makefile default. 
-
-For one MPI rank per GPU:
-
-```bash
-make gpu-mpi GPU_ARCH=80
-# Run inside a two-GPU allocation:
-srun --ntasks=2 --gpus-per-task=1 \
-  build/gpu-mpi/venus_gpu_vlasov_poisson_mpi \
-  --restart restart_state.bin --output-directory output/gpu/vp_mpi \
-  --end-time 60
-```
-
-The GPU task runners import CPU-generated particle initial data in weighted-PIC
-formats 1--6. The static CPU SIDM format 7 additionally preserves its frozen
-potential and event timescales. To initialize a GPU calculation from that
-particle state, export it at a completed collision interval:
-
-```bash
-make -C cpu inspect_weighted_pic_restart
-cpu/inspect_weighted_pic_restart restart_state.bin \
-  --export-particles gpu_initial_particles.bin
-```
-
-The export preserves the particles and initializes a fresh field and event
-schedule in the receiving solver. The manual gives the conditions for this
-conversion. A subhalo run is explicit:
-
-```bash
-build/gpu/venus_gpu_subhalo_boltzmann_poisson \
-  --restart restart_state.bin \
-  --output-directory output/gpu/example \
-  --end-time 50.1 \
-  --subhalo-collision-strength 0.1 \
-  --subhalo-adaptive-cell-timestep
-```
-
-Use `venus_gpu_vlasov_poisson` for a collisionless restart and
-`venus_gpu_sidm_constant`, `venus_gpu_sidm_power_law`, or
-`venus_gpu_sidm_yukawa_born` for a static material-SIDM run. The corresponding
-`_mpi` names select the one-rank-per-GPU build. Single-GPU VP and subhalo accept
-`--universe static` or `--universe eds`, with EdS as the default. Its static
-restart must carry total-density masses and the corresponding static background
-and radial mesh settings. MPI builds restrict VP and subhalo tasks to EdS. VP uses fixed-cap KDK
-with output/final-time shortening and rejects collision options. The GPU README
-gives a static example. Quantitative material-SIDM
-results require shell-locality, marker-number, timestep, random-seed, and
-rank-count studies. Run the selected executable with `--help`; irrelevant
-collision-family options are rejected. Initial slope and marker state come
-from the restart.
-
-
-The [bound Gaussian shell example](cpu/examples/modular/vp_bound_gaussian_shell_gpu.md) generates the example VP/BP initial states
-with `cpu/tools/generate_bound_gaussian_shell_restart.py`. It gives both complete
-static and expanding commands, including their 512-cell mesh and output cadence.
-The two files represent the same physical marker realization.
+`GPU_ARCH=80` selects an A100; use the compute capability of your GPU.
+The example generates a Gaussian shell of weighted particles, imports its
+static-background state, evolves it, and saves profiles and a complete binary
+restart. The [GPU guide](gpu/README.md) explains the initial-state format,
+collision models, output, and one-process-per-GPU parallelism step by step.
+GPU relativistic evolution is a separate development task.
 
 ### Inputs and outputs
 
-Eulerian and SphDSMC CPU tasks use INI parameter files plus command-line
-overrides, with the executable locking the equation/operator. Dedicated WPIC
-CPU and GPU tasks use documented command-line options. The
-CPU Python package and IC tools generate analytic and file-backed initial
-conditions; GPU tasks import the common versioned weighted-PIC restart
-format.
+Grid solvers read an INI file, a plain-text list of physical and numerical
+parameters. Initial data may come from an analytic distribution or the binary
+format specified in that input. Particle solvers use command-line controls
+and a built-in sampler or a compatible particle file. The example scripts
+prepare their required initial data using the supplied generators.
 
-Typical grid-solver output includes `metadata.json`, `profiles.csv`,
-`history.csv`, phase-space snapshots, operator ledgers, and restart files.
-WPIC output uses `profile_NNNNN.csv`, `history.csv` or `history_gpu.csv`,
-collision histories, `radial_mesh_contract.txt`, `metadata.json`, and
-`restart_state.bin`. The exact columns, restart versions, atomic-write rules,
-and conditions recorded at termination are tabulated in the manual.
-
-WPIC continuation checks existing histories and every saved profile before
-writing. Their times must be at or before the selected checkpoint. Use a
-separate output directory to continue a saved checkpoint while preserving
-the original later outputs.
+Each run writes to an explicit output directory. Named-column CSV tables
+contain histories and radial profiles for analysis. Metadata and small
+companion files record the model, units, and numerical controls. Binary restart
+files retain the complete evolving state needed to continue the calculation.
+Keep those files together. The CPU and GPU guides identify the exact file
+names and analysis commands for each method.
 
 ### Use your own initial distribution
 
@@ -655,14 +615,14 @@ scheduler logs are not release source.
 |---|---|---|
 | Grid Einstein--Vlasov | implemented grid task; convergence must be established for each calculation | absent |
 | Weighted Einstein--Vlasov PIC | separate Schwarzschild/polar--areal and ingoing-EF modules; EF follows apparent-horizon formation and subsequent interior evolution | absent |
-| Static/expanding spherical Vlasov--Poisson | grid and expanding-WPIC task fronts | static/expanding WPIC restart task |
+| Static/expanding spherical Vlasov--Poisson | grid plus static and expanding WPIC executables | static/expanding WPIC restart task |
 | Grid Fokker--Planck/Landau Boltzmann--Poisson | implemented; problem-specific convergence required | absent |
 | Exact/reversible/sampled/streamed finite-angle Boltzmann | separate operator-locked task fronts | absent |
 | Canonical-orbit Boltzmann--Poisson | orbit-atlas task; method-specific convergence required | absent |
 | Persistent-marker SphDSMC | separate constant and velocity-dependent task fronts | absent |
 | Material SIDM, constant | WPIC and SphDSMC tasks with documented locality limits | static-halo restart task with documented locality limits |
 | Material SIDM, power-law/Yukawa--Born | velocity-dependent WPIC/SphDSMC research scope | static-halo restart tasks; convergence required per run |
-| Subhalo Plummer scatter/capture | expanding WPIC task | static/expanding restart task |
+| Subhalo Plummer scatter/capture | static/expanding WPIC task | static/expanding restart task |
 | Collision-cell/shell adaptive clocks | per-cell subhalo WPIC; per-shell constant-SIDM WPIC for equal-mass markers | per-cell subhalo and per-shell material SIDM, including constant, power-law, and Yukawa--Born laws |
 | Shared-memory parallelism | OpenMP or `std::thread` | CUDA kernels |
 | Distributed memory | MPI $`L`$ slabs for grid EV/VP only | one MPI rank per GPU; material rank-count invariance is not claimed |

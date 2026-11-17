@@ -46,7 +46,7 @@ inline void validate_expanding_wpic_task_profile(
     if (profile == ExpandingWPICTaskProfile::collisionless_vlasov_poisson
         && subhalo_collision_strength != 0.0) {
         throw std::runtime_error(
-            "Collisionless expanding Vlasov-Poisson WPIC requires "
+            "Collisionless Vlasov-Poisson WPIC requires "
             "--subhalo-collision-strength 0.");
     }
     if (profile == ExpandingWPICTaskProfile::collisional_subhalo

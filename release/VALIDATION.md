@@ -1,4 +1,42 @@
-# VENUS 1.0 validation
+# VENUS validation
+
+## Guide and module update, 16 November 2026
+
+The current CPU candidate passes 29 C++ numerical test executables, 112 Python
+tests, and the supplied driver, restart, coordinate and scheduler-workflow
+checks. The complete CPU example catalogue passes on macOS and IAS Linux:
+22 examples evolve to their requested physical endpoint, and the expanding
+exact-grid example checks its initial-data setup at zero time. On IAS, the
+three collisionless grid examples also pass with two MPI processes, and all
+13 grid examples pass with two OpenMP threads.
+
+All CPU production targets and 15 C++ utilities compile. The single-GPU and
+MPI CUDA builds compile on IAS. On Symmetry, the CUDA 12.6/GCC 11.2 build
+passes all ten registered numerical/interface tests, including collisionless
+transport, material and subhalo encounters, CPU comparisons, endpoint moments
+and two-process MPI. The additional host output-replacement check passes.
+All eight GPU examples and all six two-GPU MPI examples reach their requested
+physical endpoints on two NVIDIA GeForce RTX 2080 Ti devices. These include
+the explicit static Vlasov--Poisson entry point, which uses the existing CUDA
+evolution kernel. The power-law example supplies its required positive
+softening speed and exponent explicitly.
+
+The static CPU Vlasov--Poisson entry point is checked against the established
+static driver, including conservation, binary continuation and rejection of
+incompatible expansion or encounter parameters. Example checks verify the
+actual saved endpoint. Restart examples preserve their source checkpoints.
+The analysis wrappers have been exercised on grid, Newtonian particle,
+material SIDM and both relativistic coordinate representations. The generated
+density/slope movie was inspected for legibility and physical labeling.
+
+All 107 shell and Slurm scripts pass syntax checks. The local JavaScript
+syntax check requires Node, which is absent from this test environment.
+
+These finite checks establish the interfaces and numerical conditions tested.
+Each scientific application requires its own physical model, resolution,
+timestep, boundary and collision-locality studies.
+
+# Earlier VENUS 1.0 validation
 
 The CPU implementation has passed its integrated C++ tests, driver checks,
 111 Python reader tests and focused address/undefined-behavior sanitizer

@@ -64,7 +64,11 @@ struct Options {
     // Sachiet's background controls retain the original Einstein--de Sitter
     // defaults. The static choice sets alpha=0 before constructing any IC,
     // field, or orbit coefficient, so these all use the same background.
+#if defined(VENUS_CPU_STATIC_WPIC_VP_PROFILE)
+    std::string vp_universe = "static";
+#else
     std::string vp_universe = "expanding";
+#endif
     double vp_alpha = 2.0 / 3.0;
     double vp_time_offset = 12.0;
     // Scale the physical initial velocity u=H*r+w, including tangential
@@ -138,13 +142,16 @@ void print_usage(const char* executable) {
     std::cout
         << "Usage: " << executable << " [options]\n"
         << "\n"
-#if defined(VENUS_CPU_EXPANDING_WPIC_VP_PROFILE)
-        << "Locked task profile: collisionless expanding Vlasov-Poisson "
+#if defined(VENUS_CPU_STATIC_WPIC_VP_PROFILE)
+        << "Locked task profile: collisionless static Vlasov-Poisson WPIC.\n"
+        << "--vp-universe static and zero collision strength are required.\n\n"
+#elif defined(VENUS_CPU_EXPANDING_WPIC_VP_PROFILE)
+        << "Locked task profile: collisionless Vlasov-Poisson "
            "WPIC.\n"
         << "--subhalo-collision-strength is pinned to 0; every nonzero value "
            "is rejected.\n\n"
 #elif defined(VENUS_CPU_EXPANDING_WPIC_SUBHALO_PROFILE)
-        << "Locked task profile: expanding collisional subhalo WPIC.\n"
+        << "Locked task profile: Newtonian collisional subhalo WPIC.\n"
         << "--subhalo-collision-strength must be strictly positive; zero is "
            "rejected.\n\n"
 #else
@@ -165,7 +172,11 @@ void print_usage(const char* executable) {
         << "same radial mesh values used by the fresh run.\n"
         << "\n"
         << "Background controls (fresh runs and matching restarts):\n"
+#if defined(VENUS_CPU_STATIC_WPIC_VP_PROFILE)
+        << "  --vp-universe static              fixed static background\n"
+#else
         << "  --vp-universe expanding|static     default: expanding\n"
+#endif
         << "  --vp-alpha X                       0 <= X <= 1; default: 2/3\n"
         << "  --vp-time-offset X                 positive; default: 12\n"
         << "  Static mode sets alpha=0; the supplied density is a cusp IC.\n"
@@ -180,6 +191,17 @@ void print_usage(const char* executable) {
         << "  --subhalo-adaptive-cell-timestep     independent cell CFL clocks\n"
         << "  --collision-prestep-coordinate-due   apply safe coordinate-close deadlines before KDK\n"
         << "\n"
+        << "Orbit, sampling, output and restart controls:\n"
+        << "  --gamma X                         cusp slope (default: 1.5)\n"
+        << "  --particles-per-radial-cell N      fresh marker sampling (default: 2048)\n"
+        << "  --end-time T                      final physical time (default: 2)\n"
+        << "  --maximum-timestep DT             fixed KDK cap (default: 4)\n"
+        << "  --output-interval DT              profile spacing (default: 1)\n"
+        << "  --history-every N                 history step cadence (default: 100)\n"
+        << "  --restart-every N                 checkpoint step cadence (default: 1000)\n"
+        << "  --threads N                       shared-memory workers (default: 1)\n"
+        << "  --output-directory PATH           run products\n"
+        << "  --restart PATH                    complete native particle state\n\n"
         << "Use --help or -h to print this summary.  Established orbit, "
            "marker, output, restart, and task-compatible collision controls "
            "remain available.\n";
@@ -354,7 +376,7 @@ Options parse_options(int argc, char** argv) {
             result.show_help = true;
         } else {
             throw std::runtime_error(
-                "Unknown expanding WPIC option: " + name
+                "Unknown Newtonian WPIC option: " + name
                 + " (use --help for radial-mesh controls)");
         }
     }
@@ -370,6 +392,11 @@ Options parse_options(int argc, char** argv) {
             "Background requires --vp-universe expanding|static, "
             "finite 0 <= --vp-alpha <= 1, and positive --vp-time-offset.");
     }
+#if defined(VENUS_CPU_STATIC_WPIC_VP_PROFILE)
+    if (result.vp_universe != "static") {
+        throw std::runtime_error("Static Vlasov-Poisson WPIC requires --vp-universe static.");
+    }
+#endif
     if (result.vp_universe == "static") result.vp_alpha = 0.0;
     if (!(result.initial_velocity_factor > 0.0)
         || !std::isfinite(result.initial_velocity_factor)) {
@@ -544,7 +571,8 @@ ev::Params make_parameters(const Options& run) {
     p.vp_alpha = run.vp_alpha;
     p.vp_time_offset = run.vp_time_offset;
     p.vp_gravity = 1.0;
-    p.vp_poisson_source = "density_contrast";
+    p.vp_poisson_source = run.vp_universe == "static"
+        ? "total_density" : "density_contrast";
     // The PIC field bridge uses the conservative radial control volumes.  The
     // marker pusher below is independent of the semi-Lagrangian remap, but this
     // flag selects the same conservative geometry and field interpolation.
@@ -1522,7 +1550,7 @@ void write_metadata(
                ? "fresh physical velocity u=H*r+w scaled once; eta scaled by factor squared"
                : "native particle velocities retained; physical u=H*r+w")
            << "\",\n"
-           << "  \"vp_poisson_source\": \"density_contrast\",\n"
+           << "  \"vp_poisson_source\": \"" << p.vp_poisson_source << "\",\n"
            << "  \"radial_cells\": " << p.Nr << ",\n"
            << "  \"radial_minimum\": " << p.r_min << ",\n"
            << "  \"radial_maximum\": " << p.r_max << ",\n"
@@ -2995,7 +3023,7 @@ int ev::apps::run_expanding_weighted_vlasov_pic(int argc, char** argv) {
         return 99;
     }
     std::cout
-        << "expanding weighted PIC run completed at t=" << time
+        << run.vp_universe << " weighted PIC run completed at t=" << time
         << " after " << rejected_cadence_steps
         << " rejected KDK probes and "
         << conservative_cadence_landings

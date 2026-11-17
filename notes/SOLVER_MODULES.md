@@ -27,7 +27,33 @@ tasks, while compatibility dispatchers continue to read older inputs.
   or older inputs and is not the primary interface.
 - **Absent** means that the backend is not implemented in this release.
 
-## One-line selector
+## Physics and background selector
+
+“Static background” means an isolated calculation with zero cosmological
+expansion. Its self-consistent gravitational field evolves with the matter.
+“Expanding” means the prescribed Newtonian background specified by the input.
+The relativistic isolated calculations evolve their spacetime metric.
+
+| Physical category | Background | CPU modules | GPU modules |
+|---|---|---|---|
+| Non-relativistic collisionless | Static | Eulerian VP; **static VP WPIC** | Static VP WPIC, single GPU |
+| Non-relativistic collisionless | Expanding | Eulerian VP; expanding VP WPIC | EdS VP WPIC, single GPU or MPI |
+| Non-relativistic collisional: subhalo scattering and capture | Static or expanding | Subhalo WPIC; grid BP with the chosen encounter approximation | Subhalo WPIC: static/EdS on one GPU, EdS with MPI |
+| Non-relativistic collisional: self-interacting dark matter | Static | Constant or velocity-dependent SIDM WPIC and SphDSMC; grid BP | Constant, softened power-law and Yukawa--Born SIDM WPIC, single GPU or MPI |
+| Non-relativistic collisional: material/encounter models | Expanding | Grid BP with explicitly selected cross section and background | Expanding subhalo model above; material SIDM GPU runners use static halos |
+| Non-relativistic collisional: globular and nuclear star clusters | Model-dependent | Small-angle Fokker--Planck/Landau machinery and encounter kernels; stellar relaxation requires a suitable gravitational encounter model and validation | A dedicated stellar relaxation solver is future work |
+| Relativistic collisionless | Isolated, evolving spacetime | Eulerian EV; low-compactness EV WPIC; high-compactness EV WPIC in Schwarzschild or ingoing EF coordinates | A relativistic CUDA solver is future work |
+| Relativistic collisionless | Cosmological expansion | A cosmological EV runner is future work | Future work |
+| Relativistic collisional: subhalos | Isolated or expanding | A relativistic subhalo scattering/capture runner is future work | Future work |
+| Relativistic collisional: self-interacting dark matter | Isolated | Covariant local elastic-collision library coupled to SC/EF streaming; component-tested API | Future work |
+| Relativistic collisional: star clusters | Isolated or expanding | A gravitational stellar-encounter model and complete application runner are future work | Future work |
+
+The elastic material library describes microscopic scattering under its stated
+interaction law. Stellar gravitational relaxation and subhalo capture require
+their own encounter physics. Read the [relativistic collision guide](../docs/relativistic_boltzmann.md)
+for the library's rate, locality, restart, and validation scope.
+
+## Executable selector
 
 | Physical task | Canonical executable | Backend | Status |
 |---|---|---|---|
@@ -46,10 +72,12 @@ tasks, while compatibility dispatchers continue to read older inputs.
 | Velocity-dependent SphDSMC SIDM | `venus_cpu_sidm_sphdsmc_velocity_dependent` or `_openmp` | CPU | Formula/kernel scope; convergence required per run |
 | Low-compactness Einstein--Vlasov WPIC | `venus_cpu_einstein_vlasov_wpic_low_compactness` | CPU | Low-compactness completed example |
 | High-compactness Einstein--Vlasov WPIC | `venus_cpu_einstein_vlasov_wpic_black_hole --coordinates schwarzschild\|eddington_finkelstein` | CPU | Separate polar--areal and horizon-penetrating advanced-null kernels; quantitative convergence required |
+| Static Vlasov--Poisson WPIC | `venus_cpu_vlasov_poisson_wpic_static` | CPU | Isolated collisionless task; H=0 |
 | Expanding Vlasov--Poisson WPIC | `venus_cpu_vlasov_poisson_wpic_expanding` | CPU | Implemented in the documented marker scope |
 | Subhalo collisional WPIC | `venus_cpu_subhalo_wpic` | CPU | Implemented operator/cadence path |
 | Constant-cross-section SIDM WPIC | `venus_cpu_sidm_wpic_constant` | CPU | Implemented with the documented locality caveat |
 | Velocity-dependent SIDM WPIC | `venus_cpu_sidm_wpic_velocity_dependent` | CPU | Formula/kernel scope; convergence required per run |
+| GPU static Vlasov--Poisson WPIC | `venus_gpu_vlasov_poisson_static` | GPU | Single-GPU static front over the VP kernel |
 | GPU Vlasov--Poisson WPIC | `venus_gpu_vlasov_poisson` or `_mpi` | GPU | Implemented restart-based task |
 | GPU subhalo BP | `venus_gpu_subhalo_boltzmann_poisson` or `_mpi` | GPU | Implemented restart-based task |
 | GPU material SIDM BP, generic law | `venus_gpu_sidm_boltzmann_poisson` or `_mpi` | GPU | Static-halo restart task |
@@ -87,10 +115,12 @@ CPU fronts are thin selectors over the shared grid or WPIC engines.
 | CPU velocity-dependent SphDSMC | `cpu/src/apps/sidm/sphdsmc_velocity_dependent.cpp` |
 | CPU low-compactness EV WPIC | `cpu/src/apps/einstein_vlasov/wpic_low_compactness.cpp` |
 | CPU high-compactness EV WPIC | `cpu/src/apps/einstein_vlasov/wpic_black_hole.cpp` |
+| CPU static VP WPIC | `cpu/src/apps/vlasov_poisson/static_wpic.cpp` |
 | CPU expanding VP WPIC | `cpu/src/apps/vlasov_poisson/expanding_wpic.cpp` |
 | CPU subhalo WPIC | `cpu/src/apps/subhalo/expanding_wpic.cpp` |
 | CPU constant SIDM WPIC | `cpu/src/apps/sidm/wpic_constant.cpp` |
 | CPU velocity-dependent SIDM WPIC | `cpu/src/apps/sidm/wpic_velocity_dependent.cpp` |
+| GPU static VP | `gpu/tools/venus_gpu_vlasov_poisson_static.cu` |
 | GPU VP | `gpu/tools/venus_gpu_vlasov_poisson.cu` |
 | GPU subhalo BP | `gpu/tools/venus_gpu_subhalo_boltzmann_poisson.cu` |
 | GPU generic material BP | `gpu/tools/venus_gpu_sidm_boltzmann_poisson.cu` |
@@ -610,10 +640,11 @@ continuation; reproduce a static transformed solution; compare pre-horizon
 invariants between coordinates; and repeat the angular-momentum bracket at
 increased resolution before interpreting it as a physical threshold.
 
-## 10. Expanding Vlasov--Poisson WPIC
+## 10. Static and expanding Vlasov--Poisson WPIC
 
-**Physics scope and exclusions.** This task advances weighted markers in an expanding
-Newtonian spherical potential with no collision scheduling. It is the explicit
+**Physics scope and exclusions.** These tasks advance weighted particles in static or prescribed expanding
+Newtonian backgrounds with a self-consistent gravitational field and zero
+explicit encounter strength. It is the explicit
 collisionless counterpart of the subhalo runner.
 
 **Equations.** Marker characteristics discretize the expanding VP equations;
@@ -625,7 +656,10 @@ and solve Poisson's equation. The resulting field supplies the KDK push with
 expanding drift. After applying boundaries, write profiles, history, and
 restart state, then repeat the collisionless update.
 
-**Source and task lock.** Use `venus_cpu_vlasov_poisson_wpic_expanding`.
+**Source and task lock.** Use `venus_cpu_vlasov_poisson_wpic_static` for an
+isolated system. It fixes the expansion rate to zero and records the total
+density as the Poisson source. Use `venus_cpu_vlasov_poisson_wpic_expanding`
+for the prescribed expanding background. Both use the same numerical routines.
 Shared code is `weighted_vlasov_pic.hpp`; the executable fixes collision
 strength to zero and rejects every SIDM/subhalo collision option.
 

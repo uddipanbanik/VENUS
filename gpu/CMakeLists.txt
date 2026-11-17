@@ -21,6 +21,7 @@ if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
   set(CMAKE_CUDA_ARCHITECTURES 80 CACHE STRING "CUDA GPU architectures")
 endif()
 
+option(VENUS_GPU_BUILD_TESTS "Build numerical and driver tests" ON)
 option(VENUS_GPU_BUILD_BENCHMARKS "Build the standalone GPU benchmark" ON)
 option(VENUS_GPU_ENABLE_MPI "Build the one-MPI-rank-per-GPU layer" OFF)
 set(VENUS_BUNDLED_CPU_REFERENCE_INCLUDE
@@ -125,6 +126,88 @@ if(VENUS_GPU_ENABLE_MPI)
 endif()
 
 
+if(VENUS_GPU_BUILD_TESTS)
+  enable_testing()
+
+  # Pure host/device pair-space arithmetic is testable without a GPU.
+  add_executable(test_collision_matching tests/test_collision_matching.cpp)
+  target_include_directories(test_collision_matching PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include)
+  add_test(NAME collision_matching COMMAND test_collision_matching)
+
+  # Restart serialization is host-only, so this regression can run even when
+  # the configured test node has no visible GPU.
+  add_executable(test_wpic_restart
+    tests/test_wpic_restart.cpp
+    src/wpic_restart.cpp)
+  target_include_directories(test_wpic_restart PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include)
+  add_test(NAME wpic_restart COMMAND test_wpic_restart)
+
+  add_executable(test_production_output tests/test_production_output.cpp)
+  target_link_libraries(test_production_output PRIVATE
+    venus_gpu_production_output stdc++fs)
+  target_compile_features(test_production_output PRIVATE cxx_std_17)
+  add_test(NAME production_output COMMAND test_production_output)
+
+  add_executable(test_wpic_vlasov_poisson tests/test_wpic_vlasov_poisson.cu)
+  target_include_directories(test_wpic_vlasov_poisson PRIVATE
+    ${VENUS_BUNDLED_CPU_REFERENCE_INCLUDE})
+  target_link_libraries(test_wpic_vlasov_poisson PRIVATE venus_gpu)
+  add_test(NAME wpic_vlasov_poisson COMMAND test_wpic_vlasov_poisson)
+
+  add_executable(test_wpic_collisions tests/test_wpic_collisions.cu)
+  target_link_libraries(test_wpic_collisions PRIVATE venus_gpu)
+  add_test(NAME wpic_collisions COMMAND test_wpic_collisions)
+
+  if(VENUS_CPU_REFERENCE_INCLUDE)
+    add_executable(test_wpic_vlasov_poisson_cpu_parity
+      tests/test_wpic_vlasov_poisson_cpu_parity.cu)
+    target_include_directories(test_wpic_vlasov_poisson_cpu_parity PRIVATE
+      ${VENUS_CPU_REFERENCE_INCLUDE})
+    target_link_libraries(test_wpic_vlasov_poisson_cpu_parity PRIVATE
+      venus_gpu stdc++fs)
+    target_compile_features(test_wpic_vlasov_poisson_cpu_parity PRIVATE
+      cxx_std_17)
+    set_target_properties(test_wpic_vlasov_poisson_cpu_parity PROPERTIES
+      CUDA_STANDARD 17
+      CUDA_STANDARD_REQUIRED ON)
+    add_test(NAME wpic_vlasov_poisson_cpu_parity
+      COMMAND test_wpic_vlasov_poisson_cpu_parity)
+
+    add_executable(test_wpic_subhalo_collisions
+      tests/test_wpic_subhalo_collisions.cu)
+    target_include_directories(test_wpic_subhalo_collisions PRIVATE
+      ${VENUS_CPU_REFERENCE_INCLUDE})
+    target_link_libraries(test_wpic_subhalo_collisions PRIVATE venus_gpu)
+    target_compile_features(test_wpic_subhalo_collisions PRIVATE cxx_std_17)
+    set_target_properties(test_wpic_subhalo_collisions PROPERTIES
+      CUDA_STANDARD 17
+      CUDA_STANDARD_REQUIRED ON)
+    add_test(NAME wpic_subhalo_collisions COMMAND test_wpic_subhalo_collisions)
+
+    add_executable(test_material_physics_cpu_parity
+      tests/test_material_physics_cpu_parity.cpp)
+    target_include_directories(test_material_physics_cpu_parity PRIVATE
+      ${VENUS_CPU_REFERENCE_INCLUDE})
+    target_link_libraries(test_material_physics_cpu_parity PRIVATE venus_gpu)
+    target_compile_features(test_material_physics_cpu_parity PRIVATE cxx_std_17)
+    add_test(NAME material_physics_cpu_parity
+      COMMAND test_material_physics_cpu_parity)
+  endif()
+
+  if(VENUS_GPU_ENABLE_MPI)
+    add_executable(test_wpic_mpi tests/test_wpic_mpi.cu)
+    target_link_libraries(test_wpic_mpi PRIVATE venus_gpu_mpi)
+    add_test(NAME wpic_mpi_2rank
+      COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 2
+        ${MPIEXEC_PREFLAGS} $<TARGET_FILE:test_wpic_mpi>
+        ${MPIEXEC_POSTFLAGS})
+    set_tests_properties(wpic_mpi_2rank PROPERTIES PROCESSORS 2)
+  endif()
+endif()
+
+
 # The restart comparison tool links only restart I/O and can inspect stored states on the host.
 add_executable(compare_wpic_restarts
   tools/compare_wpic_restarts.cpp
@@ -173,6 +256,14 @@ if(VENUS_CPU_REFERENCE_INCLUDE)
     CUDA_SEPARABLE_COMPILATION ON)
 
 
+  if(VENUS_GPU_BUILD_TESTS)
+    add_executable(test_production_endpoint_moments tests/test_production_endpoint_moments.cu)
+    target_link_libraries(test_production_endpoint_moments PRIVATE venus_gpu_production_driver)
+    target_compile_features(test_production_endpoint_moments PRIVATE cxx_std_17)
+    set_target_properties(test_production_endpoint_moments PROPERTIES CUDA_STANDARD 17 CUDA_STANDARD_REQUIRED ON)
+    add_test(NAME production_endpoint_moments COMMAND test_production_endpoint_moments)
+  endif()
+
   # Each task-specific main links the common driver, preserving a single implementation of evolution.
   function(venus_add_gpu_task target source)
     add_executable(${target} ${source})
@@ -183,6 +274,8 @@ if(VENUS_CPU_REFERENCE_INCLUDE)
       CUDA_STANDARD_REQUIRED ON)
   endfunction()
 
+  venus_add_gpu_task(venus_gpu_vlasov_poisson_static
+    tools/venus_gpu_vlasov_poisson_static.cu)
   venus_add_gpu_task(venus_gpu_vlasov_poisson
     tools/venus_gpu_vlasov_poisson.cu)
   venus_add_gpu_task(venus_gpu_subhalo_boltzmann_poisson
@@ -195,6 +288,14 @@ if(VENUS_CPU_REFERENCE_INCLUDE)
     tools/venus_gpu_sidm_power_law.cu)
   venus_add_gpu_task(venus_gpu_sidm_yukawa_born
     tools/venus_gpu_sidm_yukawa_born.cu)
+
+  if(VENUS_GPU_BUILD_TESTS)
+    add_test(NAME production_driver_cli
+      COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_production_driver_cli.py
+        $<TARGET_FILE:venus_gpu_vlasov_poisson> $<TARGET_FILE:venus_gpu_subhalo_boltzmann_poisson>
+        $<TARGET_FILE:venus_gpu_sidm_boltzmann_poisson> $<TARGET_FILE:venus_gpu_sidm_constant>
+        $<TARGET_FILE:venus_gpu_vlasov_poisson_static>)
+  endif()
 
   # Compatibility launchers retain their executable name and auto-select
   # collisionless/subhalo behavior from strength.  Task launchers use a

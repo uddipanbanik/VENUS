@@ -9,13 +9,33 @@ The source comments follow important calculations and branches in code order.
 Command-line programs list their options through `--help`; specialized
 no-argument diagnostics state their fixed inputs and outputs in source.
 
+## First-run scripts
+
+The [examples index](../examples/README.md) is the entry point for a new user.
+It organizes all supplied examples by physical problem and background, with
+links to the exact input, run script, and Slurm launcher.
+
+| Operation | Scripts |
+|---|---|
+| Build | `scripts/build/cpu.sh`, `cpu_openmp.sh`, `cpu_mpi.sh`, `gpu.sh`, `gpu_mpi.sh`, `tools.sh` |
+| Run | `examples/run/NAME.sh`, backed by `scripts/run_example.py` and `examples/catalogue.json` |
+| Submit with Slurm | `examples/slurm/NAME.sbatch`, submitted with `scripts/slurm/submit.sh` |
+| Resume | The same run script with `--resume --end-time T` and the original `--output` |
+| Summarize or plot | `scripts/analyze/run.py RUN --plot` |
+| Test | `scripts/check/cpu.sh`, `gpu.sh`, and `examples.py` |
+
+`generate_collision_example.cpp` constructs the small compact distribution
+used by the reversible collision examples. Its reference potential specifies
+the input distribution; the evolution then reconstructs gravity from the
+actual matter. Build it with `scripts/build/tools.sh`.
+
 ## CPU task mains and specialist runners
 
 The preferred one-task/one-main sources are organized under `cpu/src/apps/`:
 
 - `einstein_vlasov/eulerian.cpp`, `wpic_low_compactness.cpp`, and
   `wpic_black_hole.cpp`;
-- `vlasov_poisson/eulerian.cpp` and `expanding_wpic.cpp`;
+- `vlasov_poisson/eulerian.cpp`, `static_wpic.cpp`, and `expanding_wpic.cpp`;
 - `subhalo/expanding_wpic.cpp`;
 - `sidm/sphdsmc_constant.cpp`, `sphdsmc_velocity_dependent.cpp`,
   `wpic_constant.cpp`, and `wpic_velocity_dependent.cpp`; and

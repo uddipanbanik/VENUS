@@ -2,16 +2,16 @@
   "version": "1.0.0",
   "date": "2026-11-16",
   "scope": "Distributed sources, documentation, initial-condition interfaces, twelve example figure pairs, nineteen simulation movies, and reproducible analysis/rendering inputs. The manifest and checksum are excluded to avoid self-reference.",
-  "numerical_file_count": 128,
-  "numerical_manifest_identity_sha256": "1e502aae81a751fcef488602bcafd505e910fdde2b719a66a53171f666ed1fb4",
+  "numerical_file_count": 153,
+  "numerical_manifest_identity_sha256": "8afac7fa03fb4d200eb6aac2779bdecaed780f468ebadbe5b3a48d418cf69f04",
   "movie_count": 19,
   "figure_pairs": 12,
-  "file_count": 2290,
+  "file_count": 2463,
   "files": [
     {
       "path": ".gitignore",
-      "bytes": 593,
-      "sha256": "01e3cefe5ecca97424bc00e3e46d29932f5c49f9986e192504ae08ba558e51da"
+      "bytes": 701,
+      "sha256": "2440868c9054d2ac60411595323d35cfcde18c940d48da4ce9d9eed4ab5f1297"
     },
     {
       "path": "CITATION.cff",
@@ -30,8 +30,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 64771,
-      "sha256": "7d081d65089514bf77eca0cf94d4e21666d61d61f3b40b9562f7dd62b4b5e304"
+      "bytes": 63696,
+      "sha256": "78c873421f583361c0275a8b4ad661480781b5ec399ca37123b4f2a4d90f614f"
     },
     {
       "path": "VERSION",
@@ -800,13 +800,13 @@
     },
     {
       "path": "cpu/Makefile",
-      "bytes": 15933,
-      "sha256": "a0f6db5baaa88a4fe32962921e0e9f9771b1d7e76648c0ad70d494dc8d2f0fbd"
+      "bytes": 16807,
+      "sha256": "b83848e24dd9c870c32321ab6240b719a9d2287d32f04ec74e92cbcd6282230b"
     },
     {
       "path": "cpu/README.md",
-      "bytes": 13002,
-      "sha256": "20d81a1eec40257d89456a60183a4d3abe340e5da264aecb09e893886b0f1145"
+      "bytes": 22380,
+      "sha256": "9d2bab0994a42fdb866a14de8d393da916dda6380a881d7c9a9b3fb485e09863"
     },
     {
       "path": "cpu/docs/cluster.md",
@@ -1305,8 +1305,8 @@
     },
     {
       "path": "cpu/include/ev/wpic_task_profile.hpp",
-      "bytes": 3348,
-      "sha256": "045bdea22d57f87e35181653f9e65c1b1492a0ebe9d880b81a99347816b09ad4"
+      "bytes": 3338,
+      "sha256": "4bb2abbd2e9051e0803fe8ec22f7df531541dc3265120fcb341612b957e74813"
     },
     {
       "path": "cpu/python/ev_solver/__init__.py",
@@ -1485,8 +1485,8 @@
     },
     {
       "path": "cpu/src/apps/boltzmann_poisson/canonical_orbit.cpp",
-      "bytes": 138915,
-      "sha256": "ccac2cdff620b432a4be61be47d1bbdf39e42abce23f4748dc68561cb276b938"
+      "bytes": 138936,
+      "sha256": "e0cca782c10d76a4175f0130f3a9c1b521b2295249b4c721579cb48cc2207954"
     },
     {
       "path": "cpu/src/apps/boltzmann_poisson/exact.cpp",
@@ -1579,14 +1579,19 @@
       "sha256": "441ab9892a2be94f9a61d64fb75bb88825f1bc76c22c7f360b7db4215edf0dbc"
     },
     {
+      "path": "cpu/src/apps/vlasov_poisson/static_wpic.cpp",
+      "bytes": 508,
+      "sha256": "3d2c9b9fd300bcd24de772c536daa9b14e6bdd2c85cb3dacf0f44e5ea2eed890"
+    },
+    {
       "path": "cpu/src/drivers/einstein_vlasov_wpic.cpp",
       "bytes": 343384,
       "sha256": "d1879c5cbd4a2c741f4f9ba4681c9ab08c2de2b270102faf7ad43ef4e0c95344"
     },
     {
       "path": "cpu/src/drivers/expanding_wpic.cpp",
-      "bytes": 144190,
-      "sha256": "7a953fa692c4b0f9b0e1d0aad0bc377f59f3bfa476ff212e753d81ca26b34471"
+      "bytes": 145776,
+      "sha256": "77020264239016d46a6717beec9df4873db7db862ee149249d0bb7658722430d"
     },
     {
       "path": "cpu/src/drivers/sidm_wpic.cpp",
@@ -1602,6 +1607,276 @@
       "path": "cpu/src/venus_modular_solver.cpp",
       "bytes": 688,
       "sha256": "e5dbe5732d3c4342c59496e4e397b3d8dccaf11c66ffe79f01c9c1e3c2b7fd74"
+    },
+    {
+      "path": "cpu/tests/check_ef_interior_archived_slice.cpp",
+      "bytes": 5286,
+      "sha256": "28eb6cd9952ea5e0595cf40d8205cbf83c2b9d1f7b3d3887be0972c5628e016f"
+    },
+    {
+      "path": "cpu/tests/test_bp_rkl2.cpp",
+      "bytes": 5169,
+      "sha256": "5a6d0fb24f602cb38eafbae59c008ccf4de01682d8e1c283a8f9b2315f517ef4"
+    },
+    {
+      "path": "cpu/tests/test_canonical_ntc_collision.cpp",
+      "bytes": 33105,
+      "sha256": "56645910eb6548b7044d2d3be51fd4bf2c4185d85124e94389fdcc5c5c50d6c2"
+    },
+    {
+      "path": "cpu/tests/test_canonical_open_carrier_compression.cpp",
+      "bytes": 13752,
+      "sha256": "93f1e843d7d219c63ac8a44d5f379ed852162c80c10d0428ab72ba1a5f76b738"
+    },
+    {
+      "path": "cpu/tests/test_canonical_particle_ntc_collision.cpp",
+      "bytes": 8020,
+      "sha256": "46a880926646d1252d317e7ded4955c560a359c978db99fe5977f83a7fc586f8"
+    },
+    {
+      "path": "cpu/tests/test_canonical_reversible_collision.cpp",
+      "bytes": 8015,
+      "sha256": "2c9b16fc5c4d8175aeecf443149c1004949926e268401e812e70b1a09fb37dcd"
+    },
+    {
+      "path": "cpu/tests/test_dynamic_coordinate_convergence_builder.py",
+      "bytes": 20108,
+      "sha256": "978e3d154208d25c116387d168bee99b3899ec4d5351c6be6096e233e4c091b4"
+    },
+    {
+      "path": "cpu/tests/test_dynamic_eikonal_coordinate_parity.py",
+      "bytes": 67142,
+      "sha256": "979598c4153afd48a5a80bbe1b47296355b51543b98835fecc8977f7d32edf32"
+    },
+    {
+      "path": "cpu/tests/test_eikonal_reprocess_runner.py",
+      "bytes": 13332,
+      "sha256": "0162ff5b8cb937d3bea27b3dbb4185ba9c4c81a13e0446252c06cdad6749ae98"
+    },
+    {
+      "path": "cpu/tests/test_einstein_vlasov_halo_outcome_driver.sh",
+      "bytes": 6402,
+      "sha256": "280206b3a7628badd02f1956c11310e3a58d694e4767ff194afbf5fbdd88b627"
+    },
+    {
+      "path": "cpu/tests/test_einstein_vlasov_wpic_coordinate_driver.sh",
+      "bytes": 32422,
+      "sha256": "f098e38bf51db9e2002aa1912a4a49fa97e184a571b22810a3a559a524b2839e"
+    },
+    {
+      "path": "cpu/tests/test_einstein_vlasov_wpic_excision_audit.cpp",
+      "bytes": 28431,
+      "sha256": "c94e1fff42e52a045de9ca8067bdf8d9cc1c915d61ee039bb836c406f52b3529"
+    },
+    {
+      "path": "cpu/tests/test_einstein_vlasov_wpic_paired_long_gif.sh",
+      "bytes": 13352,
+      "sha256": "fcd61d3f870688e4128aebe7f03ff4eca02eb69ff2c660eea1dcd48766f0c827"
+    },
+    {
+      "path": "cpu/tests/test_einstein_vlasov_wpic_static_workflows.sh",
+      "bytes": 46082,
+      "sha256": "67d9429daa4472b4f21ca2c03755d8b8ac588f77646046a9cbc0616f6fcc3e00"
+    },
+    {
+      "path": "cpu/tests/test_ev_python_reader_contract.py",
+      "bytes": 3962,
+      "sha256": "e1867844f99991d9f953f7ea37062691aa69674f41e7abe10890781709d4d228"
+    },
+    {
+      "path": "cpu/tests/test_expanding_wpic_cadence_integration.sh",
+      "bytes": 7199,
+      "sha256": "bc77a147efa2cb8e4ff42e49a2cca3ab1e470bacbfe5645157ee002309b7a579"
+    },
+    {
+      "path": "cpu/tests/test_expanding_wpic_initial_distribution.cpp",
+      "bytes": 2880,
+      "sha256": "2f1f396d06345dca9c45e1250b6f3f2f21e133b762ff8a9c9de5747ce0ba08a9"
+    },
+    {
+      "path": "cpu/tests/test_fully_kinetic_modules.cpp",
+      "bytes": 185517,
+      "sha256": "9b39765136f6a4905773f542719034b002ed9958e7e1589f4af40bb819b5327a"
+    },
+    {
+      "path": "cpu/tests/test_hamiltonian_orbit_phase.cpp",
+      "bytes": 29818,
+      "sha256": "c084e37dfa3da0f34623369afa6972691e856b820c6667f9b59810cec8187618"
+    },
+    {
+      "path": "cpu/tests/test_mpi_collision_guard.cpp",
+      "bytes": 2708,
+      "sha256": "4b3434f770df5683a73f5955b8ed70baf34f0d00b5e1b37f057efcb474c3de17"
+    },
+    {
+      "path": "cpu/tests/test_relativistic_boltzmann.cpp",
+      "bytes": 10027,
+      "sha256": "b9df216307a4a18425faa42db344b795ee336d11b1dec73b86bec8fe59ccefc4"
+    },
+    {
+      "path": "cpu/tests/test_render_ef_interior_inputs.py",
+      "bytes": 2294,
+      "sha256": "174fd5c3a52818f8d10ca9108a974523682b13f6087e0e87ce6fc8b84232316f"
+    },
+    {
+      "path": "cpu/tests/test_render_weighted_einstein_vlasov_coordinate_pair_gif.py",
+      "bytes": 8043,
+      "sha256": "badf9e90e5d765024b47c438d887eedea7e7db884bbfe21a7b096e05f7b25938"
+    },
+    {
+      "path": "cpu/tests/test_render_weighted_einstein_vlasov_pic_profile_gifs.py",
+      "bytes": 3804,
+      "sha256": "36e837b72d3488482106b26252382e03330b000f817e9c5dee9a58a5db3aa12a"
+    },
+    {
+      "path": "cpu/tests/test_render_weighted_pic_subhalo_collision_age_gif.py",
+      "bytes": 2801,
+      "sha256": "4f65e7fde910a063a26a06c384bada64b697af98b0b757bc2dd0f7753d6c4478"
+    },
+    {
+      "path": "cpu/tests/test_solver_task_profiles.cpp",
+      "bytes": 10643,
+      "sha256": "73d30b99602eca2f3b193c590531c30e1f36cefc048fb30406a63a4fc3c976c1"
+    },
+    {
+      "path": "cpu/tests/test_spherical_dsmc_collision.cpp",
+      "bytes": 13060,
+      "sha256": "fe2c1dc10ed4ed8ea19005e49134e41182ad58b2f797343056dbf57a46e6086f"
+    },
+    {
+      "path": "cpu/tests/test_spherical_dsmc_restart_tools.py",
+      "bytes": 4386,
+      "sha256": "c8168bfaa296245dfcff35ae6649514d75cb57b92ca8c5386e918d85f34befe5"
+    },
+    {
+      "path": "cpu/tests/test_spherical_dsmc_solver.cpp",
+      "bytes": 56010,
+      "sha256": "348059bc0443937c3b79e1d733b46e0e02d1101435e796f5d17498d66d162c0a"
+    },
+    {
+      "path": "cpu/tests/test_static_sidm_restart_integration.py",
+      "bytes": 7476,
+      "sha256": "f6ad353e713f8490cdfd6ff517a89f721fd9c678bf8de86e738460df2d4a69e6"
+    },
+    {
+      "path": "cpu/tests/test_static_wpic_driver.py",
+      "bytes": 2837,
+      "sha256": "88467ea9ffa9d00a9c02a2cd86947cba6e366b6e57aec8b0cf99c300cf44f09f"
+    },
+    {
+      "path": "cpu/tests/test_vp_orbit_regularization.cpp",
+      "bytes": 25551,
+      "sha256": "1e7ee6591c6f19c3ee58b66a67b0e3d98c6e2685d826000ac5f251f9633f1b90"
+    },
+    {
+      "path": "cpu/tests/test_weighted_einstein_vlasov_coordinate_map.cpp",
+      "bytes": 15309,
+      "sha256": "34464c65ccf55ea04c48ca9f213828f6ea317eb92b2c8ce7a67e3f89127103e7"
+    },
+    {
+      "path": "cpu/tests/test_weighted_einstein_vlasov_halo_classifier.cpp",
+      "bytes": 6081,
+      "sha256": "de527178d54dca951bec6390c2057c207fbef1c688368d0876835e47e9f13cb9"
+    },
+    {
+      "path": "cpu/tests/test_weighted_einstein_vlasov_pic.cpp",
+      "bytes": 42933,
+      "sha256": "9d3f6a07a893cf914bca65703f842d8e9b026d4fa50186c23c4d2579d982c47c"
+    },
+    {
+      "path": "cpu/tests/test_weighted_einstein_vlasov_pic_eddington_finkelstein.cpp",
+      "bytes": 40105,
+      "sha256": "97c84560345602b6aa276aa93964fca47de99eac567421f272b062a7aac54769"
+    },
+    {
+      "path": "cpu/tests/test_weighted_einstein_vlasov_static_shell.cpp",
+      "bytes": 27485,
+      "sha256": "656c73847448cb93bf02c7739d0e71006be3eed5db1490172353f5c9c73c86eb"
+    },
+    {
+      "path": "cpu/tests/test_weighted_pic_boltzmann_event.cpp",
+      "bytes": 20498,
+      "sha256": "ebd2af5ee218356630675ccc2aa74267612e26556a8da8c97a2609c92e48ac9c"
+    },
+    {
+      "path": "cpu/tests/test_weighted_pic_frank_restart_import.cpp",
+      "bytes": 4655,
+      "sha256": "e803c49a0bbc9af8aeb7c72a149ae94f69a57023ad0ac09f6204e79c7f53d5c6"
+    },
+    {
+      "path": "cpu/tests/test_weighted_pic_restart_tools.cpp",
+      "bytes": 6772,
+      "sha256": "5945f9cf75e930c77f5d399a8cbe1488bbc808fc54caf2a68ff71e0f860d3c5c"
+    },
+    {
+      "path": "cpu/tests/test_weighted_vlasov_pic.cpp",
+      "bytes": 76269,
+      "sha256": "590906e102b3f7fbf30d32da190d38e09ff93ed734cef613c665b4f61baa599b"
+    },
+    {
+      "path": "cpu/tests/test_weighted_vlasov_pic_collisions.cpp",
+      "bytes": 35779,
+      "sha256": "a508aa8b9fccdb52ac9e0d2768da98d38b37a565ec10b12551a3fab077da2d38"
+    },
+    {
+      "path": "cpu/tests/test_weighted_vlasov_pic_equilibrium.cpp",
+      "bytes": 25240,
+      "sha256": "3ef9daf5a2bb998b4541bd12f692e7aa345bc017d2b2033f05a8c958ab890835"
+    },
+    {
+      "path": "cpu/tests/test_weighted_vlasov_pic_event_scheduler.cpp",
+      "bytes": 15289,
+      "sha256": "2631710ef8459a6f138873d54cf243f2b37bd2835b807a5014681a5e19233e0a"
+    },
+    {
+      "path": "cpu/tests/test_weighted_vlasov_pic_phase_remap.cpp",
+      "bytes": 14712,
+      "sha256": "42e45adf7f3ed610bbf67e36e27d0aeb9902656d699033f5e60dd25035f98779"
+    },
+    {
+      "path": "cpu/tests/test_weighted_vlasov_pic_subhalo_collisions.cpp",
+      "bytes": 60757,
+      "sha256": "0f40f4cc4694453d25d690a702a2eba9bffcb39c95b3f1830b8c6f5d0ad30466"
+    },
+    {
+      "path": "cpu/tests/test_wpic_analysis.py",
+      "bytes": 7052,
+      "sha256": "6ca7d3ea161bd7b2c31bad1d1dd13d027027c1c0bc4170ada4a4151edd1ff6b6"
+    },
+    {
+      "path": "cpu/tests/test_wpic_background_integration.py",
+      "bytes": 5318,
+      "sha256": "600473b6ca62d4b13961e8b509326fb3ae949c0298c98937764dd7d3ffb6fafa"
+    },
+    {
+      "path": "cpu/tests/test_wpic_null_map_preflight.py",
+      "bytes": 9761,
+      "sha256": "7cb2691461899dd41544b023c5767c11ff55a93b4a0a887de25061836d5e5356"
+    },
+    {
+      "path": "cpu/tests/test_wpic_post_horizon_gate.py",
+      "bytes": 24050,
+      "sha256": "e966fd55a1d23bd536766530d2b6a2a95cfeabb63ea2aa171f02bf9ca0599844"
+    },
+    {
+      "path": "cpu/tests/test_wpic_threshold_adm_ratios.py",
+      "bytes": 10098,
+      "sha256": "7640d754675085aaa8567fee81dbad5e104f0458d013f679cea4a3631ed0e450"
+    },
+    {
+      "path": "cpu/tests/test_wpic_threshold_bound_family.py",
+      "bytes": 11316,
+      "sha256": "fe7b3c6fcce0817e2a81093af40697aa7f7633178093bc2158ac44e285d202c1"
+    },
+    {
+      "path": "cpu/tests/test_wpic_threshold_parity_gate.py",
+      "bytes": 10250,
+      "sha256": "0c2b59b621eaaf4cce1a4ff67707ad195a32ab7c6fc4406a711be6db5438ea67"
+    },
+    {
+      "path": "cpu/tests/test_wpic_threshold_time_series.py",
+      "bytes": 26424,
+      "sha256": "2e13d82305e32512de6900981298bc2671f1e58a56618d2ef1aa30c1e97a13fd"
     },
     {
       "path": "cpu/tools/analyze_einstein_vlasov_wpic.py",
@@ -1727,6 +2002,11 @@
       "path": "cpu/tools/generate_bound_gaussian_shell_restart.py",
       "bytes": 11201,
       "sha256": "0012328b033379a179b42f35025b5fd65fefbf3fa8b8fd2741e2dcbf23b13673"
+    },
+    {
+      "path": "cpu/tools/generate_collision_example.cpp",
+      "bytes": 5474,
+      "sha256": "4e49fb0d19fe2347aadd38111629f46bd99a64dc268d3ee87815d8896013203f"
     },
     {
       "path": "cpu/tools/generate_frank_core_cell_average_restart.py",
@@ -1880,8 +2160,8 @@
     },
     {
       "path": "cpu/tools/render_weighted_pic_subhalo_strength_scan_gif.py",
-      "bytes": 17850,
-      "sha256": "500be0dacb714dd4f859938c074e519add3b2c38e006205cf8eda67472fca0ee"
+      "bytes": 18499,
+      "sha256": "d05a40db5b9e6cb917e244ca50a267d05f2069cdfc14546a9dca4f56abd9de4c"
     },
     {
       "path": "cpu/tools/render_weighted_vlasov_pic_equilibrium_gif.py",
@@ -1930,8 +2210,8 @@
     },
     {
       "path": "docs/README.md",
-      "bytes": 1614,
-      "sha256": "587f525e21938b12fcfafa4e14b6cf9ada2ef472fd65b230137e754d87e617b9"
+      "bytes": 1775,
+      "sha256": "928086b63ba326581e00bf9e9d9021b6930068be6cad8455a0260253e15d4e08"
     },
     {
       "path": "docs/relativistic_boltzmann.md",
@@ -1944,14 +2224,444 @@
       "sha256": "09be6c509a9ad7cf55988bfe8ce6309cf7861fea67c0ac640a9b64f7b8b2b12a"
     },
     {
+      "path": "examples/README.md",
+      "bytes": 16814,
+      "sha256": "de38fc90a59349cc81ff0f1710de18be4cf4d2b09d93aceaa988f6c80ac847c0"
+    },
+    {
+      "path": "examples/catalogue.json",
+      "bytes": 22602,
+      "sha256": "f74ddac0e5971345decdd81882874c52006f56dbc3ad36d04ca8c0c5f17eb099"
+    },
+    {
+      "path": "examples/inputs/bp_exact.ini",
+      "bytes": 1094,
+      "sha256": "31cd84fa00e2791a12a2d67c58ddecfa15997fb9ccdb619655258f16a18d99da"
+    },
+    {
+      "path": "examples/inputs/bp_expanding_prompt_cusp.ini",
+      "bytes": 1090,
+      "sha256": "136358aa3b5f7d3f5b420523dfd61f004fe99871378c2577fb180edcccfa87b4"
+    },
+    {
+      "path": "examples/inputs/bp_finite_angle.ini",
+      "bytes": 1094,
+      "sha256": "31cd84fa00e2791a12a2d67c58ddecfa15997fb9ccdb619655258f16a18d99da"
+    },
+    {
+      "path": "examples/inputs/bp_fokker_planck.ini",
+      "bytes": 1039,
+      "sha256": "aaaf081707ebc612afcea1864c6d2bf24cff4359d6b83defdfc62ca65eb0cb91"
+    },
+    {
+      "path": "examples/inputs/bp_landau.ini",
+      "bytes": 1035,
+      "sha256": "2db8c4542dca1d91c325ab930a77242f975c6b1a6d82d3acbee9ea97c95bb800"
+    },
+    {
+      "path": "examples/inputs/bp_reversible.ini",
+      "bytes": 1099,
+      "sha256": "27b98b2803d3d68b809f43db534356a1626e90ef7589b8e602505c26f76cb457"
+    },
+    {
+      "path": "examples/inputs/bp_reversible_sampled.ini",
+      "bytes": 1107,
+      "sha256": "0bb33645e986dc5b11c2944521683cc2e7663fe60086446ba251cbcf5809c96e"
+    },
+    {
+      "path": "examples/inputs/bp_reversible_streamed.ini",
+      "bytes": 1108,
+      "sha256": "dc3d674ed0f80ecfd000197fb4ac18b3f0367f9cf2136cbd50ca56c020f48b3d"
+    },
+    {
+      "path": "examples/inputs/ev_grid.ini",
+      "bytes": 1025,
+      "sha256": "38e0c64935f9f1acb6cfbdc1394ad121a0216d38cdf689fcb6c56e2064969704"
+    },
+    {
+      "path": "examples/inputs/sidm_sphdsmc_constant.ini",
+      "bytes": 1040,
+      "sha256": "090aa99ef8caeaeda3297ed227e4ef6a9d7fff7850872d59e7f703c66e00b416"
+    },
+    {
+      "path": "examples/inputs/sidm_sphdsmc_velocity_dependent.ini",
+      "bytes": 1040,
+      "sha256": "b57f3940d941a6f4d48e5a6aae6285069f3d467194ce913104129b96b25c7e31"
+    },
+    {
+      "path": "examples/inputs/vp_grid_expanding.ini",
+      "bytes": 1030,
+      "sha256": "ea6d36220a99dabd5da3c2e9a4317290041421b16be76cc81dfd2cd4cf146b62"
+    },
+    {
+      "path": "examples/inputs/vp_grid_static.ini",
+      "bytes": 1024,
+      "sha256": "92913c03cb7d560a7a45a1fa56502100c3243e3ce23e98f8c80fbe7b089ec31c"
+    },
+    {
+      "path": "examples/run/bp_canonical_orbit.sh",
+      "bytes": 276,
+      "sha256": "35bd64b7d3e894d4a2fe5f71a5c15c4924155d7452a521a2c8e6a7db9082554c"
+    },
+    {
+      "path": "examples/run/bp_exact.sh",
+      "bytes": 261,
+      "sha256": "9a2757da69e7cad7fe63a155f54c342222162f5759e9ae73f38931fb9c702e11"
+    },
+    {
+      "path": "examples/run/bp_expanding_prompt_cusp.sh",
+      "bytes": 280,
+      "sha256": "7090837dc644e09d09ba2b03f55d494021c3411a3bf8c3e06af20f99fcbcebe8"
+    },
+    {
+      "path": "examples/run/bp_finite_angle.sh",
+      "bytes": 268,
+      "sha256": "de9f2621709c1f1d703ffbf4f6a3ff161d9f5703c1aabed487e3af54e3bc761e"
+    },
+    {
+      "path": "examples/run/bp_fokker_planck.sh",
+      "bytes": 269,
+      "sha256": "128e0b53bb0ea37c8d61f2d22fe790091a107da493da497b5860074c2b01c089"
+    },
+    {
+      "path": "examples/run/bp_landau.sh",
+      "bytes": 262,
+      "sha256": "034cd170bd837cbf642a8f816aa9b998d5eeea63e5c908a83b3401678cb83954"
+    },
+    {
+      "path": "examples/run/bp_reversible.sh",
+      "bytes": 266,
+      "sha256": "6c331b8a2e0e3837644cc9525a87dec6d5088b2a4f65c610fc3ef4fe19d40cd9"
+    },
+    {
+      "path": "examples/run/bp_reversible_sampled.sh",
+      "bytes": 274,
+      "sha256": "a661337f3e18ef3a62d3c7c98266da791faa81232fea48ef0dc8cc5fe3686814"
+    },
+    {
+      "path": "examples/run/bp_reversible_streamed.sh",
+      "bytes": 275,
+      "sha256": "3eec8829ace5dde4cf795252f5f1b14c40687b59e0004b0eba678cfb4419fbef"
+    },
+    {
+      "path": "examples/run/ev_grid.sh",
+      "bytes": 258,
+      "sha256": "9ade3da8a1e1e44bc2849fbdc00027f38407ba51de4349827531c7e65352b05b"
+    },
+    {
+      "path": "examples/run/ev_wpic_eddington_finkelstein.sh",
+      "bytes": 282,
+      "sha256": "7d40ea3e3cb553d81439ac77c0c50a43960a47d56d9f1bf235de12737cef64ca"
+    },
+    {
+      "path": "examples/run/ev_wpic_low.sh",
+      "bytes": 264,
+      "sha256": "a4c105f2ae9e672d350f24441d7265abf4572cf5a1a18e211446ee21965fbc1f"
+    },
+    {
+      "path": "examples/run/ev_wpic_schwarzschild.sh",
+      "bytes": 274,
+      "sha256": "0678c52555a185924bfb73098dc88337718000e76973d29fcc472803040b9100"
+    },
+    {
+      "path": "examples/run/gpu_sidm_constant.sh",
+      "bytes": 270,
+      "sha256": "8bb8909279c87939803e9d1cf6765f6c46413d46f1e669df0817ec799c3779e0"
+    },
+    {
+      "path": "examples/run/gpu_sidm_explicit_law.sh",
+      "bytes": 274,
+      "sha256": "7becb8c1800618905f2d26a1d4774c32cb231e767729f97229f1aeca9d2c6c75"
+    },
+    {
+      "path": "examples/run/gpu_sidm_power_law.sh",
+      "bytes": 271,
+      "sha256": "64556411420a995f35c753bb14b99111910ecf1c05f801ed16af0e91b084295b"
+    },
+    {
+      "path": "examples/run/gpu_sidm_yukawa_born.sh",
+      "bytes": 273,
+      "sha256": "68828dc0b5dfd636d5369dfbf8cae9e089b2619e589e1fc645f533c2cc1cd290"
+    },
+    {
+      "path": "examples/run/gpu_subhalo_expanding.sh",
+      "bytes": 271,
+      "sha256": "edf3f7e717ba1679735fb0c10d2054f11dcbba52cb45b1a073720ebb6c89ef1e"
+    },
+    {
+      "path": "examples/run/gpu_subhalo_static.sh",
+      "bytes": 271,
+      "sha256": "4e5dd79ac8b98cbbebe7c53c4a809b1cd70c24bb3db33f075d5e638296bac966"
+    },
+    {
+      "path": "examples/run/gpu_vp_expanding.sh",
+      "bytes": 268,
+      "sha256": "791a4ecdc70cde3df18fdee0fa48b4b40ccdacd183010f173039fc960a9a8ff6"
+    },
+    {
+      "path": "examples/run/gpu_vp_static.sh",
+      "bytes": 268,
+      "sha256": "41b86330f0de668c7f0fbeaff5747c3c2d00467bb008bb285f93c33e0ac5b7c1"
+    },
+    {
+      "path": "examples/run/sidm_sphdsmc_constant.sh",
+      "bytes": 274,
+      "sha256": "6011a637bc255af944a10bf0a412911b53c8f0b0583624c1e0f9aeb858a378c1"
+    },
+    {
+      "path": "examples/run/sidm_sphdsmc_velocity_dependent.sh",
+      "bytes": 284,
+      "sha256": "da355b5b1706c12428e1c3c21d71affb7c64091834c3136382fa8f1ed8a90038"
+    },
+    {
+      "path": "examples/run/sidm_wpic_constant.sh",
+      "bytes": 278,
+      "sha256": "80ff74599bc28edc1d194038cecc60343050d6512128182536a3ca24977eb73e"
+    },
+    {
+      "path": "examples/run/sidm_wpic_powerlaw.sh",
+      "bytes": 278,
+      "sha256": "a71e1f4963c72a886421efb3b57247d6df5bc4d0bcffb77795e3a37f4adb32f5"
+    },
+    {
+      "path": "examples/run/subhalo_expanding.sh",
+      "bytes": 284,
+      "sha256": "4b93a6c1366ea9452b73f48beaffa150a5b42836058802d5dfc47c048c2b3c56"
+    },
+    {
+      "path": "examples/run/subhalo_static.sh",
+      "bytes": 278,
+      "sha256": "590e0ec05a059f9d782ec399223ebdb7448e64dff9f6326d27b2d8964de96285"
+    },
+    {
+      "path": "examples/run/vp_grid_expanding.sh",
+      "bytes": 275,
+      "sha256": "905a8c65794f94ceec87b059d59250ed0850ec73c5977f0e39707463379a0a37"
+    },
+    {
+      "path": "examples/run/vp_grid_static.sh",
+      "bytes": 269,
+      "sha256": "0b1fc0de6529d7c1dcf30ca0acc71c009c991213def6a7e665ede832e153db8e"
+    },
+    {
+      "path": "examples/run/vp_wpic_expanding.sh",
+      "bytes": 275,
+      "sha256": "59df11d1b98c5391a9938d5ff5304d69add1e2e968606f19acfb65d9352161a5"
+    },
+    {
+      "path": "examples/run/vp_wpic_static.sh",
+      "bytes": 269,
+      "sha256": "38a719f19d7e42081360f360c515565c9e86c17ad3bafba6c4c33b87bfb5c639"
+    },
+    {
+      "path": "examples/slurm/bp_canonical_orbit.sbatch",
+      "bytes": 511,
+      "sha256": "ed7b131a64da563ad95337c4280964f8cbe8783c94ff2d06e518415e130ed00b"
+    },
+    {
+      "path": "examples/slurm/bp_exact.sbatch",
+      "bytes": 491,
+      "sha256": "a2d43b7a27238f537fb3f9023b00f6162e755ce412699bdea618373c9ce8c64d"
+    },
+    {
+      "path": "examples/slurm/bp_expanding_prompt_cusp.sbatch",
+      "bytes": 523,
+      "sha256": "e3cdc5256aca9f4d92f464a8e10dc89d79d0155cc3febda9b8d40c800c311c43"
+    },
+    {
+      "path": "examples/slurm/bp_finite_angle.sbatch",
+      "bytes": 505,
+      "sha256": "cb4c33b6077e4d5fd95fd287d029013a936372b4e197dc752277be0fb225abe6"
+    },
+    {
+      "path": "examples/slurm/bp_fokker_planck.sbatch",
+      "bytes": 507,
+      "sha256": "3fd6f52133e57d724c6e5a58fb004002e88094b3ca248f9e5513bd717def9f03"
+    },
+    {
+      "path": "examples/slurm/bp_landau.sbatch",
+      "bytes": 493,
+      "sha256": "918656e56b0c838f6bed9e0a064bb8b409e0859b71aced9c3278fca0454711fa"
+    },
+    {
+      "path": "examples/slurm/bp_reversible.sbatch",
+      "bytes": 501,
+      "sha256": "d980a355c14c71d4a02513661721fe04b85d6a763d983d569848340246b34f6a"
+    },
+    {
+      "path": "examples/slurm/bp_reversible_sampled.sbatch",
+      "bytes": 517,
+      "sha256": "085a0e3f4591670dfe5d14682aa3ab23362de34a97a07d4a8ccf604792e1cc8a"
+    },
+    {
+      "path": "examples/slurm/bp_reversible_streamed.sbatch",
+      "bytes": 519,
+      "sha256": "fb14807112e4701ba9ded5d706c5fb8980069340cab0b2894ab57504ff151247"
+    },
+    {
+      "path": "examples/slurm/ev_grid.sbatch",
+      "bytes": 489,
+      "sha256": "c74cd919d017525f29ee7c9420d3e58310fe9e41e2b7c7de3924ec97c62c190e"
+    },
+    {
+      "path": "examples/slurm/ev_grid_mpi.sbatch",
+      "bytes": 473,
+      "sha256": "ba8f8fb716a6a5eaf6e5af00d70885a0ee7831906646ccff85ea8b4a0554629f"
+    },
+    {
+      "path": "examples/slurm/ev_wpic_eddington_finkelstein.sbatch",
+      "bytes": 533,
+      "sha256": "0cfa9f28fc05a135743e0bfcd98613f56561497bcc8eea5ff5f7d6363809a463"
+    },
+    {
+      "path": "examples/slurm/ev_wpic_low.sbatch",
+      "bytes": 497,
+      "sha256": "a272e263b01ceef0b9adff7b90536c93920ad4313f2d3922e58766898378ede5"
+    },
+    {
+      "path": "examples/slurm/ev_wpic_schwarzschild.sbatch",
+      "bytes": 517,
+      "sha256": "d8e466c81ffd78cf24da985b69a9cdf8a33dbe1182a9f2cc7918d0afd9c9c572"
+    },
+    {
+      "path": "examples/slurm/gpu_sidm_constant.sbatch",
+      "bytes": 530,
+      "sha256": "d41c21847435542fd75840aee97ea21f4fd8ede1d31cec68a393d555117f7488"
+    },
+    {
+      "path": "examples/slurm/gpu_sidm_constant_mpi.sbatch",
+      "bytes": 519,
+      "sha256": "9abb2d60f2bc6d4a92eed42ae0414be121f0b4d148944a367efb8f04529cb59e"
+    },
+    {
+      "path": "examples/slurm/gpu_sidm_explicit_law.sbatch",
+      "bytes": 538,
+      "sha256": "d4f055b6c2a460e523e2032304341709ecc63a6ea8cafc13c0f12024b20fcf9f"
+    },
+    {
+      "path": "examples/slurm/gpu_sidm_explicit_law_mpi.sbatch",
+      "bytes": 527,
+      "sha256": "7b603243b65b9209daea3456236eb5d45eb196e4a88923d1819c88de8635761e"
+    },
+    {
+      "path": "examples/slurm/gpu_sidm_power_law.sbatch",
+      "bytes": 532,
+      "sha256": "2792ac7f5b2eb2682c94d3adb801bc9258650febdcc76adce73e2d96bf1eca2f"
+    },
+    {
+      "path": "examples/slurm/gpu_sidm_power_law_mpi.sbatch",
+      "bytes": 521,
+      "sha256": "1bf1d47e4fbe82dbddf0e3f41a11b1da59cf2cf81881732026a95a112eb43c9e"
+    },
+    {
+      "path": "examples/slurm/gpu_sidm_yukawa_born.sbatch",
+      "bytes": 536,
+      "sha256": "871d416fe9b52afd134eb964170fdcfe486181d6cac689e957d4e0ea02967e6a"
+    },
+    {
+      "path": "examples/slurm/gpu_sidm_yukawa_born_mpi.sbatch",
+      "bytes": 525,
+      "sha256": "f629e1a8de2e1c7c13d76b72363b088fa8d475f926930b957b7de3cf3affce58"
+    },
+    {
+      "path": "examples/slurm/gpu_subhalo_expanding.sbatch",
+      "bytes": 538,
+      "sha256": "c97eab984dec69d9f0eae7e0f47527492d1e3c0ad093cef27dfaf4b44b34526c"
+    },
+    {
+      "path": "examples/slurm/gpu_subhalo_expanding_mpi.sbatch",
+      "bytes": 527,
+      "sha256": "2bf0ed298facd9e778672d66117414ea90daa970130b72253ef3b0b9d59ad146"
+    },
+    {
+      "path": "examples/slurm/gpu_subhalo_static.sbatch",
+      "bytes": 532,
+      "sha256": "7870b70b098bdf94f0ceeab2b8a4bdbff8a1ba32ea9d3ff58a0e918734648d4d"
+    },
+    {
+      "path": "examples/slurm/gpu_vp_expanding.sbatch",
+      "bytes": 528,
+      "sha256": "f0d45d5cc60498f981dcf55785aa87a583af5bce716767d11953075b1bfabf65"
+    },
+    {
+      "path": "examples/slurm/gpu_vp_expanding_mpi.sbatch",
+      "bytes": 517,
+      "sha256": "ccbbf103c7f4c4383a5c45fbe0f722b40381a1c938d8b47f3448ed9a3d0488f6"
+    },
+    {
+      "path": "examples/slurm/gpu_vp_static.sbatch",
+      "bytes": 522,
+      "sha256": "c655be8a289e330f5098c8f43978c7dea444914771d5439360a316f00855def4"
+    },
+    {
+      "path": "examples/slurm/sidm_sphdsmc_constant.sbatch",
+      "bytes": 517,
+      "sha256": "53f22f3a6c5543f20447e28478d43867f75dfc108ff70c4423fea43a5539a4ac"
+    },
+    {
+      "path": "examples/slurm/sidm_sphdsmc_velocity_dependent.sbatch",
+      "bytes": 537,
+      "sha256": "4c4c715a57e157df7f404a046b4b39d08469cb160f8da0d9cb30104470a19d21"
+    },
+    {
+      "path": "examples/slurm/sidm_wpic_constant.sbatch",
+      "bytes": 511,
+      "sha256": "db3e4ab95cb490e02416fe94e2cc82c4d2202d2b7b7c6b6eaad9de66f59d46f5"
+    },
+    {
+      "path": "examples/slurm/sidm_wpic_powerlaw.sbatch",
+      "bytes": 511,
+      "sha256": "e559dff969ac4b87e033bdba8e865e85a67cec6b13c0e80c4156d3895dba2caa"
+    },
+    {
+      "path": "examples/slurm/subhalo_expanding.sbatch",
+      "bytes": 509,
+      "sha256": "b62498b66b1fd47d661afcb42bc4252f8bed9b13a47eab4364153a37dad1f846"
+    },
+    {
+      "path": "examples/slurm/subhalo_static.sbatch",
+      "bytes": 503,
+      "sha256": "fffa48645041e8efec318cc5668d9fc882cb4a3baefe09f2fc17296eeea55782"
+    },
+    {
+      "path": "examples/slurm/vp_grid_expanding.sbatch",
+      "bytes": 509,
+      "sha256": "8b38470217e02d0e90fbfa7af417e8ee11ebee07c2da025adab5a5d694c0afaa"
+    },
+    {
+      "path": "examples/slurm/vp_grid_expanding_mpi.sbatch",
+      "bytes": 493,
+      "sha256": "aa8651a7f886ca8066730e0d95c2226190ce84d974246888aad7a6519a2ceb22"
+    },
+    {
+      "path": "examples/slurm/vp_grid_static.sbatch",
+      "bytes": 503,
+      "sha256": "8001f5d04af21913a449d640de526516f2dd633100d2bda387c9a96bd5f42333"
+    },
+    {
+      "path": "examples/slurm/vp_grid_static_mpi.sbatch",
+      "bytes": 487,
+      "sha256": "f12391fa47bc339e2c58907d759107aba6535e46ae998b3c64aa977239a80774"
+    },
+    {
+      "path": "examples/slurm/vp_wpic_expanding.sbatch",
+      "bytes": 509,
+      "sha256": "ec9c1badd47d0a927679349b5d5e1a1c06cddb6eb7490973755fdfaec582f1f5"
+    },
+    {
+      "path": "examples/slurm/vp_wpic_static.sbatch",
+      "bytes": 503,
+      "sha256": "de459e4c670133b713e5a153e5518b1bf7edca262f7c5f40adcf6923391a81db"
+    },
+    {
       "path": "gpu/CMakeLists.txt",
-      "bytes": 11191,
-      "sha256": "50332b9ddd494144e176807f0142776ab45ea596a85aa43c21f5cf0fbf9353b8"
+      "bytes": 15973,
+      "sha256": "80f2078041ad8768b3bf45834a5b7c45c4a3020da0ea361984ce66ac192ea998"
     },
     {
       "path": "gpu/README.md",
-      "bytes": 11638,
-      "sha256": "b2b7b72a0daff8c5ffbc14a543429d51c7d3e3e0c850880e8b71e03d9b0ba929"
+      "bytes": 15003,
+      "sha256": "ffecc83f93ed150a17746497e65fbb5ab421e201897d3da3186eecf4fa0b8825"
     },
     {
       "path": "gpu/benchmarks/benchmark_material_sidm_gpu.cu",
@@ -2164,6 +2874,61 @@
       "sha256": "867f42b68b62b5a005d446a004e398e4d83cc0c07849f487181b4a8e43a1e1d8"
     },
     {
+      "path": "gpu/tests/test_collision_matching.cpp",
+      "bytes": 3515,
+      "sha256": "15e102ddc15a8ada22ae0c4425b83283759c84ec2c069f29547d09e6cae8723d"
+    },
+    {
+      "path": "gpu/tests/test_material_physics_cpu_parity.cpp",
+      "bytes": 3145,
+      "sha256": "b820aa75f398cc52d24c984ae6ed58f3aa412dec4e81f71af7e71cc996a51276"
+    },
+    {
+      "path": "gpu/tests/test_production_driver_cli.py",
+      "bytes": 5168,
+      "sha256": "904d4245359e9a8a88b672b7b2fe99d0de04babd3008c117097e03da67cf2134"
+    },
+    {
+      "path": "gpu/tests/test_production_endpoint_moments.cu",
+      "bytes": 13349,
+      "sha256": "2ccf5306831e3111fc2afe460c143f2cace569ada413bd072f4aa74904ef82a5"
+    },
+    {
+      "path": "gpu/tests/test_production_output.cpp",
+      "bytes": 4138,
+      "sha256": "8e7e0513caa41c04c06086a5ea530f0cf0e09b16deab5ebe191e5f9515973c4d"
+    },
+    {
+      "path": "gpu/tests/test_wpic_collisions.cu",
+      "bytes": 20132,
+      "sha256": "55bdf6c1b488b2fd7051df3401efb4e36382fa81f58add373628df2d4c11d241"
+    },
+    {
+      "path": "gpu/tests/test_wpic_mpi.cu",
+      "bytes": 11335,
+      "sha256": "6ac97582277cf48571991f79c016d045f5052ac9dc23ec949147fbf15c64e104"
+    },
+    {
+      "path": "gpu/tests/test_wpic_restart.cpp",
+      "bytes": 5209,
+      "sha256": "b07af1abb9f7750b9fd982216bf9ad82be02c2897745d300bdc6fb26a5bbdb14"
+    },
+    {
+      "path": "gpu/tests/test_wpic_subhalo_collisions.cu",
+      "bytes": 19647,
+      "sha256": "b2a0797de6eeee17642d067c7c838d811c7517078841297138aebea496efb611"
+    },
+    {
+      "path": "gpu/tests/test_wpic_vlasov_poisson.cu",
+      "bytes": 24615,
+      "sha256": "9a01ffc69e86449913fa3de0e083f9ce34a91e39743d6cd98fb43b06e3126d9a"
+    },
+    {
+      "path": "gpu/tests/test_wpic_vlasov_poisson_cpu_parity.cu",
+      "bytes": 12895,
+      "sha256": "aef922ea59ff34e365d798234fc5a85a8c72d0278269b5de8071978772e353bb"
+    },
+    {
       "path": "gpu/tools/compare_wpic_restarts.cpp",
       "bytes": 10557,
       "sha256": "e5568c66765049e45418b774cf1d90c833d5d688c20ff1469905953eacdb6733"
@@ -2207,6 +2972,11 @@
       "path": "gpu/tools/venus_gpu_vlasov_poisson.cu",
       "bytes": 562,
       "sha256": "10916b2ce9b0a5814a3fa78f7b80e7a8ccea38c44398c2d13e6038935d49c62f"
+    },
+    {
+      "path": "gpu/tools/venus_gpu_vlasov_poisson_static.cu",
+      "bytes": 1106,
+      "sha256": "05cfa65b4d2b968ae282e0e9642f6ed95d70e516bda059c27f5ad5323f6f9a3b"
     },
     {
       "path": "movies/HALOS.md",
@@ -11170,13 +11940,13 @@
     },
     {
       "path": "notes/SCRIPT_REFERENCE.md",
-      "bytes": 27477,
-      "sha256": "3b9980eac98c10b88802f8447a468cca547269e4ea8a2b86760b2793d9520c7f"
+      "bytes": 28558,
+      "sha256": "19c148dde0f15b3c5be2b9c5c66e7fb7469fc8fed6b2ddeebac2024de8aac48c"
     },
     {
       "path": "notes/SOLVER_MODULES.md",
-      "bytes": 58183,
-      "sha256": "d5ac768b2f23a996e6e8f2ceb08695b0a8055ca47460e784a802e6349645f03c"
+      "bytes": 61581,
+      "sha256": "9731e33020d8475aad4c78662fa037751eaca855db006661f94336a983d945fb"
     },
     {
       "path": "notes/sections/cpu/cpu_grid_solver_reference.tex",
@@ -11430,18 +12200,93 @@
     },
     {
       "path": "release/VALIDATION.md",
-      "bytes": 1971,
-      "sha256": "40bb7cf7ed461609bbdc7c481a2fbfe23fd316ccb97f10d00c5c16b7cf8c59ed"
+      "bytes": 4145,
+      "sha256": "f89ff313063f79c4c057e77a381574231a6cd5ce72f6d27e90307034eba0f378"
     },
     {
       "path": "release/numerical_sources.json",
-      "bytes": 15439,
-      "sha256": "180e1d0ad52e1dfeba44e062bb33609fedf1422e21ba3a1e872e7f8a88769d32"
+      "bytes": 18470,
+      "sha256": "1e8b580ff48449fd555c9696eed6712b2efcc02a0dcdcb125e9a99f82ae50560"
     },
     {
       "path": "requirements.txt",
       "bytes": 213,
       "sha256": "988e6039438c35d5d876256572fe4c0d7b3522745f5db2c971cc8899ffc6bf47"
+    },
+    {
+      "path": "scripts/analyze/run.py",
+      "bytes": 4397,
+      "sha256": "667c2f3742f2687922d9eb9f9b1b3d4fee53da68e859ea3323f1285523227971"
+    },
+    {
+      "path": "scripts/build/build.sh",
+      "bytes": 767,
+      "sha256": "328f122ff149af92f599c19d48208dab6feda2c9379802e44052ff79049df84b"
+    },
+    {
+      "path": "scripts/build/cpu.sh",
+      "bytes": 99,
+      "sha256": "461e9fc3865e51cb7b9b431677d9764e038e1a8398b5f2b5d6aa5c9be21154ed"
+    },
+    {
+      "path": "scripts/build/cpu_mpi.sh",
+      "bytes": 103,
+      "sha256": "ae0bbc806f50cce4f9b0987442bb52fb1b41d8f0350fb71991367f5da8e2553e"
+    },
+    {
+      "path": "scripts/build/cpu_openmp.sh",
+      "bytes": 106,
+      "sha256": "7bf063992ded6cd249be91073b43cf8ec2d960475d0a968f3f0dec348cc1b04c"
+    },
+    {
+      "path": "scripts/build/gpu.sh",
+      "bytes": 99,
+      "sha256": "ef89b80d0b817e3d153b74dfc9e18112d4d4784bd2f0cadc5b0807acc2013771"
+    },
+    {
+      "path": "scripts/build/gpu_mpi.sh",
+      "bytes": 103,
+      "sha256": "f1728f45e952c4438edc42c04f4fddad74865d83c6dcbb1131c9a4d80050527b"
+    },
+    {
+      "path": "scripts/build/ias_environment.sh",
+      "bytes": 864,
+      "sha256": "83fd5e590e00f86a0e7f7ee27904acbc436d0b45c6ae82a3181373428d0280b7"
+    },
+    {
+      "path": "scripts/build/macos_toolchain.sh",
+      "bytes": 1357,
+      "sha256": "fc187e5d15f5fb9f96d9cf40bc01dc6a43000ffcee27fdcd1fb175a0afa7e10c"
+    },
+    {
+      "path": "scripts/build/tools.sh",
+      "bytes": 101,
+      "sha256": "4fe9efe8f1d65ca2da3d695934df8f9e777e3c16dd2e6b8eb3d1928476c73fab"
+    },
+    {
+      "path": "scripts/check/cpu.sh",
+      "bytes": 1058,
+      "sha256": "78d64424f7d4354c7fed78fa2321ad9dfefec68c0d918de50f0e21888799ed1e"
+    },
+    {
+      "path": "scripts/check/examples.py",
+      "bytes": 1132,
+      "sha256": "73bf187e55c220dea0bc28b27df88308749828db4018e9679745d5db7cbac63a"
+    },
+    {
+      "path": "scripts/check/gpu.sh",
+      "bytes": 823,
+      "sha256": "b7935ca2d3886ad25a56c4dba44837f8dd7c40e15f954899d5bc719335dd6bb4"
+    },
+    {
+      "path": "scripts/check/source_manifest.py",
+      "bytes": 941,
+      "sha256": "b36c52fcb84ad41bd3c92d9dfbadea20c2e0fbb9c800285f54cf9516e517eb38"
+    },
+    {
+      "path": "scripts/check/update_manifests.py",
+      "bytes": 2318,
+      "sha256": "799ee8591351513d6cf69c9b75825781d3b52562c5fe916017d043d696459897"
     },
     {
       "path": "scripts/check_manual_log.py",
@@ -11450,13 +12295,33 @@
     },
     {
       "path": "scripts/check_shell_syntax.sh",
-      "bytes": 1459,
-      "sha256": "b7749c6c2532e0b1f26dfb694cfe1e71bf24dd38ea16fd38a71ce17512a37fd6"
+      "bytes": 1555,
+      "sha256": "f11f674d97030add28f09de14ce6c2b4a39b5337549783f76252f0acfe4d1371"
     },
     {
       "path": "scripts/cluster_gpu_smoke.sh",
       "bytes": 1805,
       "sha256": "5d2f39a9e19f770d0fce39c1a4c43444fde1f522dd531fe71d58a6d1ec1783c9"
+    },
+    {
+      "path": "scripts/run_example.py",
+      "bytes": 13596,
+      "sha256": "6e9c4ab994338c69a5aa09d6ac0538c50ac7efd34f0b94fd2292016fec49af79"
+    },
+    {
+      "path": "scripts/slurm/build.sbatch",
+      "bytes": 422,
+      "sha256": "f60fe8b669c69df03c561a6ad0e8e3ccfbafb893ad4be6890b4640b6ebe7142d"
+    },
+    {
+      "path": "scripts/slurm/check_gpu.sbatch",
+      "bytes": 445,
+      "sha256": "ffc92fc558ae1b8f68487b5ccbb592cb54fc78292f69bdf2be6b5fc56f8b1bdb"
+    },
+    {
+      "path": "scripts/slurm/submit.sh",
+      "bytes": 533,
+      "sha256": "e586ec956d9d18a83eb371e76ccfe0cb045ded9ba2f7259d9cdc9a6c4cc3a220"
     }
   ]
 }

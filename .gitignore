@@ -37,3 +37,7 @@
 /paper/reproduced/
 /movies/generated/
 *.tmp
+
+# Generated tutorial outputs and the small example-input builder
+/output/*
+/cpu/generate_collision_example

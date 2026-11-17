@@ -21,7 +21,9 @@ while IFS= read -r -d '' script_path; do
 done < <(
   find "$release_root" -type f \
     \( -name '*.sh' -o -name '*.sbatch' -o -name '*.slurm' \) \
-    ! -path '*/build/*' -print0
+    ! -path "$release_root/build/*" \
+    ! -path "$release_root/cpu/build/*" \
+    ! -path "$release_root/gpu/build/*" -print0
 )
 
 # Check the JavaScript extractor when Node is installed and report that scope explicitly otherwise.

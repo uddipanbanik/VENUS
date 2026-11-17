@@ -47,6 +47,7 @@ CPU_TASK_SOLVER_MPI_TARGETS := \
 WPIC_TASK_RUNNER_TARGETS := \
 	venus_cpu_einstein_vlasov_wpic_low_compactness \
 	venus_cpu_einstein_vlasov_wpic_black_hole \
+	venus_cpu_vlasov_poisson_wpic_static \
 	venus_cpu_vlasov_poisson_wpic_expanding \
 	venus_cpu_subhalo_wpic \
 	venus_cpu_sidm_wpic_constant \
@@ -76,7 +77,7 @@ SETUP_OUTPUT_ROOT ?= ../output/cpu
 # Section: compiler flags.
 # OPENMP_FLAGS is intentionally separate so clusters can override it when their
 # compiler wrapper needs a site-specific OpenMP flag or runtime library.
-BASE_CXXFLAGS ?= -std=c++17 -O3 -Wall -Wextra -Wpedantic
+BASE_CXXFLAGS ?= -std=c++17 -O3 -Wall -Wextra -Wpedantic -ffp-contract=off
 DEBUG_CXXFLAGS ?= -std=c++17 -O0 -g -Wall -Wextra -Wpedantic
 OPENMP_FLAGS ?= -fopenmp
 PTHREAD_FLAGS ?= -pthread
@@ -176,6 +177,9 @@ venus_cpu_einstein_vlasov_wpic_low_compactness: src/apps/einstein_vlasov/wpic_lo
 venus_cpu_einstein_vlasov_wpic_black_hole: src/apps/einstein_vlasov/wpic_black_hole.cpp $(EV_WPIC_DRIVER_SOURCE) $(MODULE_HEADERS)
 	$(CXX) $(BASE_CXXFLAGS) $(PTHREAD_FLAGS) -DVENUS_CPU_EV_WPIC_BLACK_HOLE_PROFILE -Iinclude src/apps/einstein_vlasov/wpic_black_hole.cpp $(EV_WPIC_DRIVER_SOURCE) -o $@ $(EXTRA_LDLIBS)
 
+venus_cpu_vlasov_poisson_wpic_static: src/apps/vlasov_poisson/static_wpic.cpp $(EXPANDING_WPIC_DRIVER_SOURCE) $(MODULE_HEADERS)
+	$(CXX) $(BASE_CXXFLAGS) $(PTHREAD_FLAGS) -DVENUS_CPU_STATIC_WPIC_VP_PROFILE -DVENUS_CPU_EXPANDING_WPIC_VP_PROFILE -Iinclude src/apps/vlasov_poisson/static_wpic.cpp $(EXPANDING_WPIC_DRIVER_SOURCE) -o $@ $(EXTRA_LDLIBS)
+
 venus_cpu_vlasov_poisson_wpic_expanding: src/apps/vlasov_poisson/expanding_wpic.cpp $(EXPANDING_WPIC_DRIVER_SOURCE) $(MODULE_HEADERS)
 	$(CXX) $(BASE_CXXFLAGS) $(PTHREAD_FLAGS) -DVENUS_CPU_EXPANDING_WPIC_VP_PROFILE -Iinclude src/apps/vlasov_poisson/expanding_wpic.cpp $(EXPANDING_WPIC_DRIVER_SOURCE) -o $@ $(EXTRA_LDLIBS)
 
@@ -272,3 +276,13 @@ clean:
 	find python tools -type f \( -name '*.pyc' -o -name '*.pyo' \) -delete
 	find python tools -type d -name __pycache__ -empty -delete
 	-rmdir $(TOOL_CHECK_DIR) build 2>/dev/null
+
+# Reproducible finite numerical checks, compiled independently of production binaries.
+TEST_SOURCES := $(wildcard tests/test_*.cpp)
+TEST_BINARIES := $(patsubst tests/%.cpp,build/tests/%,$(TEST_SOURCES))
+.PHONY: check
+build/tests/%: tests/%.cpp $(MODULE_HEADERS)
+	@mkdir -p build/tests
+	$(CXX) $(BASE_CXXFLAGS) $(PTHREAD_FLAGS) -Iinclude $< -o $@ $(EXTRA_LDLIBS)
+check: $(TEST_BINARIES)
+	@set -e; for test in $(TEST_BINARIES); do echo "Running $$test"; "$$test"; done

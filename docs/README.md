@@ -1,5 +1,8 @@
 # VENUS documentation
 
+Start with the [step-by-step examples and script index](../examples/README.md),
+then follow the [CPU guide](../cpu/README.md) or [GPU guide](../gpu/README.md).
+
 Read the [solver manual](venus_manual.pdf) for the physical equations,
 numerical updates, source explanations and operating instructions. It follows
 the calculation from initial data through gravity, transport, collisions and

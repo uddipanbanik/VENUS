@@ -4,7 +4,7 @@
 // moves this matter along the orbit, while encounters change its velocity and
 // therefore its energy, angular momentum and destination row.
 //
-// Inputs are a spherical DSMC restart, an Eddington distribution f(H), and
+// Inputs are a cell-average Eulerian restart, an Eddington distribution f(H), and
 // numerical controls for the orbit mesh and collision sampling.  The driver
 // first reconstructs the density and gravitational potential, fills the orbit
 // mesh, and checks how much of the original distribution it represents.  It
@@ -122,7 +122,7 @@ void print_usage(const char* executable) {
     std::cout
         << "Usage: " << executable << " --restart PATH [options]\n"
         << "\nRequired initial state:\n"
-        << "  --restart PATH                 source SphDSMC restart\n"
+        << "  --restart PATH                 source cell-average Eulerian restart\n"
         << "  --eddington-table PATH         optional stationary f(H) table\n"
         << "  --canonical-restart PATH       resume a canonical-atlas state\n"
         << "\nAtlas and physical evolution:\n"

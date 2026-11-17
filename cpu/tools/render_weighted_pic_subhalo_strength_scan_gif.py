@@ -238,8 +238,9 @@ def render(arguments: argparse.Namespace) -> Path:
 
     time_min, time_max = paired[0][0], paired[-1][0]
     tag = f"_{arguments.output_tag}" if arguments.output_tag else ""
+    profile_tag = f"gamma{number_tag(arguments.gamma)}" if arguments.gamma is not None else "profiles"
     output = arguments.output or arguments.output_directory / (
-        f"wpic_gamma{number_tag(arguments.gamma)}_"
+        f"wpic_{profile_tag}_"
         "subhalo_strength_scan_logrho_slope"
         f"{tag}_t{time_min:g}_to_t{time_max:g}.gif"
     )
@@ -301,7 +302,7 @@ def render(arguments: argparse.Namespace) -> Path:
             ls="-",
             lw=2.6,
             zorder=2,
-            label="Collisionless",
+            label=getattr(arguments, "series_label", "Collisionless"),
         )[0]
         red_lines = []
         for strength, color, (radius, density) in zip(
@@ -383,7 +384,8 @@ def render(arguments: argparse.Namespace) -> Path:
         style_axes(slope_axis, 19)
 
         figure.suptitle(
-            rf"$\gamma_i={arguments.gamma:g},\qquad t={time:g}$",
+            (f"{arguments.title}, t={time:g}" if getattr(arguments, "title", None)
+             else rf"$\gamma_i={arguments.gamma:g},\qquad t={time:g}$"),
             fontsize=24,
             y=0.992,
         )
@@ -451,7 +453,9 @@ def parse_arguments() -> argparse.Namespace:
         type=float,
         help="Use only profiles at or before this cumulative time horizon",
     )
-    parser.add_argument("--gamma", type=float, required=True)
+    parser.add_argument("--gamma", type=float, help="Initial power-law density slope, when applicable")
+    parser.add_argument("--series-label", default="Collisionless", help="Label for the primary saved profile sequence")
+    parser.add_argument("--title", help="Physical initial-data label for a general distribution")
     parser.add_argument("--fps", type=float, default=10.0)
     parser.add_argument("--r-min", type=float, default=0.1)
     parser.add_argument("--r-max", type=float, default=900.0)
@@ -466,7 +470,10 @@ def parse_arguments() -> argparse.Namespace:
             "curve at its last saved profile"
         ),
     )
-    return parser.parse_args()
+    arguments = parser.parse_args()
+    if arguments.gamma is None and not arguments.title:
+        parser.error("Supply --gamma for a power-law cusp or --title for a general distribution.")
+    return arguments
 
 
 if __name__ == "__main__":
